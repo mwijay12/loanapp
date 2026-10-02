@@ -245,35 +245,20 @@ class FeaturedPhoneDealCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Right floating smartphone image
+                    // Right floating smartphone hardware presentation
                     Expanded(
-                      flex: 7,
+                      flex: 8,
                       child: Center(
-                        child: Container(
-                          height: 145,
-                          decoration: const BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0x26000000),
-                                blurRadius: 16,
-                                offset: Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: deal.imageAsset != null && deal.imageAsset!.isNotEmpty
-                              ? Image.asset(
+                        child: deal.imageAsset != null && deal.imageAsset!.isNotEmpty
+                            ? SizedBox(
+                                height: 145,
+                                child: Image.asset(
                                   deal.imageAsset!,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => _buildFallbackDevice(),
-                                )
-                              : (deal.imageUrl != null && deal.imageUrl!.isNotEmpty
-                                  ? Image.network(
-                                      deal.imageUrl!,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => _buildFallbackDevice(),
-                                    )
-                                  : _buildFallbackDevice()),
-                        ),
+                                  errorBuilder: (_, __, ___) => _buildFramedDevice(deal),
+                                ),
+                              )
+                            : _buildFramedDevice(deal),
                       ),
                     ),
                   ],
@@ -286,16 +271,109 @@ class FeaturedPhoneDealCard extends StatelessWidget {
     );
   }
 
+  Widget _buildFramedDevice(FeaturedPhoneDeal deal) {
+    return Container(
+      width: 96,
+      height: 146,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.35),
+          width: 2.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Screen wallpaper or photo
+            if (deal.imageUrl != null && deal.imageUrl!.isNotEmpty)
+              Image.network(
+                deal.imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildScreenWallpaper(deal),
+              )
+            else
+              _buildScreenWallpaper(deal),
+
+            // Top Dynamic Island / speaker slit
+            Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                margin: const EdgeInsets.only(top: 5),
+                width: 28,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+
+            // Subtle glass glare reflection overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.15),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScreenWallpaper(FeaturedPhoneDeal deal) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [deal.gradient.last, deal.gradient.first],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.phone_android_rounded, color: Colors.white.withValues(alpha: 0.9), size: 30),
+          const SizedBox(height: 4),
+          Text(
+            deal.cashPrice,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGlassTag(String text) {
+    if (text.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-          width: 0.8,
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
       ),
       child: Text(
         text,
@@ -304,16 +382,6 @@ class FeaturedPhoneDealCard extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackDevice() {
-    return const Center(
-      child: Icon(
-        Icons.smartphone_rounded,
-        size: 58,
-        color: Colors.white,
       ),
     );
   }

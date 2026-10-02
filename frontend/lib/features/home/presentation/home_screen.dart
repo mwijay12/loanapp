@@ -39,7 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'title': 'Super Admin',
         'badge': 'HQ Executive',
         'persona': 'David Erick Mwijage · HQ Central',
-        'desc': 'Full company oversight: P&L margins, staff RBAC permissions, multi-branch audits & Knox remote lock master.',
+        'desc': 'Full company oversight: P&L margins, staff RBAC permissions, multi-branch audits & financial health.',
         'icon': Icons.admin_panel_settings_rounded,
         'color': const Color(0xFF7C3AED),
       },
@@ -57,7 +57,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'title': 'Loan Officer',
         'badge': 'Credit Risk',
         'persona': 'Baraka Mushi · Credit & Recovery',
-        'desc': 'Borrower KYC scoring, loan approval/rejection, remote Knox lock for overdue arrears, collections queue.',
+        'desc': 'Borrower KYC scoring, loan approval/rejection, collections follow-up and legal recovery escalation.',
         'icon': Icons.verified_user_rounded,
         'color': const Color(0xFF059669),
       },
@@ -391,11 +391,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   _buildNotificationItem(
-                    icon: Icons.phonelink_lock_rounded,
-                    iconBg: const Color(0xFFFFFBEB),
-                    iconColor: const Color(0xFFD97706),
-                    title: 'Knox Remote Security Heartbeat',
-                    subtitle: 'All locked handset screens reporting active enforcement.',
+                    icon: Icons.qr_code_scanner_rounded,
+                    iconBg: const Color(0xFFEFF6FF),
+                    iconColor: AppTheme.brand600,
+                    title: 'Hardware Serial Ledger Verification',
+                    subtitle: 'All branch serialized IMEIs matched against physical inventory.',
                     time: '1h ago',
                     onTap: () {
                       Navigator.pop(ctx);
@@ -696,7 +696,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isBranchManager = currentRole == 'Branch Manager';
     final isLoanOfficer = currentRole == 'Loan Officer';
     final isStorekeeper = currentRole == 'Storekeeper' || currentRole == 'Inventory Officer';
-    final isCashier = currentRole == 'Counter Cashier' || (!isSuperAdmin && !isBranchManager && !isLoanOfficer && !isStorekeeper);
 
     final activeBranch = ref.watch(activeBranchProvider);
     final totalStock = ref.watch(totalPhonesCountProvider);
@@ -788,13 +787,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // Ask LIMS AI Card
               _buildAskAiCard(context),
-              const SizedBox(height: 16),
-
-              // Featured Deals Carousel for Admin, Manager, Officer & Storekeeper (Placed after AI Card)
-              if (!isCashier) ...[
-                _buildFeaturedDealsSection(context),
-                const SizedBox(height: 18),
-              ],
+              const SizedBox(height: 18),
 
               // Quick Actions Header
               Row(
@@ -986,11 +979,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   children: [
                                     Expanded(
                                       child: _buildBentoActionCard(
-                                        icon: Icons.phonelink_lock_rounded,
-                                        iconBg: const Color(0xFFFEF3F2),
-                                        iconColor: const Color(0xFFD92D20),
-                                        title: 'Knox Remote Lock',
-                                        subtitle: 'Defaulter Control',
+                                        icon: Icons.qr_code_scanner_rounded,
+                                        iconBg: const Color(0xFFEFF6FF),
+                                        iconColor: AppTheme.brand600,
+                                        title: 'Hardware Inspector',
+                                        subtitle: 'Verify Phone IMEI',
                                         onTap: () => context.push('/scanner'),
                                       ),
                                     ),
@@ -1325,7 +1318,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ------------------------------------------------------------- Branch Operational Pulse
   Widget _buildOperationalPulseSection(BuildContext context, List<ProductItem> lowStock, List<LoanItem> loans) {
     final activeBranch = ref.watch(activeBranchProvider);
-    final lockedLoans = loans.where((l) => l.isKnoxLocked).length;
     final overdueLoans = loans.where((l) => l.status == 'overdue').length;
 
     return Container(
@@ -1465,7 +1457,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$lockedLoans Knox Locked · $overdueLoans Overdue',
+                          '$overdueLoans Overdue Accounts Requiring Action',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -1474,7 +1466,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'Tap to manage live collections & device lockscreen',
+                          'Tap to review borrower dossier and contact guarantor',
                           style: TextStyle(fontSize: 11, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -1486,14 +1478,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          // Critical Overdue / Locked borrower preview (if any)
-          if (loans.any((l) => l.isKnoxLocked || l.status == 'overdue')) ...[
+          // Critical Overdue / recovery borrower preview (if any)
+          if (loans.any((l) => l.status == 'overdue')) ...[
             const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Critical Knox & Collections',
+                  'Critical Collections & Arrears',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
@@ -1516,7 +1508,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 8),
             _buildBorrowerQuickWatchList(
               context,
-              loans.where((l) => l.isKnoxLocked || l.status == 'overdue').take(2).toList(),
+              loans.where((l) => l.status == 'overdue').take(2).toList(),
             ),
           ],
         ],
@@ -1751,26 +1743,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             InkWell(
               onTap: _triggerSync,
               borderRadius: BorderRadius.circular(99),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _isSyncing
-                      ? const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(strokeWidth: 1.8, color: Color(0xFF10B981)),
-                        )
-                      : const Icon(Icons.autorenew_rounded, size: 14, color: Color(0xFF10B981)),
-                  const SizedBox(width: 4),
-                  Text(
-                    _isSyncing ? 'Syncing…' : 'Synced just now',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF10B981),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _isSyncing
+                        ? const SizedBox(
+                            width: 10,
+                            height: 10,
+                            child: CircularProgressIndicator(strokeWidth: 1.6, color: Color(0xFF059669)),
+                          )
+                        : const Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF059669)),
+                    const SizedBox(width: 3),
+                    Text(
+                      _isSyncing ? 'Syncing…' : 'Live Sync',
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF059669),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -1797,7 +1797,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         glowColor: const Color(0xFF2563EB),
         imageAsset: 'assets/images/blue_iphones_duo.png',
         tag1: '256GB Titanium',
-        tag2: 'Knox Protected',
+        tag2: 'Hardware Verified',
         cashPrice: 'TZS 2.85M',
         monthlyDue: 'TZS 145K/mo',
         actionLabel: 'Issue Loan',
@@ -1918,7 +1918,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ------------------------------------------------------------- Hero Card (Today's Sales)
   Widget _buildHeroCard(int todaySales, int todayTx) {
     return Container(
-      height: 172,
+      constraints: const BoxConstraints(minHeight: 164),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF1652E1), Color(0xFF1E60F2), Color(0xFF3B82F6)],
@@ -1954,10 +1954,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             // Left Content
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 16, 18),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -1973,6 +1973,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                   Text(
                     LimsFormatters.currency(todaySales),
                     style: const TextStyle(
@@ -1982,6 +1983,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -2042,7 +2044,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildBranchManagerHeroCard(int branchSales, int branchTx, String activeBranch) {
     return Container(
-      height: 172,
+      constraints: const BoxConstraints(minHeight: 164),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF6366F1)],
@@ -2075,10 +2077,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 16, 18),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -2094,6 +2096,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                   Text(
                     LimsFormatters.currency(branchSales),
                     style: const TextStyle(
@@ -2103,6 +2106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -2159,7 +2163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildLoanOfficerHeroCard(int activeLoans, int overdueCount) {
     return Container(
-      height: 172,
+      constraints: const BoxConstraints(minHeight: 164),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF059669)],
@@ -2192,10 +2196,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 16, 18),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -2211,6 +2215,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                   const Text(
                     "TZS 28,450,000",
                     style: TextStyle(
@@ -2220,6 +2225,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -2268,7 +2274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildStorekeeperHeroCard(int totalStock, int lowStockCount) {
     return Container(
-      height: 172,
+      constraints: const BoxConstraints(minHeight: 164),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF0F172A), Color(0xFF0369A1), Color(0xFF0284C7)],
@@ -2301,10 +2307,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 16, 18),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -2320,6 +2326,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                   Text(
                     "$totalStock Handsets",
                     style: const TextStyle(
@@ -2329,6 +2336,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -2377,7 +2385,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildCashierTillHeroCard(int drawerAmount, int salesCount) {
     return Container(
-      height: 172,
+      constraints: const BoxConstraints(minHeight: 164),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF1E3A8A), Color(0xFF2563EB), Color(0xFF3B82F6)],
@@ -2410,10 +2418,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 16, 18),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -2429,6 +2437,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                   Text(
                     LimsFormatters.currency(drawerAmount),
                     style: const TextStyle(
@@ -2438,6 +2447,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(

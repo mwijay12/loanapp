@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/services/telecom_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
@@ -651,21 +652,24 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    LimsToast.show(
+                    TelecomService.sendSmsMessage(
                       context,
-                      'SMS payment reminder dispatched to ${loan.phone} via Lipa Namba gateway.',
-                      isSuccess: true,
+                      loan.phone,
+                      body: 'Habari ${loan.name}, ukumbusho wa rejesho la mkopo wa ${loan.item}. Salio ni ${loan.formattedRemainingAmount}. Lipa kupitia Lipa Namba 552219.',
                     );
                   },
-                  icon: const Icon(Icons.sms_rounded, size: 16),
-                  label: const Text(
-                    'Send SMS Reminder',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  icon: const Icon(Icons.sms_rounded, size: 15),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Send SMS',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.brand600,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
@@ -696,19 +700,32 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                             Text('Relationship: ${loan.guarantorRelation}', style: const TextStyle(fontSize: 12, color: AppTheme.ink500)),
                             const SizedBox(height: 12),
                             const Text(
-                              'Please call guarantor only if borrower cannot be reached within 3 business days.',
+                              'Please call or message guarantor only if borrower cannot be reached within 3 business days.',
                               style: TextStyle(fontSize: 11, color: AppTheme.ink600),
                             ),
                           ],
                         ),
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              TelecomService.openWhatsAppChat(
+                                context,
+                                loan.guarantorPhone,
+                                recipientName: loan.guarantorName,
+                                message: 'Habari Ndg. ${loan.guarantorName}, huu ni ukumbusho kutoka LIMS kuhusu mteja uliyemdhamini (${loan.name}) kwa mkopo wa simu (${loan.item}).',
+                              );
+                            },
+                            icon: const Icon(Icons.chat_bubble_rounded, size: 15, color: Color(0xFF25D366)),
+                            label: const Text('WhatsApp'),
+                          ),
                           ElevatedButton.icon(
                             onPressed: () {
                               Navigator.pop(ctx);
-                              LimsToast.show(context, 'Dialing guarantor: ${loan.guarantorPhone}');
+                              TelecomService.makePhoneCall(context, loan.guarantorPhone, recipientName: loan.guarantorName);
                             },
-                            icon: const Icon(Icons.phone_rounded, size: 16),
+                            icon: const Icon(Icons.phone_rounded, size: 15),
                             label: const Text('Call Guarantor'),
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF79009), foregroundColor: Colors.white),
                           ),
@@ -716,12 +733,15 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                       ),
                     );
                   },
-                  icon: const Icon(Icons.supervisor_account_outlined, size: 16),
-                  label: const Text('Guarantor Action', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  icon: const Icon(Icons.supervisor_account_outlined, size: 15),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Guarantor', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.ink700,
                     side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
@@ -877,49 +897,61 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: loan.phone));
-              LimsToast.show(context, 'Namba ya mteja (${loan.phone}) imenakiliwa!', isSuccess: true);
+              TelecomService.makePhoneCall(context, loan.phone, recipientName: loan.name);
             },
-            icon: const Icon(Icons.call_rounded, size: 16, color: AppTheme.successColor),
-            label: const Text('Piga Simu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            icon: const Icon(Icons.call_rounded, size: 15, color: AppTheme.successColor),
+            label: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('Piga Simu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.ink900,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: loan.phone));
-              LimsToast.show(context, 'WhatsApp: Kikumbusho cha malipo kimetumwa!', isSuccess: true);
-            },
-            icon: const Icon(Icons.chat_bubble_rounded, size: 16, color: Color(0xFF25D366)),
-            label: const Text('WhatsApp', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.ink900,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              LimsToast.show(
+              TelecomService.openWhatsAppChat(
                 context,
-                'Ujumbe wa ukumbusho wa rejesho umetumwa kwa ${loan.phone}!',
-                isSuccess: true,
+                loan.phone,
+                recipientName: loan.name,
+                message: 'Habari ${loan.name}, huu ni ukumbusho kutoka LIMS kuhusiana na mkopo wako wa ${loan.item}. Salio lako lililosalia ni ${loan.formattedRemainingAmount}. Asante.',
               );
             },
-            icon: const Icon(Icons.sms_rounded, size: 16, color: AppTheme.brand600),
-            label: const Text('Tuma SMS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            icon: const Icon(Icons.chat_bubble_rounded, size: 15, color: Color(0xFF25D366)),
+            label: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('WhatsApp', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.ink900,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              TelecomService.sendSmsMessage(
+                context,
+                loan.phone,
+                body: 'Habari ${loan.name}, ukumbusho wa rejesho la mkopo wa simu (${loan.item}). Lipa kupitia Lipa Namba 552219. Asante.',
+              );
+            },
+            icon: const Icon(Icons.sms_rounded, size: 15, color: AppTheme.brand600),
+            label: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('Tuma SMS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.ink900,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
@@ -1093,21 +1125,51 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           _infoRow('Guarantor Full Name', loan.guarantorName),
           _infoRow('Relationship to Borrower', loan.guarantorRelation),
           _infoRowWithCopy('Guarantor Contact Phone', displayedGuarantorPhone),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: loan.guarantorPhone));
-                LimsToast.show(context, 'Guarantor phone copied to clipboard', isSuccess: true);
-              },
-              icon: const Icon(Icons.phone_in_talk_rounded, size: 16, color: Color(0xFF7C5CFC)),
-              label: Text('Contact Guarantor ($displayedGuarantorPhone)', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF7C5CFC),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    TelecomService.makePhoneCall(context, loan.guarantorPhone, recipientName: loan.guarantorName);
+                  },
+                  icon: const Icon(Icons.phone_rounded, size: 15),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Call Guarantor', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C5CFC),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    TelecomService.openWhatsAppChat(
+                      context,
+                      loan.guarantorPhone,
+                      recipientName: loan.guarantorName,
+                      message: 'Habari Ndg. ${loan.guarantorName}, huu ni ukumbusho kutoka LIMS kwa mteja ${loan.name} uliyemdhamini kwa simu ya ${loan.item}.',
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_rounded, size: 15, color: Color(0xFF25D366)),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('WhatsApp', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.ink900,
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/services/location_service.dart';
+import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ui_kit.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
@@ -20,6 +23,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
   String _currentAmPm = 'AM';
   final String _currentDate = 'Friday, 02 October 2026';
   late TabController _tabController;
+  bool _isCheckingGps = false;
 
   @override
   void initState() {
@@ -50,9 +54,41 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
     super.dispose();
   }
 
-  void _handleClockAction(AttendanceRecord? currentRecord, StaffMember activeStaff, String branch) {
+  Future<void> _handleClockAction(AttendanceRecord? currentRecord, StaffMember activeStaff, String branch) async {
+    if (activeStaff.role == 'Super Admin') {
+      _showTopAlert(
+        context,
+        title: 'Executive HQ Exemption',
+        message: 'Super Admin is exempt from retail branch till punch-in. Global oversight active.',
+        isSuccess: true,
+      );
+      return;
+    }
+
     if (currentRecord == null) {
-      // Clock In
+      // Clock In - Real GPS Geofence Check
+      setState(() => _isCheckingGps = true);
+      _showTopAlert(
+        context,
+        title: 'Checking GPS Location',
+        message: 'Verifying device distance to $branch...',
+        isSuccess: true,
+      );
+
+      final result = await BranchLocationService.verifyBranchGeofence(branch);
+      if (!mounted) return;
+      setState(() => _isCheckingGps = false);
+
+      if (!result.isWithinGeofence && result.isGpsHardwareActive) {
+        _showTopAlert(
+          context,
+          title: 'Geofence Verification Failed',
+          message: 'You are ${result.distanceMeters.round()}m away from $branch. Clock-in requires store physical presence.',
+          isSuccess: false,
+        );
+        return;
+      }
+
       ref.read(attendanceProvider.notifier).clockIn(
             staffId: activeStaff.id,
             staffName: activeStaff.name,
@@ -60,10 +96,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
             branch: branch,
             customTime: '$_currentTime $_currentAmPm',
           );
+
       _showTopAlert(
         context,
         title: 'Clock-In Confirmed',
-        message: 'Stationed at $branch · Biometrics & GPS validated.',
+        message: '${result.statusMessage} Logged at $branch.',
         isSuccess: true,
       );
     } else if (currentRecord.clockOutTime == null) {
@@ -73,7 +110,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
         context,
         title: 'Shift Ended',
         message: 'Clocked out successfully at $_currentTime $_currentAmPm.',
-        isSuccess: false,
+        isSuccess: true,
       );
     }
   }
@@ -84,7 +121,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
       _showTopAlert(
         context,
         title: 'Break Ended',
-        message: 'Resumed active shift duties at $currentRecord.branch.',
+        message: 'Resumed active shift duties at ${currentRecord.branch}.',
         isSuccess: true,
       );
     } else {
@@ -99,55 +136,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
   }
 
   void _showTopAlert(BuildContext context, {required String title, required String message, required bool isSuccess}) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height - 160,
-          left: 18,
-          right: 18,
-        ),
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isSuccess ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 13.5),
-                  ),
-                  Text(
-                    message,
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    LimsToast.show(
+      context,
+      '$title · $message',
+      isSuccess: isSuccess,
+      isError: !isSuccess,
     );
   }
 
-  void _showTimesheetExportModal(BuildContext context, List<AttendanceRecord> records) {
+  void _showTimesheetExportModal(List<AttendanceRecord> records, String branchName) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -230,7 +227,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                     child: Column(
                       children: [
                         _buildTimesheetMetaRow('Company', 'Loan & Investment Management System Ltd'),
-                        _buildTimesheetMetaRow('Branch', 'Kariakoo Main Hub (Branch #01)'),
+                        _buildTimesheetMetaRow('Branch', branchName),
                         _buildTimesheetMetaRow('TIN / VRN', '142-998-314 / 40-028912-K'),
                         _buildTimesheetMetaRow('Pay Period', '01 Oct 2026 - 31 Oct 2026'),
                         _buildTimesheetMetaRow('Approved By', 'David Erick Mwijage · Managing Director'),
@@ -322,10 +319,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.print_rounded, size: 18, color: Colors.white),
-                      label: const Text('Print PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      onPressed: () {
+                      label: const Text('Print / PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      onPressed: () async {
                         Navigator.pop(ctx);
-                        _showTopAlert(context, title: 'Document Sent to Printer', message: 'Kariakoo Office EFD network printer.', isSuccess: true);
+                        _showTopAlert(context, title: 'Generating Audit PDF', message: 'Preparing official timesheet report...', isSuccess: true);
+                        try {
+                          await PdfReportService.generateAndDownloadTimesheetReport(
+                            branchName: branchName,
+                            records: records,
+                          );
+                        } catch (e) {
+                          if (mounted) {
+                            _showTopAlert(context, title: 'Export Failed', message: '$e', isSuccess: false);
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E60F2),
@@ -390,7 +397,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
           IconButton(
             icon: const Icon(Icons.print_outlined, color: Color(0xFF1E60F2)),
             tooltip: 'Timesheet Audit',
-            onPressed: () => _showTimesheetExportModal(context, attendanceLogs),
+            onPressed: () => _showTimesheetExportModal(attendanceLogs, activeBranch),
           ),
           const SizedBox(width: 8),
         ],
@@ -530,13 +537,62 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                   const SizedBox(height: 20),
 
                   // Shift Action Buttons
-                  if (!isClockedIn) ...[
+                  if (activeStaff.role == 'Super Admin') ...[
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF60A5FA), size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Executive HQ Status Active',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Super Admin is exempt from daily retail till clock-in. You have global oversight across all branches.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.analytics_outlined, size: 16, color: Colors.white),
+                              label: const Text('Review Branch Timesheet Audit', style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                              onPressed: () => _showTimesheetExportModal(attendanceLogs, activeBranch),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.white70),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else if (!isClockedIn) ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.fingerprint_rounded, size: 22),
-                        label: const Text('Clock In (Shift Start)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                        onPressed: () => _handleClockAction(currentStaffRecord, activeStaff, activeBranch),
+                        icon: _isCheckingGps
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.fingerprint_rounded, size: 22),
+                        label: Text(
+                          _isCheckingGps ? 'Verifying GPS Location...' : 'Clock In (Shift Start)',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                        ),
+                        onPressed: _isCheckingGps ? null : () => _handleClockAction(currentStaffRecord, activeStaff, activeBranch),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
@@ -583,9 +639,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
 
                   // Status detail text
                   Text(
-                    isClockedIn
-                        ? 'Clocked in at ${currentStaffRecord.clockInTime} · GPS: Within 15m of $activeBranch'
-                        : 'Tap Clock In upon arriving at store terminal · Geofence Active',
+                    activeStaff.role == 'Super Admin'
+                        ? 'Executive privileges: Global management across 10 regions in Tanzania'
+                        : (isClockedIn
+                            ? 'Clocked in at ${currentStaffRecord.clockInTime} · GPS: Within 15m of $activeBranch'
+                            : 'Tap Clock In upon arriving at store terminal · Geofence Active'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,
@@ -656,7 +714,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                   _buildTodayRosterList(todayLogs),
 
                   // Tab 2: Audit Timesheet Report
-                  _buildTimesheetAuditReport(attendanceLogs),
+                  _buildTimesheetAuditReport(attendanceLogs, activeBranch),
                 ],
               ),
             ),
@@ -746,7 +804,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
     );
   }
 
-  Widget _buildTimesheetAuditReport(List<AttendanceRecord> records) {
+  Widget _buildTimesheetAuditReport(List<AttendanceRecord> records, String branchName) {
     return ListView(
       physics: const BouncingScrollPhysics(),
       children: [
@@ -806,7 +864,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
           child: OutlinedButton.icon(
             icon: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF1E60F2)),
             label: const Text('Export Official Monthly Timesheet', style: TextStyle(fontWeight: FontWeight.w800)),
-            onPressed: () => _showTimesheetExportModal(context, records),
+            onPressed: () => _showTimesheetExportModal(records, branchName),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

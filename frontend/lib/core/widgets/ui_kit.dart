@@ -892,9 +892,11 @@ class LimsValidators {
   }
 }
 
-/// Modern floating toast
+/// Modern top-pinned floating toast notification
 class LimsToast {
   LimsToast._();
+
+  static OverlayEntry? _currentEntry;
 
   static void show(
     BuildContext context,
@@ -904,55 +906,198 @@ class LimsToast {
     IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(seconds: 4),
   }) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: isError
-            ? AppTheme.errorColor
-            : (isSuccess ? AppTheme.brand700 : AppTheme.ink900),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.rMd)),
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        content: Row(
-          children: [
-            Icon(
-              icon ??
-                  (isError
-                      ? Icons.error_outline_rounded
-                      : (isSuccess ? Icons.check_circle_rounded : Icons.info_outline_rounded)),
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13.5,
+    // Remove any active toast
+    _currentEntry?.remove();
+    _currentEntry = null;
+
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bgColor = isError
+        ? const Color(0xFFDC2626)
+        : (isSuccess ? const Color(0xFF059669) : const Color(0xFF0F172A));
+
+    final effectiveIcon = icon ??
+        (isError
+            ? Icons.error_outline_rounded
+            : (isSuccess ? Icons.check_circle_rounded : Icons.notifications_active_rounded));
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) => _TopToastWidget(
+        topPadding: topPadding,
+        message: message,
+        bgColor: bgColor,
+        icon: effectiveIcon,
+        actionLabel: actionLabel,
+        onAction: () {
+          entry.remove();
+          _currentEntry = null;
+          onAction?.call();
+        },
+        onDismiss: () {
+          entry.remove();
+          if (_currentEntry == entry) _currentEntry = null;
+        },
+      ),
+    );
+
+    _currentEntry = entry;
+    overlay.insert(entry);
+
+    Future.delayed(duration, () {
+      if (entry.mounted && _currentEntry == entry) {
+        entry.remove();
+        _currentEntry = null;
+      }
+    });
+  }
+}
+
+class _TopToastWidget extends StatefulWidget {
+  final double topPadding;
+  final String message;
+  final Color bgColor;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final VoidCallback onDismiss;
+
+  const _TopToastWidget({
+    required this.topPadding,
+    required this.message,
+    required this.bgColor,
+    required this.icon,
+    this.actionLabel,
+    this.onAction,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_TopToastWidget> createState() => _TopToastWidgetState();
+}
+
+class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _offsetAnim;
+  late final Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _offsetAnim = Tween<Offset>(
+      begin: const Offset(0, -0.6),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  void _dismiss() async {
+    await _controller.reverse();
+    widget.onDismiss();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: widget.topPadding + 10,
+      left: 16,
+      right: 16,
+      child: SlideTransition(
+        position: _offsetAnim,
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: Material(
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: _dismiss,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: widget.bgColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x3D000000),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(widget.icon, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.message,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                    if (widget.actionLabel != null) ...[
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: widget.onAction,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.white.withValues(alpha: 0.25),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          minimumSize: Size.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: Text(
+                          widget.actionLabel!,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: _dismiss,
+                      borderRadius: BorderRadius.circular(99),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            if (actionLabel != null && onAction != null)
-              TextButton(
-                onPressed: onAction,
-                style: TextButton.styleFrom(
-                  foregroundColor: isError ? Colors.white : AppTheme.brand300,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: Size.zero,
-                ),
-                child: Text(
-                  actionLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                ),
-              ),
-          ],
+          ),
         ),
-        duration: duration,
       ),
     );
   }

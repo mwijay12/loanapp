@@ -241,36 +241,42 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
           children: [
             // Header
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Credit & Borrower Portfolio',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.ink500,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Credit & Borrower Portfolio',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.ink500,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Borrowers & Active Contracts',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                        color: AppTheme.ink900,
+                      const SizedBox(height: 2),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: const Text(
+                          'Borrowers & Active Contracts',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                            color: AppTheme.ink900,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 InkWell(
                   onTap: _openNewLoanSheet,
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppTheme.brand600,
                       borderRadius: BorderRadius.circular(12),
@@ -283,12 +289,13 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                       ],
                     ),
                     child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                        Icon(Icons.add_rounded, size: 16, color: Colors.white),
                         SizedBox(width: 4),
                         Text(
                           'Toa Mkopo',
-                          style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800),
+                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -637,20 +644,28 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '${l.paid}% imelipwa',
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF9AA8BF),
+                              Flexible(
+                                child: Text(
+                                  '${l.paid}% imelipwa',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF9AA8BF),
+                                  ),
                                 ),
                               ),
-                              Text(
-                                'Salio: ${l.formattedRemainingAmount}',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: l.remainingAmount > 0 ? AppTheme.errorColor : AppTheme.successColor,
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Salio: ${l.formattedRemainingAmount}',
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: l.remainingAmount > 0 ? AppTheme.errorColor : AppTheme.successColor,
+                                  ),
                                 ),
                               ),
                             ],

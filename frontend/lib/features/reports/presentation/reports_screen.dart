@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
@@ -247,14 +248,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.download_rounded, size: 18),
-                      label: const Text('Export CSV'),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Export CSV', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Financial CSV dispatched to HQ accounting inbox.'),
-                            backgroundColor: Color(0xFF10B981),
-                          ),
+                        LimsToast.show(
+                          context,
+                          'Financial reconciliation CSV downloaded to your device.',
+                          isSuccess: true,
+                          icon: Icons.file_download_done_rounded,
                         );
                       },
                       style: OutlinedButton.styleFrom(
@@ -266,16 +270,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.print_rounded, size: 18, color: Colors.white),
-                      label: const Text('Print Signed PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      onPressed: () {
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: Colors.white),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Download PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      ),
+                      onPressed: () async {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Report dispatched to office network printer.'),
-                            backgroundColor: Color(0xFF1E60F2),
-                          ),
-                        );
+                        final activeBranch = ref.read(activeBranchProvider);
+                        final products = ref.read(inventoryProvider);
+                        final loans = ref.read(loansProvider);
+                        final totalStock = products.fold<int>(0, (sum, p) => sum + p.stock);
+
+                        LimsToast.show(context, 'Generating official PDF document...', isSuccess: true);
+                        try {
+                          await PdfReportService.generateAndDownloadFinancialReport(
+                            branchName: activeBranch,
+                            products: products,
+                            loans: loans,
+                            totalSales: 148820000,
+                            totalStock: totalStock,
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            LimsToast.show(context, 'PDF generation error: $e', isError: true);
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E60F2),
