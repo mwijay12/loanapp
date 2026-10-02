@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
@@ -16,12 +18,143 @@ class AppShell extends StatelessWidget {
     return 0;
   }
 
-  void _openMoreSheet(BuildContext context) {
+  void _openMoreSheet(BuildContext context, WidgetRef ref) {
+    final currentRole = ref.watch(userRoleProvider);
+    final isSuperAdmin = currentRole == 'Super Admin';
+    final isBranchManager = currentRole == 'Branch Manager';
+    final isStorekeeper = currentRole == 'Storekeeper' || currentRole == 'Inventory Officer';
+    final isCashier = currentRole == 'Counter Cashier' || currentRole == 'Staff';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final List<Widget> opButtons = [];
+
+        if (isCashier) {
+          opButtons.addAll([
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.point_of_sale_rounded,
+              iconColor: AppTheme.brand600,
+              title: 'Sell Phone (POS)',
+              sub: 'Cash or loan',
+              route: '/sell-loan',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.fingerprint_rounded,
+              iconColor: const Color(0xFF12B76A),
+              title: 'Attendance',
+              sub: 'Clock in & out',
+              route: '/attendance',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.calculate_rounded,
+              iconColor: const Color(0xFFF79009),
+              title: 'Daily Close',
+              sub: 'Reconcile drawer',
+              route: '/daily-closing',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.auto_awesome_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'AI Assistant',
+              sub: 'Ask anything',
+              route: '/ai',
+            ),
+          ]);
+        } else if (isStorekeeper) {
+          opButtons.addAll([
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.archive_rounded,
+              iconColor: AppTheme.brand600,
+              title: 'Receive Stock',
+              sub: 'Verify shipments',
+              route: '/receive',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.swap_horiz_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'Transfer',
+              sub: 'Between branches',
+              route: '/transfer',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.fingerprint_rounded,
+              iconColor: const Color(0xFF12B76A),
+              title: 'Attendance',
+              sub: 'Clock in & out',
+              route: '/attendance',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.auto_awesome_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'AI Assistant',
+              sub: 'Ask anything',
+              route: '/ai',
+            ),
+          ]);
+        } else {
+          opButtons.addAll([
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.archive_rounded,
+              iconColor: AppTheme.brand600,
+              title: 'Receive Stock',
+              sub: 'Verify shipments',
+              route: '/receive',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.swap_horiz_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'Transfer',
+              sub: 'Between branches',
+              route: '/transfer',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.fingerprint_rounded,
+              iconColor: const Color(0xFF12B76A),
+              title: 'Attendance',
+              sub: 'Clock in & out',
+              route: '/attendance',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.point_of_sale_rounded,
+              iconColor: const Color(0xFFF79009),
+              title: 'Daily Close',
+              sub: 'Reconcile drawer',
+              route: '/daily-closing',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.bar_chart_rounded,
+              iconColor: const Color(0xFFF43F5E),
+              title: 'Reports',
+              sub: 'Sales & loans',
+              route: '/reports',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.auto_awesome_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'AI Assistant',
+              sub: 'Ask anything',
+              route: '/ai',
+            ),
+          ]);
+        }
+
         return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -43,6 +176,54 @@ class AppShell extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
+
+              // Active Role Scope Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isCashier
+                      ? const Color(0xFFFEF3E4)
+                      : (isStorekeeper ? const Color(0xFFF0EBFF) : const Color(0xFFEFF6FF)),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isCashier
+                        ? const Color(0xFFFDE68A)
+                        : (isStorekeeper ? const Color(0xFFD8B4FE) : const Color(0xFFBFDBFE)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isCashier
+                          ? Icons.point_of_sale_rounded
+                          : (isStorekeeper ? Icons.inventory_2_rounded : Icons.shield_rounded),
+                      size: 16,
+                      color: isCashier
+                          ? const Color(0xFFD97706)
+                          : (isStorekeeper ? const Color(0xFF7C3AED) : AppTheme.brand600),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Role: $currentRole',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: isCashier
+                              ? const Color(0xFF92400E)
+                              : (isStorekeeper ? const Color(0xFF5B21B6) : const Color(0xFF1E40AF)),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      isCashier ? 'Till Scope' : (isStorekeeper ? 'Warehouse' : 'Full Admin'),
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
               const Text(
                 'Operations',
                 style: TextStyle(
@@ -53,9 +234,11 @@ class AppShell extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
-                'Core branch workflows & management',
-                style: TextStyle(
+              Text(
+                isCashier
+                    ? 'Cashier till, sales & shift actions'
+                    : (isStorekeeper ? 'Warehouse & stock movements' : 'Core branch workflows & management'),
+                style: const TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.ink500,
@@ -71,56 +254,7 @@ class AppShell extends StatelessWidget {
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
                 childAspectRatio: 2.2,
-                children: [
-                  _buildOpButton(
-                    context: ctx,
-                    icon: Icons.archive_rounded,
-                    iconColor: AppTheme.brand600,
-                    title: 'Receive Stock',
-                    sub: 'Verify shipments',
-                    route: '/receive',
-                  ),
-                  _buildOpButton(
-                    context: ctx,
-                    icon: Icons.swap_horiz_rounded,
-                    iconColor: const Color(0xFF7C5CFC),
-                    title: 'Transfer',
-                    sub: 'Between branches',
-                    route: '/transfer',
-                  ),
-                  _buildOpButton(
-                    context: ctx,
-                    icon: Icons.fingerprint_rounded,
-                    iconColor: const Color(0xFF12B76A),
-                    title: 'Attendance',
-                    sub: 'Clock in & out',
-                    route: '/attendance',
-                  ),
-                  _buildOpButton(
-                    context: ctx,
-                    icon: Icons.point_of_sale_rounded,
-                    iconColor: const Color(0xFFF79009),
-                    title: 'Daily Close',
-                    sub: 'Reconcile drawer',
-                    route: '/daily-closing',
-                  ),
-                  _buildOpButton(
-                    context: ctx,
-                    icon: Icons.bar_chart_rounded,
-                    iconColor: const Color(0xFFF43F5E),
-                    title: 'Reports',
-                    sub: 'Sales & loans',
-                    route: '/reports',
-                  ),
-                  _buildOpButton(
-                    context: ctx,
-                    icon: Icons.auto_awesome_rounded,
-                    iconColor: const Color(0xFF7C5CFC),
-                    title: 'AI Assistant',
-                    sub: 'Ask anything',
-                    route: '/ai',
-                  ),
-                ],
+                children: opButtons,
               ),
               const SizedBox(height: 20),
 
@@ -135,28 +269,30 @@ class AppShell extends StatelessWidget {
               const SizedBox(height: 8),
 
               // Workspace list rows
+              if (isSuperAdmin || isBranchManager) ...[
+                _buildWorkspaceRow(
+                  icon: Icons.admin_panel_settings_outlined,
+                  iconColor: AppTheme.brand600,
+                  title: 'Admin Console & Network',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/admin');
+                  },
+                ),
+                _buildWorkspaceRow(
+                  icon: Icons.badge_outlined,
+                  iconColor: const Color(0xFF7C5CFC),
+                  title: 'Staff Roles & Credentials (RBAC)',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/admin?tab=staff');
+                  },
+                ),
+              ],
               _buildWorkspaceRow(
-                icon: Icons.admin_panel_settings_outlined,
-                iconColor: AppTheme.brand600,
-                title: 'Admin Console & Network',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/admin');
-                },
-              ),
-              _buildWorkspaceRow(
-                icon: Icons.badge_outlined,
-                iconColor: const Color(0xFF7C5CFC),
-                title: 'Staff Roles & Credentials (RBAC)',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/admin?tab=staff');
-                },
-              ),
-              _buildWorkspaceRow(
-                icon: Icons.shield_rounded,
+                icon: Icons.verified_outlined,
                 iconColor: const Color(0xFF0EA5E9),
-                title: 'Kikagua IMEI, Knox & Waranti',
+                title: 'Device & IMEI Inspector',
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/imei-inspector');
@@ -302,7 +438,7 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = _getCurrentIndex(context);
 
     return Scaffold(
@@ -386,7 +522,7 @@ class AppShell extends StatelessWidget {
                 icon: Icons.tune_rounded,
                 tooltip: 'Uendeshaji & Mipangilio (Operations)',
                 isSelected: false,
-                onTap: () => _openMoreSheet(context),
+                onTap: () => _openMoreSheet(context, ref),
               ),
             ],
           ),
