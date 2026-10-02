@@ -151,8 +151,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         const Divider(height: 1, color: Color(0xFFE2E8F0)),
                         const SizedBox(height: 10),
                         _buildDocRow('Registered Office', 'Plot 14, Uhuru St, Kariakoo, Dar es Salaam'),
-                        _buildDocRow('TIN / VRN', '142-998-314 / 40-028912-K'),
-                        _buildDocRow('EFD Machine S/N', 'TZ-EFD-894102 (Live Online)'),
+                        _buildDocRow('Report Category', 'Branch Financial & Portfolio Audit'),
+                        _buildDocRow('Audit Standard', 'Financial Management & Portfolio At Risk (PAR)'),
                         _buildDocRow('Branch Scope', activeBranch),
                         _buildDocRow('Report Date', 'Friday, 02 October 2026 · 14:45 EAT'),
                         _buildDocRow('Auditing Officer', 'David Erick Mwijage · Managing Director'),
@@ -220,12 +220,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Digital Verification Hash: #9941-EFD-LIMS',
+                                'Internal Ledger Audit Verified',
                                 style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF1E60F2)),
                               ),
                               SizedBox(height: 2),
                               Text(
-                                'This document is digitally stamped and synchronized with Supabase central financial ledger.',
+                                'Generated dynamically from LIMS branch financial ledger and inventory asset register.',
                                 style: TextStyle(fontSize: 10.5, color: Color(0xFF475569)),
                               ),
                             ],
@@ -433,7 +433,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                         ),
                         Text(
-                          'TIN: 142-998-314 · EFD Sync · $activeBranch',
+                          'Branch Ledger · $activeBranch',
                           style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
                         ),
                       ],
@@ -575,7 +575,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Daily Close & Drawer Reconcile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                    Text('Match cash count with EFD tax register', style: TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                    Text('Reconcile physical cash drawer with daily register', style: TextStyle(fontSize: 11, color: Color(0xFF475569))),
                   ],
                 ),
               ),

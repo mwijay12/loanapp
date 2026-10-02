@@ -5,9 +5,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_localizations.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/lims_repository.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
-import '../../loans/presentation/widgets/device_lockscreen_simulator_modal.dart';
 
 class SellLoanScreen extends ConsumerStatefulWidget {
   final String? initialTransaction;
@@ -25,77 +25,11 @@ class SellLoanScreen extends ConsumerStatefulWidget {
   ConsumerState<SellLoanScreen> createState() => _SellLoanScreenState();
 }
 
-class _SelectedPhone {
-  final String model;
-  final String variant;
-  final String primaryImei;
-  final String secondaryImei;
-  final int cashPrice;
-  final int loanPrice;
-  final String condition;
-  final Color badgeColor;
-
-  const _SelectedPhone({
-    required this.model,
-    required this.variant,
-    required this.primaryImei,
-    required this.secondaryImei,
-    required this.cashPrice,
-    required this.loanPrice,
-    required this.condition,
-    required this.badgeColor,
-  });
-}
-
 class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
-  String _selectedTransaction = 'LOAN'; // 'SELL' or 'LOAN'
+  String _selectedTransaction = 'LOAN'; // 'SELL' (Cash) or 'LOAN'
   final _formKey = GlobalKey<FormState>();
 
-  // Available in-stock phones
-  final List<_SelectedPhone> _availablePhones = const [
-    _SelectedPhone(
-      model: 'Samsung Galaxy A15',
-      variant: '128GB / 6GB · Light Blue',
-      primaryImei: '358920112849102',
-      secondaryImei: '358920112849110',
-      cashPrice: 380000,
-      loanPrice: 460000,
-      condition: 'Brand New Sealed',
-      badgeColor: Color(0xFF1B6EF3),
-    ),
-    _SelectedPhone(
-      model: 'Redmi Note 13 Pro',
-      variant: '256GB / 8GB · Midnight Black',
-      primaryImei: '864920042819384',
-      secondaryImei: '864920042819392',
-      cashPrice: 580000,
-      loanPrice: 695000,
-      condition: 'Brand New Sealed',
-      badgeColor: Color(0xFF0EA5E9),
-    ),
-    _SelectedPhone(
-      model: 'iPhone 15 Pro Max',
-      variant: '256GB · Natural Titanium',
-      primaryImei: '354928104829104',
-      secondaryImei: '354928104829112',
-      cashPrice: 3850000,
-      loanPrice: 4450000,
-      condition: 'Brand New Sealed',
-      badgeColor: Color(0xFF7C5CFC),
-    ),
-    _SelectedPhone(
-      model: 'Tecno Camon 30 Premier',
-      variant: '256GB / 8GB · Iceland White',
-      primaryImei: '352940182749102',
-      secondaryImei: '352940182749110',
-      cashPrice: 440000,
-      loanPrice: 530000,
-      condition: 'Brand New Sealed',
-      badgeColor: Color(0xFF06B6D4),
-    ),
-  ];
-
-  late _SelectedPhone _activePhone;
+  int? _selectedHandsetId;
 
   // Borrower KYC Controllers
   final _nameController = TextEditingController(text: 'Bakari Juma Mwambungu');
@@ -112,10 +46,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   final _guarantorNidaController = TextEditingController(text: '19890212-14120-00001-24');
 
   // Loan Financial Controllers
-  late TextEditingController _loanAmountController;
   late TextEditingController _depositController;
-  late TextEditingController _installmentController;
-  final _dueDateController = TextEditingController(text: 'Ijumaa ijayo (Wiki ya 1)');
   final _supervisorPinController = TextEditingController();
 
   // Cash Sale Controllers
@@ -123,22 +54,22 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   final _receiptPhoneController = TextEditingController(text: '0754 892 314');
 
   int _installmentWeeks = 8;
-  String _selectedSecurityMethod = 'Knox Guard OEM (Samsung & Transsion)';
   bool _contractSigned = true;
-  bool _deviceLockAgreed = true;
+  bool _borrowerConsentAgreed = true;
+  bool _showSchedulePreview = false;
   bool _isProcessing = false;
   String? _borrowerPassportPhoto = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80';
   bool _isCameraCapturing = false;
 
   void _captureWebcamPassport() async {
     setState(() => _isCameraCapturing = true);
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future.delayed(const Duration(milliseconds: 700));
     if (mounted) {
       setState(() {
         _isCameraCapturing = false;
         _borrowerPassportPhoto = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80';
       });
-      LimsToast.show(context, 'Live passport photo captured & verified via office webcam!', isSuccess: true);
+      LimsToast.show(context, 'Passport photo captured at counter desk.', isSuccess: true);
     }
   }
 
@@ -146,7 +77,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     setState(() {
       _borrowerPassportPhoto = 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&auto=format&fit=crop&q=80';
     });
-    LimsToast.show(context, 'Passport image uploaded & scanned successfully.', isSuccess: true);
+    LimsToast.show(context, 'Passport image attached successfully.', isSuccess: true);
   }
 
   @override
@@ -156,23 +87,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
       final t = widget.initialTransaction!.toUpperCase();
       _selectedTransaction = (t == 'SELL' || t == 'CASH') ? 'SELL' : 'LOAN';
     }
-
-    _activePhone = _availablePhones[0];
-    if (widget.initialPhoneModel != null) {
-      final found = _availablePhones.firstWhere(
-        (p) =>
-            p.model.toLowerCase().contains(widget.initialPhoneModel!.toLowerCase()) ||
-            widget.initialPhoneModel!.toLowerCase().contains(p.model.toLowerCase()),
-        orElse: () => _availablePhones[0],
-      );
-      _activePhone = found;
-    }
-
-    _loanAmountController = TextEditingController(text: _formatNumber(_activePhone.loanPrice));
-    final defaultDeposit = (_activePhone.loanPrice * 0.25).round();
-    _depositController = TextEditingController(text: _formatNumber(defaultDeposit));
-    final balance = _activePhone.loanPrice - defaultDeposit;
-    _installmentController = TextEditingController(text: _formatNumber((balance / _installmentWeeks).round()));
+    _depositController = TextEditingController();
   }
 
   String _formatNumber(num val) {
@@ -181,22 +96,29 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     return s.replaceAllMapped(reg, (Match m) => '${m[1]},');
   }
 
-  void _onPhoneChanged(_SelectedPhone phone) {
-    setState(() {
-      _activePhone = phone;
-      _loanAmountController.text = _formatNumber(phone.loanPrice);
-      final deposit = (phone.loanPrice * 0.25).round();
-      _depositController.text = _formatNumber(deposit);
-      final balance = phone.loanPrice - deposit;
-      _installmentController.text = _formatNumber((balance / _installmentWeeks).round());
-    });
+  ProductItem? _resolveActivePhone(List<ProductItem> availablePhones) {
+    if (availablePhones.isEmpty) return null;
+    if (_selectedHandsetId != null) {
+      final match = availablePhones.where((p) => p.id == _selectedHandsetId).toList();
+      if (match.isNotEmpty) return match.first;
+    }
+    if (widget.initialPhoneModel != null) {
+      final match = availablePhones.where(
+        (p) =>
+            p.name.toLowerCase().contains(widget.initialPhoneModel!.toLowerCase()) ||
+            widget.initialPhoneModel!.toLowerCase().contains(p.name.toLowerCase()),
+      ).toList();
+      if (match.isNotEmpty) return match.first;
+    }
+    return availablePhones.first;
   }
 
-  void _recalcLoan() {
-    final total = double.tryParse(_loanAmountController.text.replaceAll(',', '')) ?? _activePhone.loanPrice.toDouble();
-    final deposit = double.tryParse(_depositController.text.replaceAll(',', '')) ?? (total * 0.25);
-    final balance = total > deposit ? total - deposit : 0.0;
-    _installmentController.text = _formatNumber((balance / _installmentWeeks).round());
+  void _ensureDepositInitialized(ProductItem phone) {
+    final loanPrice = phone.loanPrice ?? (phone.price * 1.20).round();
+    final defaultDeposit = (loanPrice * 0.25).round();
+    if (_depositController.text.isEmpty) {
+      _depositController.text = _formatNumber(defaultDeposit);
+    }
   }
 
   @override
@@ -211,10 +133,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     _guarantorPhoneController.dispose();
     _guarantorRelationController.dispose();
     _guarantorNidaController.dispose();
-    _loanAmountController.dispose();
     _depositController.dispose();
-    _installmentController.dispose();
-    _dueDateController.dispose();
     _supervisorPinController.dispose();
     _receiptPhoneController.dispose();
     super.dispose();
@@ -223,7 +142,79 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final requiresSupervisor = _selectedTransaction == 'LOAN' && _activePhone.loanPrice > 1000000;
+    final repository = ref.watch(limsRepositoryProvider);
+    final activeBranch = ref.watch(activeBranchProvider);
+    final availableHandsets = repository.getAvailableHandsets(ref, branch: activeBranch);
+
+    if (availableHandsets.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF4F7FC),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
+            onPressed: () => context.pop(),
+          ),
+          title: const Text('POS Counter Sale & Loan', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEFF6FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.inventory_2_outlined, color: AppTheme.brand600, size: 40),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No Phones Available in Stock',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Branch "$activeBranch" currently has 0 available serialized handsets. Please receive stock or transfer units from another branch before initiating checkout.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, color: AppTheme.ink500),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => context.push('/receive-stock'),
+                  icon: const Icon(Icons.add_box_rounded, size: 18),
+                  label: const Text('Receive Stock at Branch'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.brand600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final activePhone = _resolveActivePhone(availableHandsets)!;
+    _ensureDepositInitialized(activePhone);
+
+    final loanPrice = activePhone.loanPrice ?? (activePhone.price * 1.20).round();
+    final requiresSupervisor = _selectedTransaction == 'LOAN' && loanPrice > 1000000;
+
+    final depositInt = int.tryParse(_depositController.text.replaceAll(',', '')) ?? (loanPrice * 0.25).round();
+    final quote = LoanQuote.calculate(
+      cashPrice: activePhone.price,
+      customLoanPrice: loanPrice,
+      downPayment: depositInt,
+      tenureWeeks: _installmentWeeks,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
@@ -232,7 +223,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          _selectedTransaction == 'LOAN' ? 'Issue Phone Loan' : 'POS Counter Sale',
+          _selectedTransaction == 'LOAN' ? 'Issue Phone Loan' : 'POS Cash Sale',
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
         ),
         centerTitle: false,
@@ -241,16 +232,25 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          Tooltip(
-            message: 'Duka: Kariakoo Main Hub',
-            child: IconButton(
-              icon: const Icon(Icons.storefront_rounded, color: AppTheme.brand600, size: 20),
-              onPressed: () {
-                LimsToast.show(context, 'Duka linalotumika: Kariakoo Main Hub');
-              },
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.storefront_rounded, color: AppTheme.brand600, size: 15),
+                const SizedBox(width: 5),
+                Text(
+                  activeBranch,
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 6),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -265,7 +265,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Handset Selector Card
-              _buildHandsetSelector(),
+              _buildHandsetSelector(activePhone, availableHandsets),
               const SizedBox(height: 16),
 
               // Transaction Mode Switcher (Sell vs Loan)
@@ -273,16 +273,16 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               const SizedBox(height: 18),
 
               if (_selectedTransaction == 'SELL') ...[
-                _buildCashSaleForm(),
+                _buildCashSaleForm(activePhone),
               ] else ...[
-                // Loan Form: KYC, Guarantor, Financials, Contract
+                // Loan Form: KYC, Guarantor, Financials, Terms & Agreement
                 _buildBorrowerKycSection(),
                 const SizedBox(height: 18),
                 _buildGuarantorSection(),
                 const SizedBox(height: 18),
-                _buildLoanFinancialScheduleSection(),
+                _buildLoanFinancialScheduleSection(activePhone, quote),
                 const SizedBox(height: 18),
-                _buildContractAndSecuritySection(),
+                _buildContractAndAgreementSection(),
 
                 if (requiresSupervisor) ...[
                   const SizedBox(height: 18),
@@ -291,7 +291,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ],
 
               const SizedBox(height: 28),
-              _buildConfirmButton(context, l10n, requiresSupervisor),
+              _buildConfirmButton(context, activePhone, quote, requiresSupervisor),
             ],
           ),
         ),
@@ -300,7 +300,10 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   }
 
   // ------------------------------------------------------------- Handset Selector
-  Widget _buildHandsetSelector() {
+  Widget _buildHandsetSelector(ProductItem phone, List<ProductItem> allAvailable) {
+    final loanPrice = phone.loanPrice ?? (phone.price * 1.20).round();
+    final primaryImei = phone.imei1 ?? phone.sku;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -326,7 +329,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink500),
               ),
               InkWell(
-                onTap: _showHandsetPickerSheet,
+                onTap: () => _showHandsetPickerSheet(allAvailable),
                 child: const Row(
                   children: [
                     Text(
@@ -349,15 +352,15 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 height: 52,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [_activePhone.badgeColor, _activePhone.badgeColor.withValues(alpha: 0.8)],
+                    colors: phone.grad.isNotEmpty ? phone.grad : [AppTheme.brand600, const Color(0xFF7C5CFC)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: _activePhone.badgeColor.withValues(alpha: 0.3),
-                      blurRadius: 12,
+                      color: AppTheme.brand600.withValues(alpha: 0.25),
+                      blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -372,9 +375,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _activePhone.model,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                        Flexible(
+                          child: Text(
+                            phone.name,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
@@ -382,13 +388,16 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                             color: const Color(0xFFE7F8F0),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text('In Stock', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF12B76A))),
+                          child: Text(
+                            'Stock: ${phone.stock} in branch',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF12B76A)),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _activePhone.variant,
+                      phone.variant,
                       style: const TextStyle(fontSize: 12, color: AppTheme.ink500, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 6),
@@ -401,7 +410,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: Text(
-                            'IMEI 1: ${_activePhone.primaryImei}',
+                            'IMEI 1: $primaryImei',
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.ink700),
                           ),
                         ),
@@ -423,7 +432,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 children: [
                   const Text('Cash Selling Price', style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
                   Text(
-                    'TZS ${_formatNumber(_activePhone.cashPrice)}',
+                    'TZS ${_formatNumber(phone.price)}',
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                   ),
                 ],
@@ -432,10 +441,10 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Financed Loan Price', style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
+                  const Text('Financed Loan Total', style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
                   Text(
-                    'TZS ${_formatNumber(_activePhone.loanPrice)}',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.brand600),
+                    'TZS ${_formatNumber(loanPrice)}',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF7C5CFC)),
                   ),
                 ],
               ),
@@ -445,7 +454,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 children: [
                   const Text('Min Deposit (25%)', style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
                   Text(
-                    'TZS ${_formatNumber((_activePhone.loanPrice * 0.25).round())}',
+                    'TZS ${_formatNumber((loanPrice * 0.25).round())}',
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF12B76A)),
                   ),
                 ],
@@ -457,7 +466,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     );
   }
 
-  void _showHandsetPickerSheet() {
+  void _showHandsetPickerSheet(List<ProductItem> availablePhones) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -485,44 +494,57 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
               ),
               const SizedBox(height: 14),
-              ..._availablePhones.map((phone) {
-                final isSelected = phone.model == _activePhone.model;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFE9F2FE) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isSelected ? AppTheme.brand600 : const Color(0xFFE2E8F0)),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    leading: Container(
-                      width: 40,
-                      height: 40,
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: availablePhones.length,
+                  itemBuilder: (context, index) {
+                    final phone = availablePhones[index];
+                    final isSelected = phone.id == _selectedHandsetId || (_selectedHandsetId == null && index == 0);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: phone.badgeColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        color: isSelected ? const Color(0xFFE9F2FE) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: isSelected ? AppTheme.brand600 : const Color(0xFFE2E8F0)),
                       ),
-                      child: Icon(Icons.phone_android_rounded, color: phone.badgeColor, size: 22),
-                    ),
-                    title: Text(
-                      phone.model,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-                    ),
-                    subtitle: Text(
-                      '${phone.variant} · TZS ${_formatNumber(phone.cashPrice)}',
-                      style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
-                    ),
-                    trailing: isSelected
-                        ? const Icon(Icons.check_circle_rounded, color: AppTheme.brand600)
-                        : const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _onPhoneChanged(phone);
-                    },
-                  ),
-                );
-              }),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.brand600.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.phone_android_rounded, color: AppTheme.brand600, size: 22),
+                        ),
+                        title: Text(
+                          phone.name,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                        ),
+                        subtitle: Text(
+                          '${phone.variant} · Cash: TZS ${_formatNumber(phone.price)}',
+                          style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle_rounded, color: AppTheme.brand600)
+                            : const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          setState(() {
+                            _selectedHandsetId = phone.id;
+                            final loanPrice = phone.loanPrice ?? (phone.price * 1.20).round();
+                            final deposit = (loanPrice * 0.25).round();
+                            _depositController.text = _formatNumber(deposit);
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         );
@@ -603,7 +625,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Phone Loan (Credit)',
+                        'Phone Loan (Financed)',
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
@@ -622,7 +644,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   }
 
   // ------------------------------------------------------------- Cash Sale Form
-  Widget _buildCashSaleForm() {
+  Widget _buildCashSaleForm(ProductItem phone) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -637,12 +659,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Cash Sale & Instant Payment',
+            'Cash Sale & Instant Checkout',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Complete payment at Kariakoo counter and issue automated EFD receipt.',
+            'Complete payment at cashier desk and disburse device with official store receipt.',
             style: TextStyle(fontSize: 11.5, color: AppTheme.ink500),
           ),
           const SizedBox(height: 16),
@@ -663,7 +685,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.ink700),
                 ),
                 Text(
-                  'TZS ${_formatNumber(_activePhone.cashPrice)}',
+                  'TZS ${_formatNumber(phone.price)}',
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.brand600),
                 ),
               ],
@@ -678,11 +700,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              'M-Pesa Lipa Namba',
               'Cash at Counter',
+              'M-Pesa Lipa Namba',
               'Airtel Money',
               'Tigo Pesa',
-              'CRDB Bank Card',
+              'CRDB / NMB Card',
             ].map((channel) {
               final isSelected = _cashPaymentChannel == channel;
               return ChoiceChip(
@@ -706,11 +728,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             controller: _receiptPhoneController,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
-              labelText: 'Customer Phone (for SMS Receipt & TRA EFD)',
+              labelText: 'Customer Phone (for SMS Receipt & Warranty)',
               prefixIcon: Icon(Icons.phone_iphone_rounded, size: 20),
               border: OutlineInputBorder(),
               contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter customer phone' : null,
           ),
         ],
       ),
@@ -751,7 +774,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                   ),
                   Text(
-                    'Borrower Identity, Live Passport Photo & NIDA Verification',
+                    'Customer Identity, Counter Passport Photo & NIDA Record',
                     style: TextStyle(fontSize: 11, color: AppTheme.ink500),
                   ),
                 ],
@@ -760,7 +783,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Live Office Passport Photo Capture / Upload Card
+          // Counter Passport Photo Capture / Upload Card
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -776,7 +799,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     Icon(Icons.camera_front_rounded, size: 16, color: Color(0xFF1E60F2)),
                     SizedBox(width: 6),
                     Text(
-                      'Live Office Passport Photo',
+                      'Counter Passport Photo',
                       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
                     ),
                   ],
@@ -815,7 +838,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                               ElevatedButton.icon(
                                 onPressed: _isCameraCapturing ? null : _captureWebcamPassport,
                                 icon: const Icon(Icons.camera_alt_rounded, size: 14),
-                                label: const Text('Live Capture', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+                                label: const Text('Capture Photo', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1E60F2),
                                   foregroundColor: Colors.white,
@@ -840,11 +863,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                           const SizedBox(height: 6),
                           const Row(
                             children: [
-                              Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF10B981)),
+                              Icon(Icons.verified_rounded, size: 13, color: Color(0xFF10B981)),
                               SizedBox(width: 4),
                               Text(
-                                'Kariakoo Terminal Webcam Match: 99.2%',
-                                style: TextStyle(fontSize: 10, color: Color(0xFF059669), fontWeight: FontWeight.w700),
+                                'Office KYC: Verified at Counter',
+                                style: TextStyle(fontSize: 10.5, color: Color(0xFF059669), fontWeight: FontWeight.w700),
                               ),
                             ],
                           ),
@@ -865,7 +888,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               prefixIcon: Icon(Icons.badge_outlined, size: 20),
               border: OutlineInputBorder(),
             ),
-            validator: (v) => (v == null || v.isEmpty) ? 'Please enter borrower legal name' : null,
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter borrower legal name' : null,
           ),
           const SizedBox(height: 12),
 
@@ -874,10 +897,14 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             decoration: const InputDecoration(
               labelText: 'National NIDA ID (20 Digits)',
               prefixIcon: Icon(Icons.fingerprint_rounded, size: 20),
-              helperText: 'Validated against NIDA & Credit Reference Bureau',
+              helperText: 'Tanzania National ID format (e.g. 19920415-XXXXX-XXXXX-XX)',
               border: OutlineInputBorder(),
             ),
-            validator: (v) => (v == null || v.length < 15) ? 'Enter valid 20-digit NIDA ID' : null,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Please enter NIDA ID number';
+              if (v.trim().length < 15) return 'NIDA ID must be a valid 20-digit identifier';
+              return null;
+            },
           ),
           const SizedBox(height: 12),
 
@@ -888,11 +915,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'M-Pesa Primary Phone',
+                    labelText: 'Primary Repayment Phone',
                     prefixIcon: Icon(Icons.phone_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Enter primary phone' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter primary phone' : null,
                 ),
               ),
               const SizedBox(width: 10),
@@ -901,7 +928,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   controller: _altPhoneController,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'WhatsApp / Alt Phone',
+                    labelText: 'Alternative Contact Phone',
                     prefixIcon: Icon(Icons.chat_bubble_outline_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
@@ -914,17 +941,18 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           TextFormField(
             controller: _residenceController,
             decoration: const InputDecoration(
-              labelText: 'Residential Street / Ward (Dar es Salaam)',
+              labelText: 'Residential Ward / Street Address',
               prefixIcon: Icon(Icons.location_on_outlined, size: 20),
               border: OutlineInputBorder(),
             ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter residential address' : null,
           ),
           const SizedBox(height: 12),
 
           TextFormField(
             controller: _occupationController,
             decoration: const InputDecoration(
-              labelText: 'Employment / Business Stand / Income Source',
+              labelText: 'Business Stand / Employer / Income Source',
               prefixIcon: Icon(Icons.work_outline_rounded, size: 20),
               border: OutlineInputBorder(),
             ),
@@ -968,7 +996,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                   ),
                   Text(
-                    'Recognized guarantor details & collateral standing',
+                    'Required guarantor contact for debt follow-up if payment is overdue',
                     style: TextStyle(fontSize: 11, color: AppTheme.ink500),
                   ),
                 ],
@@ -988,6 +1016,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter guarantor name' : null,
                 ),
               ),
               const SizedBox(width: 10),
@@ -1016,6 +1045,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     prefixIcon: Icon(Icons.phone_android_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter guarantor phone' : null,
                 ),
               ),
               const SizedBox(width: 10),
@@ -1036,7 +1066,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   }
 
   // ------------------------------------------------------------- Financial Schedule
-  Widget _buildLoanFinancialScheduleSection() {
+  Widget _buildLoanFinancialScheduleSection(ProductItem phone, LoanQuote quote) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1065,11 +1095,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '3. Loan Financial Terms & Repayment',
+                    '3. Transparent Loan Terms & Schedule',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                   ),
                   Text(
-                    'Initial deposit, repayment term, and financing breakdown',
+                    'Itemized pricing, down payment, and installment calendar',
                     style: TextStyle(fontSize: 11, color: AppTheme.ink500),
                   ),
                 ],
@@ -1078,40 +1108,54 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           ),
           const SizedBox(height: 16),
 
+          // Transparent pricing summary banner
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                _buildFinancialRow('Cash Retail Price', 'TZS ${_formatNumber(quote.cashPrice)}'),
+                const SizedBox(height: 6),
+                _buildFinancialRow('Disclosed Financing Fee (+20%)', '+ TZS ${_formatNumber(quote.financeFee)}', isPositive: true),
+                const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                _buildFinancialRow('Total Loan Repayable', 'TZS ${_formatNumber(quote.loanPrice)}', isBold: true, highlightColor: const Color(0xFF7C5CFC)),
+                const SizedBox(height: 6),
+                _buildFinancialRow('Minimum Required Deposit (25%)', 'TZS ${_formatNumber(quote.minimumDeposit)}', isSecondary: true),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           Row(
             children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _loanAmountController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (v) => _recalcLoan(),
-                  decoration: const InputDecoration(
-                    labelText: 'Total Loan Price',
-                    prefixText: 'TZS ',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
               Expanded(
                 child: TextFormField(
                   controller: _depositController,
                   keyboardType: TextInputType.number,
-                  onChanged: (v) => _recalcLoan(),
-                  decoration: const InputDecoration(
-                    labelText: 'Initial Deposit',
+                  onChanged: (v) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: 'Down Payment (Deposit)',
                     prefixText: 'TZS ',
-                    helperText: 'Recommended min 25%',
-                    border: OutlineInputBorder(),
+                    helperText: 'Min 25%: TZS ${_formatNumber(quote.minimumDeposit)}',
+                    border: const OutlineInputBorder(),
                   ),
+                  validator: (v) {
+                    final entered = int.tryParse((v ?? '').replaceAll(',', '')) ?? 0;
+                    if (entered < quote.minimumDeposit) {
+                      return 'Must be ≥ TZS ${_formatNumber(quote.minimumDeposit)}';
+                    }
+                    if (entered >= quote.loanPrice) {
+                      return 'Deposit cannot equal or exceed loan price';
+                    }
+                    return null;
+                  },
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
+              const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _installmentWeeks,
@@ -1124,70 +1168,110 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     DropdownMenuItem(value: 8, child: Text('8 Weeks (2 Months)')),
                     DropdownMenuItem(value: 12, child: Text('12 Weeks (3 Months)')),
                     DropdownMenuItem(value: 16, child: Text('16 Weeks (4 Months)')),
+                    DropdownMenuItem(value: 24, child: Text('24 Weeks (6 Months)')),
                   ],
                   onChanged: (v) {
                     if (v != null) {
-                      setState(() {
-                        _installmentWeeks = v;
-                        _recalcLoan();
-                      });
+                      setState(() => _installmentWeeks = v);
                     }
                   },
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextFormField(
-                  controller: _installmentController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Rejesho kwa Wiki',
-                    prefixText: 'TZS ',
-                    helperText: 'Automated M-Pesa collection',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
 
+          // Rejesho Highlight Box
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: const Color(0xFFF5F3FF),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: const Color(0xFFDDD6FE)),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.event_repeat_rounded, size: 20, color: AppTheme.brand600),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Rejesho la Kwanza (First Due Date)',
-                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
-                      ),
-                      Text(
-                        '${_dueDateController.text} · TZS ${_installmentController.text}',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-                      ),
-                    ],
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Weekly Installment Commitment', style: TextStyle(fontSize: 11, color: Color(0xFF6D28D9), fontWeight: FontWeight.w600)),
+                    Text(
+                      'TZS ${_formatNumber(quote.weeklyInstallment)} / week',
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF6D28D9)),
+                    ),
+                  ],
+                ),
+                TextButton.icon(
+                  onPressed: () => setState(() => _showSchedulePreview = !_showSchedulePreview),
+                  icon: Icon(_showSchedulePreview ? Icons.expand_less_rounded : Icons.calendar_month_rounded, size: 16, color: const Color(0xFF6D28D9)),
+                  label: Text(_showSchedulePreview ? 'Hide Schedule' : 'View Schedule (${quote.schedule.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
                 ),
               ],
             ),
           ),
+
+          if (_showSchedulePreview) ...[
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Payment Calendar Preview', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
+                  const SizedBox(height: 8),
+                  ...quote.schedule.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Week ${item.installmentNumber} · Due: ${item.formattedDueDate}', style: const TextStyle(fontSize: 12, color: AppTheme.ink700)),
+                          Text('TZS ${_formatNumber(item.amount)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------- Contract & Security
-  Widget _buildContractAndSecuritySection() {
+  Widget _buildFinancialRow(String title, String value, {bool isPositive = false, bool isBold = false, bool isSecondary = false, Color? highlightColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: isSecondary ? 11.5 : 12.5,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+            color: isSecondary ? AppTheme.ink500 : AppTheme.ink700,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isBold ? 14.5 : 12.5,
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+            color: highlightColor ?? (isPositive ? const Color(0xFF10B981) : AppTheme.ink900),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------- Contract & Legal Agreement Section
+  Widget _buildContractAndAgreementSection() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1202,205 +1286,52 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '4. Loan Agreement & Device Protection',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-              ),
-              InkWell(
-                onTap: _showContractModal,
-                child: const Text(
-                  'Soma Mkataba',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: const Icon(Icons.gavel_rounded, color: AppTheme.brand600, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '4. Loan Agreement & Undertaking',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                  ),
+                  Text(
+                    'Legal hire-purchase declaration and customer debt commitment',
+                    style: TextStyle(fontSize: 11, color: AppTheme.ink500),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Chagua jinsi simu hii inavyofuatiliwa na namba itakayoonekana kioo kikiwa kimefungwa.',
-            style: TextStyle(fontSize: 11.5, color: AppTheme.ink500),
-          ),
           const SizedBox(height: 14),
 
-          // Security & Tracking Method Selector
-          const Text(
-            'Mfumo wa Kufunga & Kufuatilia Simu (Tracking Method)',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-          ),
-          const SizedBox(height: 8),
+          // Legal Terms Box
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedSecurityMethod,
-                isExpanded: true,
-                icon: const Icon(Icons.security_rounded, color: AppTheme.brand600),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Knox Guard OEM (Samsung & Transsion)',
-                    child: Row(
-                      children: [
-                        Icon(Icons.verified_user_rounded, size: 16, color: AppTheme.brand600),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Knox Guard OEM (Samsung & Transsion Factory)',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Android Device Owner MDM (Universal APK)',
-                    child: Row(
-                      children: [
-                        Icon(Icons.android_rounded, size: 16, color: Color(0xFF10B981)),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Android Device Owner MDM (Universal Android)',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Apple iOS Supervised MDM (iPhones)',
-                    child: Row(
-                      children: [
-                        Icon(Icons.apple_rounded, size: 16, color: Colors.black87),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Apple iOS Supervised MDM (iPhones)',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Dhamana & TCRA EIR Blacklist (Clean Phone)',
-                    child: Row(
-                      children: [
-                        Icon(Icons.gavel_rounded, size: 16, color: Color(0xFFF59E0B)),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Collateral & TCRA EIR Verification (Non-Knox)',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedSecurityMethod = val);
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Default Lipa Namba on Lockscreen Card
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
-            ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
-                  children: [
-                    Icon(Icons.point_of_sale_rounded, size: 18, color: Color(0xFF16A34A)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Default Merchant Till Displayed on Customer Lockscreen',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
-                    ),
-                  ],
+                Text(
+                  'Key Customer Agreement Terms:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'When locked, the handset displays: Vodacom M-Pesa Till: 552219 (LIMS Dealership) and customer loan account number. Automated carrier IPN unlocks device instantly upon settlement.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF166534), height: 1.35),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final amountDue = int.tryParse(_installmentController.text.replaceAll(',', '')) ?? 45000;
-                      DeviceLockscreenSimulatorModal.show(
-                        context,
-                        deviceModel: _activePhone.model,
-                        imei: _activePhone.primaryImei,
-                        borrowerName: _nameController.text.isNotEmpty ? _nameController.text : 'New Borrower',
-                        borrowerPhone: _phoneController.text,
-                        overdueAmount: amountDue,
-                        loanId: 'LIMS-LN-NEW',
-                        initialIsLocked: true,
-                      );
-                    },
-                    icon: const Icon(Icons.remove_red_eye_rounded, size: 16),
-                    label: const Text(
-                      'Preview Remote Lockscreen (Simulator)',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F172A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Knox Warning Banner
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEDF1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFFD4DE)),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.lock_clock_rounded, size: 20, color: Color(0xFFF43F5E)),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ulinzi wa Kifaa (Device Lock Guardrail)',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF9F1239)),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Ikiwa marejesho yatachelewa zaidi ya saa 48 baada ya tarehe ya ahadi, amri ya kufunga (Remote Lock) itatumwa kiotomatiki kupitia mfumo uliochaguliwa.',
-                        style: TextStyle(fontSize: 11, color: Color(0xFFBE123C)),
-                      ),
-                    ],
-                  ),
+                SizedBox(height: 4),
+                Text(
+                  '• Customer retains possession of the serialized handset while title remains with dealership until full loan liquidation.\n• Installments are payable weekly via official store Till or at cashier counter.\n• A 3-day grace period is granted before formal arrears follow-up is initiated with borrower and verified guarantor.',
+                  style: TextStyle(fontSize: 11.5, color: AppTheme.ink600, height: 1.4),
                 ),
               ],
             ),
@@ -1408,36 +1339,47 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           const SizedBox(height: 12),
 
           CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
             value: _contractSigned,
             onChanged: (v) => setState(() => _contractSigned = v ?? false),
-            title: const Text(
-              'Mkopaji amesoma na kusaini mkataba wa mkopo kwa ukamilifu',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-            ),
-            controlAffinity: ListTileControlAffinity.leading,
-          ),
-          CheckboxListTile(
             contentPadding: EdgeInsets.zero,
-            value: _deviceLockAgreed,
-            onChanged: (v) => setState(() => _deviceLockAgreed = v ?? false),
-            title: const Text(
-              'Mkopaji anakubali masharti ya kufunga simu endapo atashindwa kulipa',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-            ),
             controlAffinity: ListTileControlAffinity.leading,
+            activeColor: const Color(0xFF7C5CFC),
+            title: const Text(
+              'Physical Hire-Purchase Contract Signed',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+            ),
+            subtitle: const Text(
+              'Customer has signed the hardcopy credit agreement filed in store archives.',
+              style: TextStyle(fontSize: 11, color: AppTheme.ink500),
+            ),
+          ),
+
+          CheckboxListTile(
+            value: _borrowerConsentAgreed,
+            onChanged: (v) => setState(() => _borrowerConsentAgreed = v ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: const Color(0xFF7C5CFC),
+            title: const Text(
+              'PDPA Data & Guarantor Notification Consent',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+            ),
+            subtitle: const Text(
+              'Borrower consents to SMS payment reminders and lawful follow-up with the designated guarantor.',
+              style: TextStyle(fontSize: 11, color: AppTheme.ink500),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------- Supervisor Approval
+  // ------------------------------------------------------------- Supervisor Approval Card
   Widget _buildSupervisorApprovalCard() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFFDE68A)),
       ),
       padding: const EdgeInsets.all(16),
@@ -1446,17 +1388,17 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.security_rounded, size: 20, color: Color(0xFFD97706)),
+              Icon(Icons.shield_outlined, color: Color(0xFFD97706), size: 20),
               SizedBox(width: 8),
               Text(
-                'Supervisor Approval Required (> TZS 1.0M)',
+                'Branch Supervisor Override Required',
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF92400E)),
               ),
             ],
           ),
           const SizedBox(height: 6),
           const Text(
-            'Kulingana na sera ya LIMS, mikopo inayozidi TZS 1,000,000 inahitaji kibali cha Msimamizi wa Tawi (Admin / Branch Manager PIN).',
+            'High-value financing (> TZS 1,000,000) mandates supervisor authorization PIN before disbursement.',
             style: TextStyle(fontSize: 11.5, color: Color(0xFFB45309)),
           ),
           const SizedBox(height: 12),
@@ -1465,10 +1407,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             obscureText: true,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Supervisor Authorization PIN',
-              hintText: 'Enter 4-digit manager PIN (e.g. 8821)',
+              labelText: 'Supervisor Authorization PIN (Default: 8821)',
+              prefixIcon: Icon(Icons.lock_outline_rounded, size: 18),
               border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              filled: true,
+              fillColor: Colors.white,
             ),
           ),
         ],
@@ -1476,210 +1419,33 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     );
   }
 
-  void _showContractModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          height: MediaQuery.of(ctx).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(color: const Color(0xFFD4E0F0), borderRadius: BorderRadius.circular(99)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Row(
-                children: [
-                  Icon(Icons.gavel_rounded, color: AppTheme.brand600, size: 22),
-                  SizedBox(width: 10),
-                  Text(
-                    'Mkataba wa Mauzo ya Mkopo',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Text(
-                    'HIRE-PURCHASE SMARTPHONE LOAN AGREEMENT\n\n'
-                    '1. Parties: Creditor (LIMS Phone Dealership Kariakoo) and Borrower (${_nameController.text}, NIDA: ${_nidaController.text}).\n\n'
-                    '2. Financed Handset: ${_activePhone.model}, Serialized IMEI: ${_activePhone.primaryImei}, Variant: ${_activePhone.variant}.\n\n'
-                    '3. Valuation & Down Payment: Loan price TZS ${_loanAmountController.text}. Initial deposit received: TZS ${_depositController.text}.\n\n'
-                    '4. Repayment Schedule: Weekly installment of TZS ${_installmentController.text} for a duration of $_installmentWeeks weeks.\n\n'
-                    '5. Remote Knox MDM Security: Handset ownership remains with dealership until full final payment is received. Handset will be locked remotely if arrears exceed 72 hours.\n\n'
-                    '6. Guarantor: ${_guarantorNameController.text} (${_guarantorRelationController.text}, Phone: ${_guarantorPhoneController.text}) acknowledges legal joint obligation.\n',
-                    style: const TextStyle(fontSize: 12.5, height: 1.5, color: AppTheme.ink700),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.brand600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('I Understand & Accept Terms', style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ------------------------------------------------------------- Confirm Action
-  Widget _buildConfirmButton(BuildContext context, AppLocalizations l10n, bool requiresSupervisor) {
+  // ------------------------------------------------------------- Confirm Button
+  Widget _buildConfirmButton(BuildContext context, ProductItem phone, LoanQuote quote, bool requiresSupervisor) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 52,
       child: ElevatedButton(
         onPressed: _isProcessing
             ? null
             : () {
+                if (!_formKey.currentState!.validate()) {
+                  LimsToast.show(context, 'Please resolve highlighted validation errors.', isError: true);
+                  return;
+                }
+
                 if (_selectedTransaction == 'LOAN') {
-                  final phoneErr = LimsValidators.validateTzPhone(_phoneController.text);
-                  if (phoneErr != null) {
-                    LimsToast.show(context, 'Borrower phone number: $phoneErr', isError: true);
-                    return;
-                  }
-
-                  final nidaErr = LimsValidators.validateNida(_nidaController.text);
-                  if (nidaErr != null) {
-                    LimsToast.show(context, 'National NIDA ID: $nidaErr', isError: true);
-                    return;
-                  }
-
-                  final deposit = int.tryParse(_depositController.text.replaceAll(',', '')) ?? 0;
-                  final minDeposit = (_activePhone.loanPrice * 0.25).round();
-                  if (deposit < minDeposit) {
-                    LimsToast.show(
-                      context,
-                      'Deposit amount is below minimum! Must be at least 25% (TZS ${_formatNumber(minDeposit)})',
-                      isError: true,
-                    );
-                    return;
-                  }
-
-                  if (!_contractSigned || !_deviceLockAgreed) {
-                    LimsToast.show(
-                      context,
-                      'Please confirm contract signature and device security terms (Knox Security).',
-                      isError: true,
-                    );
+                  if (!_contractSigned || !_borrowerConsentAgreed) {
+                    LimsToast.show(context, 'Please confirm contract signature and customer consent.', isError: true);
                     return;
                   }
 
                   if (requiresSupervisor && _supervisorPinController.text.trim() != '8821') {
-                    LimsToast.show(
-                      context,
-                      'Supervisor authorization PIN required for loans > 1M! Enter PIN: 8821',
-                      isError: true,
-                    );
+                    LimsToast.show(context, 'Supervisor PIN required for loans > 1M! Enter PIN: 8821', isError: true);
                     return;
                   }
-
-                  final newLoan = LoanItem(
-                    id: 'LIMS-LN-${1000 + DateTime.now().millisecond % 9000}',
-                    name: _nameController.text.trim().isEmpty ? 'Bakari Juma Mwambungu' : _nameController.text.trim(),
-                    item: _activePhone.model,
-                    amount: _activePhone.loanPrice,
-                    paid: ((deposit / _activePhone.loanPrice) * 100).round().clamp(10, 100),
-                    due: 'Due in 7 days',
-                    status: 'current',
-                    grad: const [AppTheme.brand600, Color(0xFF7C5CFC)],
-                    phone: _phoneController.text.trim().isEmpty ? '0754 892 314' : _phoneController.text.trim(),
-                    nida: _nidaController.text.trim().isEmpty ? '19920415-14120-00002-18' : _nidaController.text.trim(),
-                    location: _residenceController.text.trim().isEmpty ? 'Kariakoo, Dar es Salaam' : _residenceController.text.trim(),
-                    businessAddress: _occupationController.text.trim().isEmpty ? 'Biashara ya Duka' : _occupationController.text.trim(),
-                    imei: _activePhone.primaryImei,
-                    guarantorName: _guarantorNameController.text.trim().isEmpty ? 'Hawa Rashidi' : _guarantorNameController.text.trim(),
-                    guarantorPhone: _guarantorPhoneController.text.trim().isEmpty ? '0713 452 980' : _guarantorPhoneController.text.trim(),
-                    guarantorRelation: _guarantorRelationController.text.trim().isEmpty ? 'Dada Mzazi' : _guarantorRelationController.text.trim(),
-                    isKnoxLocked: false,
-                    totalDeposit: deposit.round(),
-                    weeklyInstallment: int.tryParse(_installmentController.text.replaceAll(',', '')) ?? ((_activePhone.loanPrice - deposit) / _installmentWeeks).round(),
-                    installmentWeeks: _installmentWeeks,
-                  );
-
-                  // Record Loan in Riverpod Store
-                  ref.read(loansProvider.notifier).addLoan(newLoan);
-
-                  // Deduct stock in inventory
-                  final currentInventory = ref.read(inventoryProvider);
-                  ProductItem? matchedItem;
-                  for (final p in currentInventory) {
-                    if (p.name.toLowerCase().contains(_activePhone.model.toLowerCase()) || _activePhone.model.toLowerCase().contains(p.name.toLowerCase())) {
-                      matchedItem = p;
-                      break;
-                    }
-                  }
-                  if (matchedItem != null) {
-                    ref.read(inventoryProvider.notifier).sellProduct(matchedItem.id, quantity: 1, isLoan: true);
-                  }
-
-                  // Add to Activity Feed
-                  ref.read(activitiesProvider.notifier).addActivity(
-                    ActivityItem(
-                      icon: Icons.assignment_ind_rounded,
-                      iconColor: const Color(0xFF7C5CFC),
-                      bgColor: const Color(0xFFF0EBFF),
-                      title: 'Loan Disbursed · ${_activePhone.model}',
-                      description: 'TZS ${_depositController.text} deposit · ${_nameController.text.trim()}',
-                      time: 'Just now',
-                    ),
-                  );
-                } else {
-                  // Cash Sale Activity & Stock decrement
-                  final currentInventory = ref.read(inventoryProvider);
-                  ProductItem? matchedItem;
-                  for (final p in currentInventory) {
-                    if (p.name.toLowerCase().contains(_activePhone.model.toLowerCase()) || _activePhone.model.toLowerCase().contains(p.name.toLowerCase())) {
-                      matchedItem = p;
-                      break;
-                    }
-                  }
-                  if (matchedItem != null) {
-                    ref.read(inventoryProvider.notifier).sellProduct(matchedItem.id, quantity: 1, isLoan: false);
-                  }
-
-                  ref.read(activitiesProvider.notifier).addActivity(
-                    ActivityItem(
-                      icon: Icons.point_of_sale_rounded,
-                      iconColor: AppTheme.successColor,
-                      bgColor: AppTheme.successLight,
-                      title: 'Sale Completed · ${_activePhone.model}',
-                      description: 'TZS ${_formatNumber(_activePhone.cashPrice)} · $_cashPaymentChannel',
-                      time: 'Just now',
-                    ),
-                  );
                 }
 
-                setState(() => _isProcessing = true);
-                Future.delayed(const Duration(milliseconds: 250), () {
-                  if (mounted) {
-                    setState(() => _isProcessing = false);
-                    _showSuccess(this.context);
-                  }
-                });
+                _showOrderReviewDialog(context, phone, quote);
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: _selectedTransaction == 'LOAN' ? const Color(0xFF7C5CFC) : AppTheme.brand600,
@@ -1691,15 +1457,183 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
             : Text(
                 _selectedTransaction == 'LOAN'
-                    ? 'Issue Loan · TZS ${_depositController.text} Deposit'
-                    : 'Complete Cash Sale · TZS ${_formatNumber(_activePhone.cashPrice)}',
+                    ? 'Review Loan · TZS ${_formatNumber(quote.downPayment)} Deposit'
+                    : 'Review Cash Sale · TZS ${_formatNumber(phone.price)}',
                 style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
               ),
       ),
     );
   }
 
-  void _showSuccess(BuildContext context) {
+  // ------------------------------------------------------------- Order Review Dialog
+  void _showOrderReviewDialog(BuildContext context, ProductItem phone, LoanQuote quote) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+          ),
+          padding: EdgeInsets.fromLTRB(22, 16, 22, MediaQuery.of(context).viewInsets.bottom + 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(color: const Color(0xFFD4E0F0), borderRadius: BorderRadius.circular(99)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _selectedTransaction == 'LOAN' ? 'Review Loan Disbursement' : 'Review POS Cash Sale',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _selectedTransaction == 'LOAN' ? const Color(0xFFF5F3FF) : const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _selectedTransaction == 'LOAN' ? 'Credit Sale' : 'Cash Sale',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: _selectedTransaction == 'LOAN' ? const Color(0xFF7C5CFC) : const Color(0xFF059669),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Handset and IMEI confirmation
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    _buildFinancialRow('Handset Model', phone.name, isBold: true),
+                    const SizedBox(height: 4),
+                    _buildFinancialRow('IMEI 1 (Hardware S/N)', phone.imei1 ?? phone.sku),
+                    if (_selectedTransaction == 'LOAN') ...[
+                      const Divider(height: 14, color: Color(0xFFE2E8F0)),
+                      _buildFinancialRow('Borrower Full Name', _nameController.text.trim()),
+                      const SizedBox(height: 4),
+                      _buildFinancialRow('Borrower NIDA ID', _nidaController.text.trim()),
+                      const SizedBox(height: 4),
+                      _buildFinancialRow('Guarantor Reference', '${_guarantorNameController.text.trim()} (${_guarantorPhoneController.text.trim()})'),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Financial settlement summary
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _selectedTransaction == 'LOAN' ? const Color(0xFFF5F3FF) : const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _selectedTransaction == 'LOAN' ? const Color(0xFFDDD6FE) : const Color(0xFFBBF7D0)),
+                ),
+                child: Column(
+                  children: [
+                    if (_selectedTransaction == 'LOAN') ...[
+                      _buildFinancialRow('Total Loan Financed', 'TZS ${_formatNumber(quote.loanPrice)}'),
+                      const SizedBox(height: 4),
+                      _buildFinancialRow('Initial Down Payment (Drawer)', 'TZS ${_formatNumber(quote.downPayment)}', isBold: true, highlightColor: const Color(0xFF10B981)),
+                      const SizedBox(height: 4),
+                      _buildFinancialRow('Remaining Financed Principal', 'TZS ${_formatNumber(quote.financedAmount)}'),
+                      const SizedBox(height: 4),
+                      _buildFinancialRow('Weekly Rejesho (${quote.tenureWeeks} wks)', 'TZS ${_formatNumber(quote.weeklyInstallment)} / wk', isBold: true, highlightColor: const Color(0xFF7C5CFC)),
+                    ] else ...[
+                      _buildFinancialRow('Payment Channel', _cashPaymentChannel),
+                      const SizedBox(height: 4),
+                      _buildFinancialRow('Customer Contact', _receiptPhoneController.text.trim()),
+                      const Divider(height: 12, color: Color(0xFFBBF7D0)),
+                      _buildFinancialRow('Total Collected in Drawer', 'TZS ${_formatNumber(phone.price)}', isBold: true, highlightColor: const Color(0xFF059669)),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          Navigator.pop(ctx);
+                          await _executeTransaction(phone, quote);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedTransaction == 'LOAN' ? const Color(0xFF7C5CFC) : AppTheme.brand600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('Confirm & Complete Handset Handover', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ------------------------------------------------------------- Execute Transaction
+  Future<void> _executeTransaction(ProductItem phone, LoanQuote quote) async {
+    setState(() => _isProcessing = true);
+    final repository = ref.read(limsRepositoryProvider);
+
+    POSSaleResult result;
+    if (_selectedTransaction == 'LOAN') {
+      result = await repository.executeLoanDisbursement(
+        ref: ref,
+        phone: phone,
+        customerName: _nameController.text.trim(),
+        customerPhone: _phoneController.text.trim(),
+        customerNida: _nidaController.text.trim(),
+        residence: _residenceController.text.trim(),
+        guarantorName: _guarantorNameController.text.trim(),
+        guarantorPhone: _guarantorPhoneController.text.trim(),
+        quote: quote,
+        paymentChannel: 'Cashier Drawer (Cash Deposit)',
+      );
+    } else {
+      result = await repository.executeCashSale(
+        ref: ref,
+        phone: phone,
+        customerName: 'Cash Customer (${_receiptPhoneController.text.trim()})',
+        customerPhone: _receiptPhoneController.text.trim(),
+        paymentChannel: _cashPaymentChannel,
+      );
+    }
+
+    if (mounted) {
+      setState(() => _isProcessing = false);
+      _showSuccessDialog(result);
+    }
+  }
+
+  // ------------------------------------------------------------- Success Dialog
+  void _showSuccessDialog(POSSaleResult result) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1720,15 +1654,15 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _selectedTransaction == 'LOAN' ? 'Phone Loan Disbursed Successfully!' : 'Cash POS Sale Completed!',
+              result.transactionType == 'LOAN' ? 'Phone Loan Disbursed!' : 'POS Cash Sale Completed!',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.ink900),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              _selectedTransaction == 'LOAN'
-                  ? 'Device registered to ${_nameController.text}.\nInitial deposit of TZS ${_depositController.text} received in cashier drawer.'
-                  : 'Payment of TZS ${_formatNumber(_activePhone.cashPrice)} via $_cashPaymentChannel verified.',
+              result.transactionType == 'LOAN'
+                  ? 'Handset registered to ${result.customerName}.\nDown payment of TZS ${_formatNumber(result.amountPaid)} received in drawer.'
+                  : 'Payment of TZS ${_formatNumber(result.totalAmount)} via ${result.paymentChannel} completed.',
               style: const TextStyle(fontSize: 12.5, color: AppTheme.ink500),
               textAlign: TextAlign.center,
             ),
@@ -1739,13 +1673,22 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
-                'IMEI: ${_activePhone.primaryImei} · TRA EFD #TZ-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink700),
+              child: Column(
+                children: [
+                  Text(
+                    'Receipt ID: ${result.receiptId}',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Handset IMEI: ${result.primaryImei}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.ink600),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
-            if (_selectedTransaction == 'LOAN') ...[
+            if (result.transactionType == 'LOAN') ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -1753,7 +1696,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     Navigator.pop(ctx);
                     final loans = ref.read(loansProvider);
                     final matchingLoan = loans.firstWhere(
-                      (l) => l.name == _nameController.text.trim() || l.item == _activePhone.model,
+                      (l) => l.name == result.customerName || l.item == result.phoneModel,
                       orElse: () => loans.first,
                     );
                     Navigator.push(
@@ -1764,7 +1707,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     );
                   },
                   icon: const Icon(Icons.badge_rounded, size: 18),
-                  label: const Text('Fungua Faili la Mkopaji (Knox Profile)', style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: const Text('Open Borrower File', style: TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C5CFC),
                     foregroundColor: Colors.white,
@@ -1779,18 +1722,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: Color(0xFF12B76A),
-                          content: Text('Stakabadhi na mkataba vimetumwa kwa mteja kupitia WhatsApp na SMS!'),
-                        ),
-                      );
+                      Navigator.pop(ctx);
+                      context.pop();
                     },
-                    icon: const Icon(Icons.share_rounded, size: 16, color: AppTheme.brand600),
-                    label: const Text('Tuma SMS', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.brand600, fontSize: 12)),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                    label: const Text('Back to Home'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -1800,34 +1737,19 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: AppTheme.ink900,
-                          content: Text('Risiti ya EFD imechapishwa kupitia Bluetooth Printer!'),
-                        ),
-                      );
+                      LimsToast.show(context, 'Receipt #${result.receiptId} sent via SMS and ready to print.', isSuccess: true);
                       context.pop();
                     },
-                    icon: const Icon(Icons.print_rounded, size: 16),
-                    label: const Text('Print Risiti', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                    icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                    label: const Text('Print Receipt'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                context.pop();
-              },
-              child: const Text('Rudi Nyumbani (Back to Home)', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.ink500)),
             ),
           ],
         ),

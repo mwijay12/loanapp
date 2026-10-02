@@ -6,7 +6,6 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
-import 'widgets/device_lockscreen_simulator_modal.dart';
 
 class BorrowerLoanDetailsScreen extends ConsumerStatefulWidget {
   final String loanId;
@@ -180,118 +179,6 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
             ],
           );
         },
-      ),
-    );
-  }
-
-  void _showKnoxToggleDialog(LoanItem loan) {
-    final willLock = !loan.isKnoxLocked;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              willLock ? Icons.phonelink_lock_rounded : Icons.lock_open_rounded,
-              color: willLock ? AppTheme.errorColor : AppTheme.successColor,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              willLock ? 'Funga Simu kwa Mbali?' : 'Fungua Kifaa cha Mteja?',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-            ),
-          ],
-        ),
-        content: Text(
-          willLock
-              ? 'Kifaa hiki (${loan.item}, IMEI: ${loan.imei}) kitafungwa mara moja kupitia Knox Remote Management. Mteja ataona ujumbe wa kufanya malipo pekee.'
-              : 'Kifaa kitafunguliwa na mteja ataweza kuendelea kutumia huduma zote za simu yake kama kawaida.',
-          style: const TextStyle(fontSize: 13, height: 1.5, color: AppTheme.ink700),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Ghairi', style: TextStyle(color: AppTheme.ink500, fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(loansProvider.notifier).toggleKnoxLock(loan.id, willLock);
-              ref.read(activitiesProvider.notifier).addActivity(
-                ActivityItem(
-                  icon: willLock ? Icons.phonelink_lock_rounded : Icons.lock_open_rounded,
-                  iconColor: willLock ? AppTheme.errorColor : AppTheme.successColor,
-                  bgColor: willLock ? const Color(0xFFFFEDF1) : const Color(0xFFE7F8F0),
-                  title: willLock ? 'Knox Locked · ${loan.item}' : 'Knox Unlocked · ${loan.item}',
-                  description: 'Amri ya mbali imetumwa kwa ${loan.name} (IMEI: ${loan.imei})',
-                  time: 'Sasa hivi',
-                ),
-              );
-              LimsToast.show(
-                context,
-                willLock ? 'Simu imefungwa kwa mbali kupitia Knox Security!' : 'Simu imefunguliwa na iko tayari kutumika!',
-                isSuccess: !willLock,
-                isError: willLock,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: willLock ? AppTheme.errorColor : AppTheme.successColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text(willLock ? 'Ndio, Funga Simu' : 'Ndio, Fungua Simu'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showScreenPushAlertModal(LoanItem loan) {
-    final alertCtrl = TextEditingController(
-      text: 'TAARIFA: Rejesho lako la mkopo wa simu (${loan.item}) la TZS ${loan.formattedWeeklyInstallment} limechelewa. Tafadhali fanya malipo kupitia M-Pesa 552219 ili kuzuia kifaa kufungwa.',
-    );
-
-    LimsBottomSheet.show(
-      context: context,
-      title: 'Tuma Onyo Kwenye Kioo cha Simu',
-      subtitle: 'Knox Push Notification kwenye IMEI: ${loan.imei}',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Ujumbe utakaojitokeza katikati ya kioo cha mteja:',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink700),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: alertCtrl,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.all(12),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                LimsToast.show(context, 'Ujumbe wa onyo umetumwa kwenye kioo cha ${loan.item}!', isSuccess: true);
-              },
-              icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Tuma Onyo Sasa', style: TextStyle(fontWeight: FontWeight.w800)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.warningColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -587,7 +474,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               children: [
                 _buildBorrowerHeaderCard(loan),
                 const SizedBox(height: 14),
-                _buildKnoxSecurityControlCard(loan),
+                _buildDebtFollowUpControlCard(loan),
                 const SizedBox(height: 14),
                 _buildLoanFinancialsCard(loan),
                 const SizedBox(height: 14),
@@ -706,15 +593,13 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
     );
   }
 
-  Widget _buildKnoxSecurityControlCard(LoanItem loan) {
-    final isLocked = loan.isKnoxLocked;
-
+  Widget _buildDebtFollowUpControlCard(LoanItem loan) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isLocked ? const Color(0xFFFFF1F2) : const Color(0xFFF0FDF4),
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isLocked ? const Color(0xFFFECDD3) : const Color(0xFFBBF7D0)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -725,11 +610,11 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isLocked ? AppTheme.errorColor : AppTheme.successColor,
+                  color: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.brand600,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  isLocked ? Icons.phonelink_lock_rounded : Icons.shield_rounded,
+                  loan.status == 'overdue' ? Icons.warning_amber_rounded : Icons.contact_phone_rounded,
                   color: Colors.white,
                   size: 20,
                 ),
@@ -740,18 +625,18 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isLocked ? 'KIFUNGWA KWA MBALI (LOCKED)' : 'ULINZI WA KNOX: SALAMA',
+                      loan.status == 'overdue' ? 'ARREARS ESCALATION STATUS' : 'DEBT FOLLOW-UP & ACCOUNT STANDING',
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w800,
-                        color: isLocked ? AppTheme.errorColor : AppTheme.successColor,
+                        color: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.ink900,
                       ),
                     ),
                     Text(
-                      isLocked
-                          ? 'Kioo kimefungwa kuzuia matumizi hadi rejesho lilipwe.'
-                          : 'Kifaa kinafanya kazi kawaida bila kizuizi chochote.',
-                      style: TextStyle(fontSize: 11, color: isLocked ? const Color(0xFF9F1239) : const Color(0xFF166534)),
+                      loan.status == 'overdue'
+                          ? 'Installment payment is past due. Follow up with borrower and guarantor.'
+                          : 'Account is in good standing. Next payment scheduled for ${loan.due}.',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
                     ),
                   ],
                 ),
@@ -765,14 +650,20 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showKnoxToggleDialog(loan),
-                  icon: Icon(isLocked ? Icons.lock_open_rounded : Icons.lock_rounded, size: 16),
-                  label: Text(
-                    isLocked ? 'Fungua Kifaa' : 'Funga Kifaa (Lock)',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  onPressed: () {
+                    LimsToast.show(
+                      context,
+                      'SMS payment reminder dispatched to ${loan.phone} via Lipa Namba gateway.',
+                      isSuccess: true,
+                    );
+                  },
+                  icon: const Icon(Icons.sms_rounded, size: 16),
+                  label: const Text(
+                    'Send SMS Reminder',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isLocked ? AppTheme.successColor : AppTheme.errorColor,
+                    backgroundColor: AppTheme.brand600,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -782,12 +673,54 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _showScreenPushAlertModal(loan),
-                  icon: const Icon(Icons.notification_important_rounded, size: 16),
-                  label: const Text('Onyo Kwenye Kioo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Row(
+                          children: [
+                            Icon(Icons.supervisor_account_rounded, color: Color(0xFFF79009)),
+                            SizedBox(width: 8),
+                            Text('Guarantor Contact', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Guarantor: ${loan.guarantorName}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 4),
+                            Text('Phone: ${loan.guarantorPhone}', style: const TextStyle(fontSize: 13, color: AppTheme.brand600)),
+                            const SizedBox(height: 4),
+                            Text('Relationship: ${loan.guarantorRelation}', style: const TextStyle(fontSize: 12, color: AppTheme.ink500)),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Please call guarantor only if borrower cannot be reached within 3 business days.',
+                              style: TextStyle(fontSize: 11, color: AppTheme.ink600),
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              LimsToast.show(context, 'Dialing guarantor: ${loan.guarantorPhone}');
+                            },
+                            icon: const Icon(Icons.phone_rounded, size: 16),
+                            label: const Text('Call Guarantor'),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF79009), foregroundColor: Colors.white),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.supervisor_account_outlined, size: 16),
+                  label: const Text('Guarantor Action', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isLocked ? AppTheme.errorColor : AppTheme.ink700,
-                    side: BorderSide(color: isLocked ? AppTheme.errorColor : const Color(0xFFCBD5E1)),
+                    foregroundColor: AppTheme.ink700,
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -798,33 +731,18 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                DeviceLockscreenSimulatorModal.show(
-                  context,
-                  deviceModel: loan.item,
-                  imei: loan.imei,
-                  borrowerName: loan.name,
-                  borrowerPhone: loan.phone,
-                  overdueAmount: loan.remainingAmount > 0
-                      ? (loan.remainingAmount > 50000 ? loan.weeklyInstallment : loan.remainingAmount)
-                      : 45000,
-                  loanId: loan.id,
-                  initialIsLocked: isLocked,
-                  onStateChanged: () => setState(() {}),
-                );
-              },
-              icon: const Icon(Icons.smartphone_rounded, size: 18),
+            child: ElevatedButton.icon(
+              onPressed: () => _openRecordPaymentModal(loan),
+              icon: const Icon(Icons.point_of_sale_rounded, size: 18),
               label: const Text(
-                'Preview Remote Lockscreen (Simulator)',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                'Record Installment Repayment',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
               ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF0F172A),
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFFCBD5E1)),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -990,7 +908,13 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
         const SizedBox(width: 8),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => _showScreenPushAlertModal(loan),
+            onPressed: () {
+              LimsToast.show(
+                context,
+                'Ujumbe wa ukumbusho wa rejesho umetumwa kwa ${loan.phone}!',
+                isSuccess: true,
+              );
+            },
             icon: const Icon(Icons.sms_rounded, size: 16, color: AppTheme.brand600),
             label: const Text('Tuma SMS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
