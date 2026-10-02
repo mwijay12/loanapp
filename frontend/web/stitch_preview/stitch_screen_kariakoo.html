@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kariakoo Branch #04 - Retail &amp; Loan Management</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration with exact Design System tokens -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "error-container": "#93000a",
+            "on-secondary-container": "#00424e",
+            "outline": "#86948a",
+            "error": "#ffb4ab",
+            "on-primary-fixed": "#002113",
+            "on-error": "#690005",
+            "surface-container-highest": "#2f3543",
+            "background": "#0d1320",
+            "tertiary": "#7bd0ff",
+            "inverse-on-surface": "#2a303f",
+            "tertiary-container": "#19aee8",
+            "tertiary-fixed-dim": "#7bd0ff",
+            "secondary-fixed": "#acedff",
+            "on-tertiary-fixed": "#001e2c",
+            "surface-container": "#1a1f2d",
+            "on-surface": "#dde2f5",
+            "on-secondary": "#003640",
+            "on-primary-container": "#00422b",
+            "on-background": "#dde2f5",
+            "primary-fixed": "#6ffbbe",
+            "on-primary": "#003824",
+            "surface-container-low": "#161b29",
+            "on-tertiary": "#00354a",
+            "tertiary-fixed": "#c4e7ff",
+            "outline-variant": "#3c4a42",
+            "primary-container": "#10b981",
+            "inverse-surface": "#dde2f5",
+            "surface": "#0d1320",
+            "on-secondary-fixed-variant": "#004e5c",
+            "secondary-container": "#03b5d3",
+            "surface-dim": "#0d1320",
+            "primary": "#4edea3",
+            "on-tertiary-fixed-variant": "#004c69",
+            "on-error-container": "#ffdad6",
+            "primary-fixed-dim": "#4edea3",
+            "on-secondary-fixed": "#001f26",
+            "surface-container-lowest": "#080e1b",
+            "on-primary-fixed-variant": "#005236",
+            "surface-tint": "#4edea3",
+            "secondary": "#4cd7f6",
+            "inverse-primary": "#006c49",
+            "surface-bright": "#333948",
+            "on-tertiary-container": "#003e55",
+            "surface-container-high": "#242a38",
+            "on-surface-variant": "#bbcabf",
+            "secondary-fixed-dim": "#4cd7f6",
+            "surface-variant": "#2f3543"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "margin-sm": "1rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "gutter-sm": "0.75rem",
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "margin": "1.25rem"
+          },
+          "fontFamily": {
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "label-lg": ["Plus Jakarta Sans"],
+            "headline-xl-mobile": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "headline-xl": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "headline-xl-mobile": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "800" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    
+    @keyframes scanline {
+      0% { top: 0%; opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { top: 92%; opacity: 0.8; }
+    }
+    .laser-line {
+      animation: scanline 2.2s ease-in-out infinite alternate;
+    }
+
+    /* Custom subtle glass & glow utilities matching the spec */
+    .glass-panel-l1 {
+      background-color: rgba(17, 26, 46, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-panel-l2 {
+      background-color: rgba(24, 35, 60, 0.90);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+    }
+    .glow-primary-cta {
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.35);
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen selection:bg-primary-container selection:text-on-primary-container relative pb-28 antialiased">
+<!-- Ambient Background Lighting Orbs -->
+<div class="fixed top-0 right-0 w-80 h-80 rounded-full pointer-events-none opacity-40 blur-[100px] -z-10 bg-primary-container"></div>
+<div class="fixed bottom-16 left-0 w-72 h-72 rounded-full pointer-events-none opacity-25 blur-[90px] -z-10 bg-secondary-container"></div>
+<!-- SHARED COMPONENT: TopAppBar (Executing JSON style rules) -->
+<header class="docked full-width top-0 sticky z-40 bg-surface-container-low/85 dark:bg-surface-container-low/85 backdrop-blur-md shadow-sm dark:shadow-none border-b border-outline-variant/30">
+<div class="flex justify-between items-center w-full px-gutter py-space-sm max-w-md mx-auto">
+<!-- Leading: Branch Agent Profile Avatar with Role Details -->
+<div class="flex items-center gap-2.5">
+<div class="relative">
+<div class="w-10 h-10 rounded-full border border-primary/40 bg-surface-container-high flex items-center justify-center text-primary font-headline-sm shadow-inner overflow-hidden">
+            JM
+          </div>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary-container border-2 border-surface-container-low shadow-[0_0_8px_rgba(16,185,129,0.9)]"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">John M.</span>
+<span class="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary font-label-sm text-label-sm">Branch Lead</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[13px] text-secondary">location_on</span>
+<span class="font-headline-md text-label-md text-on-surface font-bold tracking-tight">Kariakoo #04</span>
+</div>
+</div>
+</div>
+<!-- Trailing: Sync Action + Status Indicator -->
+<div class="flex items-center gap-2">
+<button aria-label="Cloud Sync" class="relative p-2 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-primary transition-colors duration-150 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary animate-ping"></span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary"></span>
+</button>
+<button aria-label="Offline Queue" class="p-2 rounded-full bg-surface-container-high/60 text-on-surface-variant hover:text-secondary transition-colors duration-150 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">cloud_done</span>
+</button>
+</div>
+</div>
+<!-- Live Telemetry Status Strip inside Top Bar -->
+<div class="bg-surface-container-lowest/70 border-t border-outline-variant/15 py-1 px-gutter">
+<div class="max-w-md mx-auto flex items-center justify-between font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="text-on-surface-variant">All Data Synced • Cloud Connected</span>
+</div>
+<span class="text-secondary font-label-sm">Latency 24ms</span>
+</div>
+</div>
+</header>
+<!-- Main Mobile Canvas Container -->
+<main class="max-w-md mx-auto px-margin space-y-5 pt-3">
+<!-- 1. Hero Visual Card: Quick IMEI Scanner -->
+<section class="glass-panel-l2 rounded-xl p-space-md relative overflow-hidden group">
+<!-- Glow rim accent -->
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-primary-container/20 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex justify-between items-start mb-3 relative z-10">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-primary font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">sensors</span>
+              Camera &amp; Laser Ready
+            </span>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">Quick IMEI Scanner</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Scan physical box or phone to sell, loan or verify</p>
+</div>
+</div>
+<!-- Laser Scanner Viewfinder Graphic -->
+<div class="relative w-full h-32 rounded-lg bg-surface-container-lowest/80 border border-secondary/25 overflow-hidden flex flex-col items-center justify-center p-3 mb-3.5 shadow-inner">
+<!-- Target Reticle Corners -->
+<div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary"></div>
+<div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary"></div>
+<div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary"></div>
+<div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary"></div>
+<!-- Laser Scanning Line -->
+<div class="absolute left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_#10b981] laser-line z-10"></div>
+<!-- Viewfinder Holographic Barcode/Graphic Representation -->
+<div class="flex flex-col items-center justify-center opacity-80">
+<span class="material-symbols-outlined text-[36px] text-secondary/80 mb-1">qr_code_scanner</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-widest font-mono">ALIGN 15-DIGIT IMEI / BARCODE</span>
+</div>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-surface-container-high/90 text-on-surface-variant text-[9px] font-mono">
+          AUTO-INGEST ON
+        </div>
+</div>
+<!-- Action Cluster -->
+<div class="grid grid-cols-5 gap-2 relative z-10">
+<!-- Primary CTA: Launch Optical Scanner -->
+<button class="col-span-3 py-2.5 px-3 rounded-lg bg-primary-container hover:bg-emerald-500 active:scale-[0.98] text-on-primary-container font-headline-sm text-label-lg flex items-center justify-center gap-1.5 glow-primary-cta transition-all duration-150">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">barcode_scanner</span>
+<span>Optical Scanner</span>
+</button>
+<!-- Secondary CTA: Manual IMEI Entry -->
+<button class="col-span-2 py-2.5 px-2 rounded-lg bg-surface-container hover:bg-surface-container-high border border-secondary/30 active:scale-[0.98] text-secondary font-label-md text-label-md flex items-center justify-center gap-1 transition-all duration-150">
+<span class="material-symbols-outlined text-[18px]">keyboard</span>
+<span>Manual Entry</span>
+</button>
+</div>
+</section>
+<!-- 2. Rapid Operational Grid (2x2 Tactile Action Cards) -->
+<section class="space-y-2">
+<div class="flex justify-between items-center px-0.5">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Operations Hub</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Shift: 08:00 - 18:00</span>
+</div>
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Action 1: Sell Phone -->
+<div class="glass-panel-l1 rounded-xl p-3.5 flex flex-col justify-between hover:border-primary/40 active:scale-95 transition-all duration-150 cursor-pointer relative overflow-hidden group" role="button">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_12px_rgba(78,222,163,0.25)]">
+<span class="material-symbols-outlined text-[22px]">point_of_sale</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-primary-container/20 text-primary font-label-sm text-[10px]">POS</span>
+</div>
+<div class="mt-4">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-sm text-on-surface font-bold">Sell Phone</h4>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Instant Cash checkout</p>
+</div>
+</div>
+<!-- Action 2: Issue Loan -->
+<div class="glass-panel-l1 rounded-xl p-3.5 flex flex-col justify-between hover:border-secondary/40 active:scale-95 transition-all duration-150 cursor-pointer relative overflow-hidden group" role="button">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 border border-secondary/30 flex items-center justify-center text-secondary shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+<span class="material-symbols-outlined text-[22px]">credit_score</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-label-sm text-[10px]">Financing</span>
+</div>
+<div class="mt-4">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-sm text-on-surface font-bold">Issue Loan</h4>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-secondary group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Calculate terms &amp; deposit</p>
+</div>
+</div>
+<!-- Action 3: Receive Stock -->
+<div class="glass-panel-l1 rounded-xl p-3.5 flex flex-col justify-between hover:border-tertiary/40 active:scale-95 transition-all duration-150 cursor-pointer relative overflow-hidden group" role="button">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-tertiary/10 border border-tertiary/30 flex items-center justify-center text-tertiary shadow-[0_0_12px_rgba(123,208,255,0.25)]">
+<span class="material-symbols-outlined text-[22px]">move_to_inbox</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-high text-tertiary font-label-sm text-[10px]">Inbound</span>
+</div>
+<div class="mt-4">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-sm text-on-surface font-bold">Receive Stock</h4>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-tertiary group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Box batch IMEI ingest</p>
+</div>
+</div>
+<!-- Action 4: Transfer Out -->
+<div class="glass-panel-l1 rounded-xl p-3.5 flex flex-col justify-between hover:border-outline/40 active:scale-95 transition-all duration-150 cursor-pointer relative overflow-hidden group" role="button">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center text-on-surface-variant shadow-[0_0_12px_rgba(187,202,191,0.15)]">
+<span class="material-symbols-outlined text-[22px]">outbox</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[10px]">Outbound</span>
+</div>
+<div class="mt-4">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-sm text-on-surface font-bold">Transfer Out</h4>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-on-surface group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Inter-branch dispatch</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. Live Branch KPI Metrics Horizontal Carousel -->
+<section class="space-y-2">
+<div class="flex justify-between items-center px-0.5">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1.5">
+<span>Branch Telemetry</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+</h3>
+<span class="font-label-sm text-label-sm text-primary">Live Feeds</span>
+</div>
+<div class="flex gap-2.5 overflow-x-auto hide-scrollbar pb-1 -mx-margin px-margin">
+<!-- Metric 1: Stock on Hand -->
+<div class="glass-panel-l1 min-w-[150px] flex-1 rounded-xl p-3 flex flex-col justify-between shrink-0">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm">Stock on Hand</span>
+<span class="material-symbols-outlined text-[16px] text-primary">inventory_2</span>
+</div>
+<div class="my-2">
+<span class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface font-extrabold tracking-tight">142</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant ml-1">phones</span>
+</div>
+<div class="flex items-center gap-1 text-[11px] font-label-md text-primary">
+<span class="material-symbols-outlined text-[13px]">arrow_upward</span>
+<span>+12 received today</span>
+</div>
+</div>
+<!-- Metric 2: Today's Sales -->
+<div class="glass-panel-l1 min-w-[170px] flex-1 rounded-xl p-3 flex flex-col justify-between shrink-0">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm">Today's Sales</span>
+<span class="material-symbols-outlined text-[16px] text-secondary">payments</span>
+</div>
+<div class="my-2">
+<span class="font-headline-md text-headline-md text-on-surface font-bold">TZS 14.2M</span>
+</div>
+<div class="flex items-center gap-1 text-[11px] font-label-md text-primary">
+<span class="material-symbols-outlined text-[13px]">trending_up</span>
+<span>+18.4% vs target</span>
+</div>
+</div>
+<!-- Metric 3: Active Loans -->
+<div class="glass-panel-l1 min-w-[150px] flex-1 rounded-xl p-3 flex flex-col justify-between shrink-0">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm">Active Loans</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary">query_stats</span>
+</div>
+<div class="my-2">
+<span class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface font-extrabold">38</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant ml-1">portfolio</span>
+</div>
+<div class="flex items-center gap-1 text-[11px] font-label-md text-secondary">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+<span>99.2% repayment</span>
+</div>
+</div>
+<!-- Metric 4: Pending Audit -->
+<div class="glass-panel-l1 min-w-[150px] flex-1 rounded-xl p-3 flex flex-col justify-between shrink-0">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm">Pending Audit</span>
+<span class="material-symbols-outlined text-[16px] text-outline">verified_user</span>
+</div>
+<div class="my-2">
+<span class="font-headline-xl-mobile text-headline-xl-mobile text-primary font-extrabold">0</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant ml-1">flagged</span>
+</div>
+<div class="flex items-center gap-1 text-[11px] font-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px] text-primary">check_circle</span>
+<span>100% verified</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Bottom Operations Card: Quick Stocktake / Daily Closing -->
+<section class="glass-panel-l1 rounded-xl p-space-md border border-outline-variant/40 relative overflow-hidden">
+<div class="flex justify-between items-start mb-2.5">
+<div>
+<span class="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-[10px] uppercase tracking-wider font-bold">
+            Auditing &amp; Reconciliation
+          </span>
+<h3 class="font-headline-md text-headline-sm text-on-surface mt-1">Daily Closing Readiness</h3>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-sm text-primary font-bold">82%</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant">118/142 audited</p>
+</div>
+</div>
+<!-- Linear Repayment / Audit Velocity Progress Track -->
+<div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden mb-3.5 p-0.5">
+<div class="bg-gradient-to-r from-primary to-secondary h-full rounded-full w-[82%] shadow-[0_0_10px_#4edea3]"></div>
+</div>
+<!-- Breakdown Badges -->
+<div class="flex flex-wrap gap-2 mb-4">
+<div class="px-2 py-1 rounded bg-surface-container flex items-center gap-1.5 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-sm text-label-sm text-on-surface">Vault Sealed</span>
+</div>
+<div class="px-2 py-1 rounded bg-surface-container flex items-center gap-1.5 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-label-sm text-label-sm text-on-surface">Till Reconciled</span>
+</div>
+<div class="px-2 py-1 rounded bg-surface-container flex items-center gap-1.5 border border-secondary/30">
+<span class="material-symbols-outlined text-[14px] text-secondary">pending_actions</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">24 Box Scans Remaining</span>
+</div>
+</div>
+<!-- Resume Stocktake CTA -->
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright active:scale-[0.98] border border-outline-variant/50 text-on-surface font-headline-sm text-label-lg flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined text-[18px] text-primary">play_circle</span>
+<span>Resume Stocktake</span>
+</button>
+</section>
+</main>
+<!-- SHARED COMPONENT: BottomNavBar (Executing exact styles and active state logic) -->
+<!-- Contextual lock: This is the operational home screen, so 'Operations' is active! -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-margin-sm py-space-xs max-w-md mx-auto inset-x-0 bg-surface-container-low/90 dark:bg-surface-container-low/90 border-t border-outline-variant/30 backdrop-blur-xl shadow-[0_-8px_24px_rgba(0,0,0,0.5)]">
+<!-- Tab 1: Operations (ACTIVE as dictated by JSON style_active_navigation) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-primary dark:text-primary font-bold py-1 px-3 rounded-full bg-primary/10 dark:bg-primary/10 border border-primary/20 shadow-[0_0_12px_rgba(78,222,163,0.25)] active:scale-95 transition-transform duration-150 ease-out" href="#operations">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">point_of_sale</span>
+<span class="font-label-sm text-label-sm">Operations</span>
+</a>
+<!-- Tab 2: Inventory (INACTIVE as dictated by JSON style_inactive_navigation) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-secondary dark:hover:text-secondary transition-colors duration-150 active:scale-95" href="#inventory">
+<span class="material-symbols-outlined text-[20px]">inventory_2</span>
+<span class="font-label-sm text-label-sm">Inventory</span>
+</a>
+<!-- Tab 3: Loans (INACTIVE as dictated by JSON style_inactive_navigation) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-secondary dark:hover:text-secondary transition-colors duration-150 active:scale-95" href="#loans">
+<span class="material-symbols-outlined text-[20px]">credit_score</span>
+<span class="font-label-sm text-label-sm">Loans</span>
+</a>
+<!-- Tab 4: Ledger (INACTIVE as dictated by JSON style_inactive_navigation) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-secondary dark:hover:text-secondary transition-colors duration-150 active:scale-95" href="#ledger">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+<span class="font-label-sm text-label-sm">Ledger</span>
+</a>
+</nav>
+<!-- Interactive script for tactile and audio/haptic feel simulations -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Micro-interaction for tactile active states
+      const touchables = document.querySelectorAll('button, [role="button"]');
+      touchables.forEach(elem => {
+        elem.addEventListener('click', () => {
+          if (navigator.vibrate) {
+            navigator.vibrate(12);
+          }
+        });
+      });
+    });
+  </script>
+</body></html>

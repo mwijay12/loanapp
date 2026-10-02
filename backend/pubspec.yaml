@@ -1,0 +1,13 @@
+name: backend
+description: Supabase backend for Loan & Inventory Management System
+version: 1.0.0
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  supabase_flutter: ^2.3.0
+  flutter_riverpod: ^2.4.9
+
+dev_dependencies:
+  flutter_lints: ^3.0.1

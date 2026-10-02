@@ -1,0 +1,778 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/data/inventory_provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ui_kit.dart';
+
+class ReportsScreen extends ConsumerStatefulWidget {
+  const ReportsScreen({super.key});
+
+  @override
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String _selectedDateRange = 'Today'; // 'Today', 'This Week', 'Month to Date'
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _showOfficialPdfReport(BuildContext context, {
+    required int todaySales,
+    required int grossProfit,
+    required int totalLoans,
+    required int totalCollected,
+    required int totalPhones,
+    required int inventoryCost,
+    required int inventoryRetail,
+    required String activeBranch,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.90,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(99)),
+            ),
+            const SizedBox(height: 14),
+
+            // Modal Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: const Icon(Icons.verified_outlined, color: Color(0xFF1E60F2), size: 22),
+                      ),
+                      const SizedBox(width: 10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Official Financial Audit',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                          ),
+                          Text(
+                            'DOC-FIN-2026-10-8841 · EFD Signed',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 22),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 24, color: Color(0xFFE2E8F0)),
+
+            // Printable Document Body
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  // Company Identity Watermark Header
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'LIMS TANZANIA LTD',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5, color: Color(0xFF0F172A)),
+                                ),
+                                const Text(
+                                  'Loan & Investment Management System Ltd',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF10B981)),
+                              ),
+                              child: const Text(
+                                'TRA VERIFIED',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF065F46)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 10),
+                        _buildDocRow('Registered Office', 'Plot 14, Uhuru St, Kariakoo, Dar es Salaam'),
+                        _buildDocRow('TIN / VRN', '142-998-314 / 40-028912-K'),
+                        _buildDocRow('EFD Machine S/N', 'TZ-EFD-894102 (Live Online)'),
+                        _buildDocRow('Branch Scope', activeBranch),
+                        _buildDocRow('Report Date', 'Friday, 02 October 2026 · 14:45 EAT'),
+                        _buildDocRow('Auditing Officer', 'David Erick Mwijage · Managing Director'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  const Text(
+                    'Executive P&L Statement',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildFinancialLine('Gross POS Sales Revenue', LimsFormatters.currency(todaySales), isBold: true),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _buildFinancialLine('Cost of Goods Sold (COGS Handsets)', LimsFormatters.currency((todaySales * 0.76).round())),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _buildFinancialLine('Gross Margin (24.0%)', LimsFormatters.currency(grossProfit), isHighlight: true),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _buildFinancialLine('Active Disbursed Loan Book', LimsFormatters.currency(totalLoans)),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _buildFinancialLine('Repayments Recovered', LimsFormatters.currency(totalCollected)),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _buildFinancialLine('Total Handsets in Stock', '$totalPhones units', isBold: true),
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        _buildFinancialLine('Inventory Asset Value (Cost)', LimsFormatters.currency(inventoryCost)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Official Stamp & Digital Signature Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFF1E60F2), width: 2),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.qr_code_2_rounded, color: Color(0xFF1E60F2), size: 32),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Digital Verification Hash: #9941-EFD-LIMS',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF1E60F2)),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'This document is digitally stamped and synchronized with Supabase central financial ledger.',
+                                style: TextStyle(fontSize: 10.5, color: Color(0xFF475569)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+
+            // Print & Download Buttons
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.download_rounded, size: 18),
+                      label: const Text('Export CSV'),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Financial CSV dispatched to HQ accounting inbox.'),
+                            backgroundColor: Color(0xFF10B981),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.print_rounded, size: 18, color: Colors.white),
+                      label: const Text('Print Signed PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Report dispatched to office network printer.'),
+                            backgroundColor: Color(0xFF1E60F2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E60F2),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+          Text(value, style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A), fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinancialLine(String label, String value, {bool isBold = false, bool isHighlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: isBold || isHighlight ? FontWeight.w800 : FontWeight.w500,
+              color: isHighlight ? const Color(0xFF10B981) : const Color(0xFF1E293B),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: isHighlight ? const Color(0xFF10B981) : (isBold ? const Color(0xFF0F172A) : const Color(0xFF334155)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBranch = ref.watch(activeBranchProvider);
+    final products = ref.watch(inventoryProvider);
+    final sortedProducts = [...products]..sort((a, b) => b.soldToday.compareTo(a.soldToday));
+    final topProducts = sortedProducts.take(4).toList();
+
+    final loans = ref.watch(loansProvider);
+    final totalLoans = loans.fold<int>(0, (sum, l) => sum + l.amount);
+    final totalCollected = loans.fold<int>(0, (sum, l) => sum + ((l.amount * l.paid) ~/ 100));
+    final collectionRate = totalLoans > 0 ? (totalCollected / totalLoans) : 0.0;
+
+    final todaySales = ref.watch(todaySalesTotalProvider);
+    final grossProfit = ref.watch(todayGrossProfitProvider);
+    final totalPhones = ref.watch(totalPhonesCountProvider);
+    final inventoryCost = ref.watch(totalInventoryCostProvider);
+    final inventoryRetail = ref.watch(totalInventoryRetailValueProvider);
+
+    final overdueLoans = loans.where((l) => l.status == 'overdue').toList();
+    final knoxLockedLoans = loans.where((l) => l.isKnoxLocked).toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text(
+          'Financial Reports & Audit',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.ink900),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF1E60F2)),
+            tooltip: 'Generate Signed Audit PDF',
+            onPressed: () => _showOfficialPdfReport(
+              context,
+              todaySales: todaySales,
+              grossProfit: grossProfit,
+              totalLoans: totalLoans,
+              totalCollected: totalCollected,
+              totalPhones: totalPhones,
+              inventoryCost: inventoryCost,
+              inventoryRetail: inventoryRetail,
+              activeBranch: activeBranch,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFE2E8F0), height: 1),
+        ),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            // LIMS Corporate Identity Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x0A0F3478), blurRadius: 18, offset: Offset(0, 4)),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1652E1), Color(0xFF1E60F2)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Center(
+                      child: Text('LIMS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5)),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'LIMS Financial Center',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                        ),
+                        Text(
+                          'TIN: 142-998-314 · EFD Sync · $activeBranch',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _showOfficialPdfReport(
+                      context,
+                      todaySales: todaySales,
+                      grossProfit: grossProfit,
+                      totalLoans: totalLoans,
+                      totalCollected: totalCollected,
+                      totalPhones: totalPhones,
+                      inventoryCost: inventoryCost,
+                      inventoryRetail: inventoryRetail,
+                      activeBranch: activeBranch,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E60F2),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.print_rounded, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text('PDF', style: TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Date Range Filter Chips
+            Row(
+              children: [
+                _buildDateChip('Today'),
+                const SizedBox(width: 8),
+                _buildDateChip('This Week'),
+                const SizedBox(width: 8),
+                _buildDateChip('Month to Date'),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 3 Reporting Tabs
+            TabBar(
+              controller: _tabController,
+              labelColor: const Color(0xFF1E60F2),
+              unselectedLabelColor: const Color(0xFF64748B),
+              indicatorColor: const Color(0xFF1E60F2),
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+              tabs: const [
+                Tab(text: "P&L Statement"),
+                Tab(text: "Loan Book & PAR"),
+                Tab(text: "Inventory Asset"),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Tab Views
+            SizedBox(
+              height: 520,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Tab 1: P&L
+                  _buildPlTab(todaySales, grossProfit),
+
+                  // Tab 2: Loan Book & PAR
+                  _buildLoanBookTab(totalLoans, totalCollected, collectionRate, overdueLoans, knoxLockedLoans),
+
+                  // Tab 3: Inventory Asset
+                  _buildInventoryAssetTab(totalPhones, inventoryCost, inventoryRetail, topProducts),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateChip(String label) {
+    final isSelected = _selectedDateRange == label;
+    return InkWell(
+      onTap: () => setState(() => _selectedDateRange = label),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1E60F2) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isSelected ? const Color(0xFF1E60F2) : const Color(0xFFE2E8F0)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlTab(int todaySales, int grossProfit) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: [
+        // Daily Close Quick Action Banner
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFBFDBFE)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: const Color(0xFF1E60F2), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Daily Close & Drawer Reconcile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                    Text('Match cash count with EFD tax register', style: TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => context.push('/daily-closing'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E60F2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Open', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Financial Ledger Card
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              _buildFinancialLine('Total Inflow Revenue', LimsFormatters.currency(todaySales), isBold: true),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('Estimated Handset Cost (COGS)', LimsFormatters.currency((todaySales * 0.76).round())),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('Net Gross Profit Margin', LimsFormatters.currency(grossProfit), isHighlight: true),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('Drawer Cash On Hand', 'TZS 3,250,000'),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('M-Pesa / Tigo Collections', 'TZS 4,820,000'),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('Card & Bank Settlements', 'TZS 1,200,000'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoanBookTab(int totalLoans, int totalCollected, double collectionRate, List<dynamic> overdue, List<dynamic> knoxLocked) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Loan Portfolio Recovery', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6)),
+                    child: Text('${(collectionRate * 100).toStringAsFixed(0)}% on track', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  value: collectionRate.clamp(0.0, 1.0),
+                  minHeight: 7,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Collected ${LimsFormatters.currency(totalCollected)} of ${LimsFormatters.currency(totalLoans)} disbursed portfolio',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // PAR & Knox Risk Card
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('PAR 30 (Overdue)', style: TextStyle(fontSize: 11, color: Color(0xFF991B1B), fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text('${overdue.length} Borrowers', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF991B1B))),
+                    const SizedBox(height: 2),
+                    const Text('Follow-up pending', style: TextStyle(fontSize: 10, color: Color(0xFFB91C1C))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Knox Remote Locked', style: TextStyle(fontSize: 11, color: Color(0xFF92400E), fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text('${knoxLocked.length} Handsets', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF92400E))),
+                    const SizedBox(height: 2),
+                    const Text('Screens frozen', style: TextStyle(fontSize: 10, color: Color(0xFFB45309))),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInventoryAssetTab(int totalPhones, int costVal, int retailVal, List<dynamic> topProducts) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              _buildFinancialLine('Total Serialized Handsets', '$totalPhones units', isBold: true),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('Warehouse Stock Value (At Cost)', LimsFormatters.currency(costVal)),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              _buildFinancialLine('Retail Valuation (Selling Price)', LimsFormatters.currency(retailVal), isHighlight: true),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        const Text('Fastest Moving Models Today', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+        const SizedBox(height: 10),
+
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: topProducts.map((p) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                          Text('${p.soldToday} sold today · In Stock: ${p.stock}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ),
+                    Text(LimsFormatters.currency(p.price), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E60F2))),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}

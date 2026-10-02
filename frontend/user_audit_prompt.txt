@@ -1,0 +1,48 @@
+<USER_REQUEST>
+Nimeikagua frontend ya LIMS (Phone Loan & Inventory Management System) inayokimbia kwenye http://localhost:5050/ pamoja na codebase nzima ya Flutter (C:\Users\MWIJAY TECH\Downloads\loan-investment-main\Desktop\LOAN APP\frontend).
+
+Hapa kuna uchambuzi kamili wa mapungufu yaliyopo na Master Fix Prompt iliyonyooka unayoweza kumkabidhi developer au kuipaste kwa AI coder ili kusafisha kila kitu na kuifanya app iwe 100% production-ready na professional.
+
+
+
+1. Uchambuzi wa Mapungufu Yaliyobainika (Diagnostic Audit)
+
+🎨 Visual & UI Polish (Muonekano na Ulinganifu)
+1. Hardcoded Hex Colors (Over 380+ occurrences): Screens nyingi zinatumia rangi za moja kwa moja badala ya kutumia design tokens za AppTheme (mfano home_screen.dart pekee ina hardcoded hex 82).
+2. Inline Sheet Drag Handles (0xFFD4E0F0): Modal bottom sheets zinatengeneza drag-handles kwa mkono badala ya kutumia reusable widget ya ui_kit.dart au LimsBottomSheet.
+3. Empty States & Error Placeholders: Screens kama Stock na Loans zikikosa data zinakosa transition animations au interactive retry triggers.
+4. Card Padding na Radius Inconsistency: Baadhi ya cards zinatumia BorderRadius.circular(12) na nyingine BorderRadius.circular(20) badala ya standard tokens (AppTheme.rSm, AppTheme.rMd, AppTheme.rLg).
+
+⚙️ State, Logic & Form Validation (Uendeshaji wa Data)
+1. Forms Hazina Strict Validation:
+   - sell_loan_screen.dart na receive_stock_screen.dart hazikagui urefu wa IMEI (lazima iwe tarakimu 15 kamili za kiwango cha GSMA).
+   - Loan interest na amortisation zimekuwa free-text badala ya dynamic auto-calculation formula (Principal + Rate + Months = Total & Monthly Due).
+2. Hardcoded Const Lists badala ya Riverpod State:
+   - Karibu 85% ya lists (simu zilizopo, batch transfers, recent sales) zimeandikwa static ndani ya widgets badala ya kupitia NotifierProvider au Mock Repository.
+3. Dead Callbacks & No-Ops (onTap: () {}):
+   - Kuna vitufe kadhaa havina feedback wala route navigation (mfano notification actions, bulk transfer but
+<truncated 2798 bytes>
+rification before dispatching inventory state.
+
+Phase 3: State Management & Interactive Polish
+- Replace all static local mock lists with clean Riverpod StateNotifierProvider or AsyncNotifier stores under lib/core/data/ so actions (adding stock, approving loans, switching branches, scanning phones) update the UI reactively in-memory.
+- Fix all dead callbacks (onTap: () {} / onPressed: () {}) across all screens by providing active interactive feedback, confirmation dialogs, or haptic/visual feedback.
+- Standardize all SnackBars to floating modern toasts using AppTheme.ink900 background and clear action icons.
+
+Phase 4: Localization & Formatters
+- Ensure intl.NumberFormat.currency(symbol: 'TZS ', decimalDigits: 0) is universally used for all monetary amounts across the app.
+- Wire all user-facing strings through AppLocalizations so switching between English and Swahili in Settings updates all dashboard titles, buttons, status badges, and transaction tables seamlessly.
+
+Phase 5: Verification & Audit Pass
+- Run flutter analyze and resolve all linter warnings, dead imports, and deprecated members.
+- Ensure the app renders cleanly on both mobile viewport (390x844) and desktop/web widths without overflow warnings (A RenderFlex overflowed...).
+
+
+
+
+Mzee, prompt hii imebeba exact file paths, mapungufu yote ya design tokens, mahesabu ya mikopo na IMEI validation. Ukipenda nianze kufanya fixes hizi moja kwa moja kwenye frontend files hapa hapa, nambie tuanze na Phase 1 (Design Tokens & UI Kit) mara moja! 🚀💎
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-01T13:07:23+03:00.
+</ADDITIONAL_METADATA>
