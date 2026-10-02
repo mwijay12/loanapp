@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../account/presentation/account_screen.dart';
-import '../../loans/presentation/widgets/device_lockscreen_simulator_modal.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -23,8 +22,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _mpesaTillNumber = '552219';
   String _tigoPesaNumber = '884102';
   String _supportHotline = '0754 892 314';
-  String _autoLockGracePeriod = 'Masaa 48 (Siku 2)';
-  String _tcraThreshold = 'Siku 30';
+  String _paymentGracePeriod = 'Siku 3 (Grace Period)';
+  String _escalationPolicy = 'SMS & Piga Simu kwa Mdhamini';
 
   final List<String> _branches = [
     'Kariakoo Branch',
@@ -408,9 +407,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Lipa Namba & Knox Remote Tracking Configuration
+            // Payment Channels & Collections Policy Configuration
             const Text(
-              'Lipa Namba & Knox Remote Tracking',
+              'Payment Channels & Collections Policy',
               style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
@@ -446,7 +445,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                     ),
                     subtitle: Text(
-                      'Till: $_mpesaTillNumber · Inaonekana kwenye simu ya mteja ikifungwa',
+                      'Till: $_mpesaTillNumber · Namba kuu ya makusanyo ya marejesho',
                       style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
                     ),
                     trailing: TextButton(
@@ -513,7 +512,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                     ),
                     subtitle: Text(
-                      '$_supportHotline · Kitufe cha simu kwenye kioo kilichofungwa',
+                      '$_supportHotline · Mawasiliano rasmi ya mikopo na marejesho',
                       style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
                     ),
                   ),
@@ -527,19 +526,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Auto-Lock Grace Period',
+                              'Payment Grace Period',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                             ),
                             Text(
-                              'Muda kabla ya amri ya kufunga simu kutumwa',
+                              'Muda wa msamaha kabla ya hatua za madai kuanza',
                               style: TextStyle(fontSize: 11, color: AppTheme.ink500),
                             ),
                           ],
                         ),
                         DropdownButton<String>(
-                          value: _autoLockGracePeriod,
+                          value: _paymentGracePeriod,
                           underline: const SizedBox(),
-                          items: ['Masaa 24', 'Masaa 48 (Siku 2)', 'Siku 5', 'Siku 7'].map((val) {
+                          items: ['Siku 1', 'Siku 3 (Grace Period)', 'Siku 5', 'Siku 7'].map((val) {
                             return DropdownMenuItem(
                               value: val,
                               child: Text(
@@ -549,7 +548,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) setState(() => _autoLockGracePeriod = val);
+                            if (val != null) setState(() => _paymentGracePeriod = val);
                           },
                         ),
                       ],
@@ -565,19 +564,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'TCRA EIR Blacklist Threshold',
+                              'Arrears Escalation Policy',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                             ),
                             Text(
-                              'Kuzuia SIM card nchini kote TCRA',
+                              'Hatua za kisheria kwa mujibu wa PDPA & Mkopo',
                               style: TextStyle(fontSize: 11, color: AppTheme.ink500),
                             ),
                           ],
                         ),
                         DropdownButton<String>(
-                          value: _tcraThreshold,
+                          value: _escalationPolicy,
                           underline: const SizedBox(),
-                          items: ['Siku 14', 'Siku 30', 'Siku 60'].map((val) {
+                          items: [
+                            'SMS & Piga Simu kwa Mdhamini',
+                            'Notisi Rasmi ya Madai (Legal Notice)',
+                            'Kufuatilia Handset kwa Makubaliano',
+                          ].map((val) {
                             return DropdownMenuItem(
                               value: val,
                               child: Text(
@@ -587,7 +590,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) setState(() => _tcraThreshold = val);
+                            if (val != null) setState(() => _escalationPolicy = val);
                           },
                         ),
                       ],
@@ -600,20 +603,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          DeviceLockscreenSimulatorModal.show(
+                          LimsToast.show(
                             context,
-                            deviceModel: 'Samsung Galaxy A15 (Demo)',
-                            imei: '354928104829104',
-                            borrowerName: 'Bakari Mwambungu (Demo)',
-                            borrowerPhone: '0754 892 314',
-                            overdueAmount: 45000,
-                            loanId: 'LIMS-LN-DEMO',
-                            initialIsLocked: true,
+                            'Kiolezo cha SMS ya kukumbusha rejesho kimetumwa (Mfano: "Ndugu Mteja, rejesho lako la TZS ... linatakiwa kulipwa...")',
+                            isSuccess: true,
                           );
                         },
-                        icon: const Icon(Icons.visibility_rounded, size: 16),
+                        icon: const Icon(Icons.sms_outlined, size: 16),
                         label: const Text(
-                          'Jaribu Kielelezo cha Kioo cha Kifaa (Test Lockscreen View)',
+                          'Jaribu Kiolezo cha SMS ya Marejesho (Test Payment Reminder)',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                         ),
                         style: OutlinedButton.styleFrom(

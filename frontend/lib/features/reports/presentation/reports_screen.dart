@@ -352,7 +352,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     final inventoryRetail = ref.watch(totalInventoryRetailValueProvider);
 
     final overdueLoans = loans.where((l) => l.status == 'overdue').toList();
-    final knoxLockedLoans = loans.where((l) => l.isKnoxLocked).toList();
+    final performingLoans = loans.where((l) => l.status == 'current').toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
@@ -508,7 +508,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   _buildPlTab(todaySales, grossProfit),
 
                   // Tab 2: Loan Book & PAR
-                  _buildLoanBookTab(totalLoans, totalCollected, collectionRate, overdueLoans, knoxLockedLoans),
+                  _buildLoanBookTab(totalLoans, totalCollected, collectionRate, overdueLoans, performingLoans),
 
                   // Tab 3: Inventory Asset
                   _buildInventoryAssetTab(totalPhones, inventoryCost, inventoryRetail, topProducts),
@@ -622,7 +622,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     );
   }
 
-  Widget _buildLoanBookTab(int totalLoans, int totalCollected, double collectionRate, List<dynamic> overdue, List<dynamic> knoxLocked) {
+  Widget _buildLoanBookTab(int totalLoans, int totalCollected, double collectionRate, List<dynamic> overdue, List<dynamic> performingLoans) {
     return ListView(
       physics: const BouncingScrollPhysics(),
       children: [
@@ -667,7 +667,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
         ),
         const SizedBox(height: 14),
 
-        // PAR & Knox Risk Card
+        // PAR & Performing Portfolio Risk Card
         Row(
           children: [
             Expanded(
@@ -695,18 +695,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
+                  color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Knox Remote Locked', style: TextStyle(fontSize: 11, color: Color(0xFF92400E), fontWeight: FontWeight.w700)),
+                    const Text('Performing Loans', style: TextStyle(fontSize: 11, color: Color(0xFF065F46), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('${knoxLocked.length} Handsets', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF92400E))),
+                    Text('${performingLoans.length} Handsets', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
                     const SizedBox(height: 2),
-                    const Text('Screens frozen', style: TextStyle(fontSize: 10, color: Color(0xFFB45309))),
+                    const Text('On schedule (Current)', style: TextStyle(fontSize: 10, color: Color(0xFF047857))),
                   ],
                 ),
               ),

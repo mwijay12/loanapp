@@ -205,7 +205,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 '2. Financed Device: Model ${loan.item}, Serialized IMEI: ${loan.imei}.\n\n'
                 '3. Valuation & Deposit: Total loan value TZS ${loan.formattedAmount}. Initial deposit received: TZS ${loan.formattedDeposit}.\n\n'
                 '4. Repayment Schedule: Weekly installment of TZS ${loan.formattedWeeklyInstallment} across ${loan.installmentWeeks} weeks.\n\n'
-                '5. Samsung Knox / MDM Remote Lock: Creditor reserves legal authority to remotely lock device functionality if arrears exceed 72 hours.\n\n'
+                '5. Default & Recovery Enforcement: In case of arrears exceeding 72 hours, creditor initiates formal debtor recovery proceedings, contact with the legally registered guarantor, and repossession notices in accordance with the Personal Data Protection Act (PDPA) and microfinance regulations.\n\n'
                 '6. Guarantor: ${loan.guarantorName} (${loan.guarantorRelation}, Phone: ${loan.guarantorPhone}) confirms legal joint liability under Tanzania micro-lending regulations.',
                 style: const TextStyle(fontSize: 12.5, height: 1.5, color: AppTheme.ink700),
               ),
@@ -466,7 +466,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
       body: TabBarView(
         controller: _tabController,
         children: [
-          // TAB 1: Summary & Knox Security
+          // TAB 1: Summary & Debt Follow-up
           SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1141,8 +1141,8 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           const SizedBox(height: 14),
           _infoRow('Model ya Simu', loan.item),
           _infoRowWithCopy('IMEI 1 (Hardware ID)', loan.imei),
-          _infoRow('Ulinzi wa Mfumo', 'Samsung Knox / Cloud Device Lock'),
-          _infoRow('Hali ya Kifaa', loan.isKnoxLocked ? 'Kimefungwa (Locked)' : 'Kinafanya Kazi (Active)', valueColor: loan.isKnoxLocked ? AppTheme.errorColor : AppTheme.successColor),
+          _infoRow('Ulinzi wa Dhamana', 'Mkataba wa Hire-Purchase & Mdhamini'),
+          _infoRow('Hali ya Akaunti', loan.status == 'overdue' ? 'Inadaiwa (Overdue)' : 'Inalipika Vizuri (Current)', valueColor: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.successColor),
         ],
       ),
     );

@@ -684,8 +684,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 onPressed: () {
                   context.push('/imei-inspector?imei=$_imeiNumber');
                 },
-                icon: const Icon(Icons.shield_rounded, size: 18, color: AppTheme.brand600),
-                label: const Text('Deep Knox & Warranty Inspection', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
+                icon: const Icon(Icons.verified_outlined, size: 18, color: AppTheme.brand600),
+                label: const Text('Device Verification & Warranty Check', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFFCEE1FE)),
                   padding: const EdgeInsets.symmetric(vertical: 13),

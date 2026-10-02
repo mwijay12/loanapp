@@ -29,7 +29,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
     LimsBottomSheet.show(
       context: context,
       title: 'Sajili Mkopo Mpya (Disburse Loan)',
-      subtitle: 'Sajili mkopaji na mfumo wa Knox Security kaunta',
+      subtitle: 'Sajili mkopaji na mkataba wa mauzo ya mkopo kaunta',
       child: StatefulBuilder(
         builder: (ctx, setModalState) {
           return Column(
@@ -118,11 +118,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.shield_rounded, size: 16, color: AppTheme.brand600),
+                    Icon(Icons.verified_user_rounded, size: 16, color: AppTheme.brand600),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Handset will be enrolled in Samsung Knox / Android MDM for remote collateral locking.',
+                        'Borrower & Guarantor have signed hire-purchase contract terms (PDPA compliant).',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.brand600),
                       ),
                     ),
@@ -170,7 +170,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                     );
 
                     Navigator.pop(ctx);
-                    LimsToast.show(context, 'Loan for $customerName approved & enrolled in Knox Security!', isSuccess: true);
+                    LimsToast.show(context, 'Loan for $customerName approved & recorded in active ledger!', isSuccess: true);
                   },
                   icon: const Icon(Icons.check_circle_rounded, size: 20),
                   label: const Text('Approve & Issue Handset', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
@@ -226,13 +226,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
 
       if (_selectedFilter == 'overdue') return l.status == 'overdue';
       if (_selectedFilter == 'current') return l.status == 'current';
-      if (_selectedFilter == 'locked') return l.isKnoxLocked;
       return true;
     }).toList();
 
     final activeCount = allLoans.length;
     final overdueCount = allLoans.where((l) => l.status == 'overdue').length;
-    final lockedCount = allLoans.where((l) => l.isKnoxLocked).length;
+    final currentCount = allLoans.where((l) => l.status == 'current').length;
 
     return Scaffold(
       backgroundColor: AppTheme.canvas,
@@ -325,12 +324,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildSummaryCard(
-                    label: 'Knox Locked',
-                    value: '$lockedCount',
-                    icon: Icons.phonelink_lock_rounded,
-                    iconColor: const Color(0xFFF79009),
-                    bgColor: const Color(0xFFFEF3E4),
-                    valueColor: const Color(0xFFF79009),
+                    label: 'On Schedule',
+                    value: '$currentCount',
+                    icon: Icons.check_circle_rounded,
+                    iconColor: const Color(0xFF027A48),
+                    bgColor: const Color(0xFFECFDF5),
+                    valueColor: const Color(0xFF027A48),
                   ),
                 ),
               ],
@@ -371,13 +370,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _filterChip('all', 'Wote ($activeCount)'),
+                  _filterChip('all', 'All Loans ($activeCount)'),
                   const SizedBox(width: 8),
-                  _filterChip('overdue', 'Wamechelewa ($overdueCount)'),
+                  _filterChip('overdue', 'Overdue ($overdueCount)'),
                   const SizedBox(width: 8),
-                  _filterChip('current', 'Wanaolipa (${activeCount - overdueCount})'),
-                  const SizedBox(width: 8),
-                  _filterChip('locked', 'Kioo Kimefungwa ($lockedCount)'),
+                  _filterChip('current', 'On Schedule ($currentCount)'),
                 ],
               ),
             ),
@@ -524,7 +521,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: l.isKnoxLocked ? const Color(0xFFFECDD3) : const Color(0xFFE2E8F0),
+          color: l.status == 'overdue' ? const Color(0xFFFECDD3) : const Color(0xFFE2E8F0),
         ),
         boxShadow: const [
           BoxShadow(
@@ -594,7 +591,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              if (l.isKnoxLocked)
+                              if (l.status == 'overdue')
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                   decoration: BoxDecoration(
@@ -604,10 +601,10 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.lock_rounded, size: 10, color: AppTheme.errorColor),
+                                      Icon(Icons.warning_amber_rounded, size: 10, color: AppTheme.errorColor),
                                       SizedBox(width: 2),
                                       Text(
-                                        'LOCKED',
+                                        'OVERDUE',
                                         style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppTheme.errorColor),
                                       ),
                                     ],
@@ -709,7 +706,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'View Borrower Details & Knox',
+                      'View Borrower Dossier & Schedule',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
                     ),
                     SizedBox(width: 4),
