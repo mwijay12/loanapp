@@ -43,11 +43,14 @@ jobs:
       - name: Build release APK (split per ABI)
         run: flutter build apk --release --split-per-abi
 
+      # NOTE: defaults.run.working-directory does NOT apply to
+      # uses: steps, so paths below must include the frontend/ prefix.
       - name: Upload APKs as run artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apks
-          path: build/app/outputs/flutter-apk/*.apk
+          path: frontend/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
 
       # Only on tags like v1.0.0 -> creates a public Release page
       # with direct download links (no login needed to download).
@@ -55,5 +58,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/*.apk
+          files: frontend/build/app/outputs/flutter-apk/*.apk
           generate_release_notes: true
