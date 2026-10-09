@@ -106,13 +106,13 @@ class SyncStatus extends ConsumerWidget {
   Color _getBorderColor() {
     switch (state) {
       case SyncState.synced:
-        return AppTheme.successColor.withOpacity(0.3);
+        return AppTheme.successColor.withValues(alpha: 0.3);
       case SyncState.offline:
-        return AppTheme.warningColor.withOpacity(0.3);
+        return AppTheme.warningColor.withValues(alpha: 0.3);
       case SyncState.syncing:
-        return AppTheme.primaryColor.withOpacity(0.3);
+        return AppTheme.primaryColor.withValues(alpha: 0.3);
       case SyncState.success:
-        return AppTheme.successColor.withOpacity(0.3);
+        return AppTheme.successColor.withValues(alpha: 0.3);
     }
   }
 }

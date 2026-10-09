@@ -1,3 +1,7 @@
+// ignore_for_file: non_constant_identifier_names
+//
+// Localization getters intentionally mirror the snake_case translation keys
+// (e.g. `sign_in`) so en/sw stay in sync through a single key set.
 import 'package:flutter/material.dart';
 
 class AppLocalizations {

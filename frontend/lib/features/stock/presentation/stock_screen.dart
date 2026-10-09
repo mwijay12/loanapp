@@ -479,6 +479,24 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'url': null,
       },
       {
+        'title': 'Galaxy S24 Ultra',
+        'sub': 'Halisi · offline (Assets)',
+        'asset': 'assets/images/samsung_galaxy_ultra.png',
+        'url': null,
+      },
+      {
+        'title': 'Redmi Note 13 Pro',
+        'sub': 'Halisi · offline (Assets)',
+        'asset': 'assets/images/redmi_note_13_pro.png',
+        'url': null,
+      },
+      {
+        'title': 'TECNO Camon 30',
+        'sub': 'Halisi · offline (Assets)',
+        'asset': 'assets/images/tecno_camon_30.png',
+        'url': null,
+      },
+      {
         'title': 'Natural Titanium Pro',
         'sub': 'iPhone 15 Pro Max',
         'asset': null,

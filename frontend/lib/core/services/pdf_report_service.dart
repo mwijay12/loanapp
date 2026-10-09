@@ -37,7 +37,7 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     'LIMS · SMARTPHONE POS & FINANCING',
-                    style: pw.TextStyle(
+                    style: const pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.blue800,
@@ -46,11 +46,11 @@ class PdfReportService {
                   pw.SizedBox(height: 4),
                   pw.Text(
                     'Branch Operations, Sales & Credit Audit Report',
-                    style: pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                    style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
                   ),
                   pw.Text(
                     'Branch: $branchName  |  Generated: $dateStr',
-                    style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                   ),
                 ],
               ),
@@ -64,7 +64,7 @@ class PdfReportService {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('OFFICIAL AUDIT', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                    pw.Text('OFFICIAL AUDIT', style: const pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
                     pw.Text(reportId, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
                   ],
                 ),
@@ -90,7 +90,7 @@ class PdfReportService {
           // Inventory Table
           pw.Text(
             '1. Branch Handset Inventory & Valuation',
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+            style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
@@ -104,7 +104,7 @@ class PdfReportService {
                 p.status.toUpperCase(),
               ];
             }).toList(),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+            headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8.5),
             cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
@@ -114,7 +114,7 @@ class PdfReportService {
           // Loans Table
           pw.Text(
             '2. Active Micro-Loans & Collections Schedule',
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+            style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
@@ -128,7 +128,7 @@ class PdfReportService {
                 l.status.toUpperCase(),
               ];
             }).toList(),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+            headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8.5),
             cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
@@ -198,7 +198,7 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     'LIMS · SMARTPHONE POS & FINANCING',
-                    style: pw.TextStyle(
+                    style: const pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.blue800,
@@ -207,11 +207,11 @@ class PdfReportService {
                   pw.SizedBox(height: 4),
                   pw.Text(
                     'Official Staff Attendance & Timesheet Audit',
-                    style: pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                    style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
                   ),
                   pw.Text(
                     'Branch: $branchName  |  Audit Date: $dateStr',
-                    style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                   ),
                 ],
               ),
@@ -225,9 +225,9 @@ class PdfReportService {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('AUDIT REF: $reportId', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                    pw.Text('AUDIT REF: $reportId', style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
                     pw.Text('TIN: 142-998-314 | VRN: 40-028912-K', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
-                    pw.Text('TRA EFD Station Verified', style: pw.TextStyle(fontSize: 7, color: PdfColors.green800)),
+                    pw.Text('TRA EFD Station Verified', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green800)),
                   ],
                 ),
               ),
@@ -249,13 +249,13 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 16),
 
-          pw.Text('Shift Attendance Ledger', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          pw.Text('Shift Attendance Ledger', style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 8),
 
           // Timesheet Table
           pw.TableHelper.fromTextArray(
             headers: ['Staff Name', 'Role', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Verification & GPS', 'Status'],
-            headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+            headerStyle: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8),
             cellAlignment: pw.Alignment.centerLeft,

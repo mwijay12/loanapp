@@ -38,7 +38,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
       'sku': 'SGS24U-256-TG',
       'verified': true,
       'grad': [const Color(0xFF6366F1), const Color(0xFF4338CA)],
-      'asset': null,
+      'asset': 'assets/images/samsung_galaxy_ultra.png',
       'url': 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
     },
     {
@@ -48,8 +48,18 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
       'sku': 'RN13P-256-MB',
       'verified': true,
       'grad': [const Color(0xFF0EA5E9), const Color(0xFF0369A1)],
-      'asset': null,
+      'asset': 'assets/images/redmi_note_13_pro.png',
       'url': 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
+    },
+    {
+      'id': 4,
+      'name': 'TECNO Camon 30',
+      'qty': 5,
+      'sku': 'TC30-256-SV',
+      'verified': false,
+      'grad': [const Color(0xFF06B6D4), const Color(0xFF0E7490)],
+      'asset': 'assets/images/tecno_camon_30.png',
+      'url': 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
     },
   ];
 
@@ -159,6 +169,24 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
         'sub': 'Silver / Camon',
         'asset': null,
         'url': 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        'title': 'Galaxy S24 Ultra (Halisi)',
+        'sub': 'Picha ya dukani · offline',
+        'asset': 'assets/images/samsung_galaxy_ultra.png',
+        'url': null,
+      },
+      {
+        'title': 'Redmi Note 13 Pro (Halisi)',
+        'sub': 'Picha ya dukani · offline',
+        'asset': 'assets/images/redmi_note_13_pro.png',
+        'url': null,
+      },
+      {
+        'title': 'TECNO Camon 30 (Halisi)',
+        'sub': 'Picha ya dukani · offline',
+        'asset': 'assets/images/tecno_camon_30.png',
+        'url': null,
       },
     ];
 

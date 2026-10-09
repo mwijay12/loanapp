@@ -121,14 +121,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
+                            const Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'LIMS TANZANIA LTD',
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5, color: Color(0xFF0F172A)),
                                 ),
-                                const Text(
+                                Text(
                                   'Loan & Investment Management System Ltd',
                                   style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                                 ),

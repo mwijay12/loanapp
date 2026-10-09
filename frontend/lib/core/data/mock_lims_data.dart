@@ -454,8 +454,10 @@ class MockLimsData {
       soldToday: 3,
       onLoan: 4,
       fav: false,
+      imageAsset: 'assets/images/samsung_galaxy_ultra.png',
       imageUrl: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
       availableImages: const [
+        'assets/images/samsung_galaxy_ultra.png',
         'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
         'assets/images/blue_iphones_duo.png',
       ],
@@ -474,7 +476,12 @@ class MockLimsData {
       soldToday: 8,
       onLoan: 2,
       fav: false,
+      imageAsset: 'assets/images/redmi_note_13_pro.png',
       imageUrl: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
+      availableImages: const [
+        'assets/images/redmi_note_13_pro.png',
+        'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
+      ],
     ),
     ProductItem(
       id: 4,
@@ -490,7 +497,12 @@ class MockLimsData {
       soldToday: 6,
       onLoan: 3,
       fav: false,
+      imageAsset: 'assets/images/tecno_camon_30.png',
       imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80',
+      availableImages: const [
+        'assets/images/tecno_camon_30.png',
+        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80',
+      ],
     ),
     ProductItem(
       id: 5,

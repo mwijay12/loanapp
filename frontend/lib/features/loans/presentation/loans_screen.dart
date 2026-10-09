@@ -242,11 +242,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
             // Header
             Row(
               children: [
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Credit & Borrower Portfolio',
                         style: TextStyle(
                           fontSize: 12,
@@ -254,11 +254,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                           color: AppTheme.ink500,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: const Text(
+                        child: Text(
                           'Borrowers & Active Contracts',
                           style: TextStyle(
                             fontSize: 20,

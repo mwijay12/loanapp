@@ -20,8 +20,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _offlineCache = true;
   String _loanDownPayment = '25%';
   String _mpesaTillNumber = '552219';
-  String _tigoPesaNumber = '884102';
-  String _supportHotline = '0754 892 314';
+  final String _tigoPesaNumber = '884102';
+  final String _supportHotline = '0754 892 314';
   String _paymentGracePeriod = 'Siku 3 (Grace Period)';
   String _escalationPolicy = 'SMS & Piga Simu kwa Mdhamini';
 
