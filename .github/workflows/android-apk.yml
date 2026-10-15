@@ -41,7 +41,19 @@ jobs:
       # Split-per-abi => ~15-25 MB per APK instead of one giant
       # universal APK. Real phones need the arm64-v8a file.
       - name: Build release APK (split per ABI)
-        run: flutter build apk --release --split-per-abi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
+          MERCURY_API_KEYS: ${{ secrets.MERCURY_API_KEYS }}
+        run: |
+          flutter build apk --release --split-per-abi \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=CLOUDINARY_CLOUD_NAME="$CLOUDINARY_CLOUD_NAME" \
+            --dart-define=CLOUDINARY_UPLOAD_PRESET="$CLOUDINARY_UPLOAD_PRESET" \
+            --dart-define=MERCURY_API_KEYS="$MERCURY_API_KEYS"
 
       # NOTE: defaults.run.working-directory does NOT apply to
       # uses: steps, so paths below must include the frontend/ prefix.

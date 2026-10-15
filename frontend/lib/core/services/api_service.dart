@@ -30,6 +30,9 @@ class ApiService {
 
   /// Initializes Supabase & sends a keep-alive heartbeat ping
   Future<void> init() async {
+    if (SupabaseConfig.supabaseUrl.isEmpty || SupabaseConfig.supabaseAnonKey.isEmpty) {
+      return;
+    }
     try {
       await Supabase.initialize(
         url: SupabaseConfig.supabaseUrl,
