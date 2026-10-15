@@ -339,22 +339,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(10),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF1E60F2), size: 18),
                               ),
-                              child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF1E60F2), size: 18),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'In-App Notifications',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                            ),
-                          ],
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'In-App Notifications',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
@@ -478,14 +484,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-                      Text(time, style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8))),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          time,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                  ),
                 ],
               ),
             ),
@@ -584,22 +609,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3F2),
-                        borderRadius: BorderRadius.circular(10),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3F2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.pin_outlined, color: Color(0xFFD92D20), size: 20),
                       ),
-                      child: const Icon(Icons.pin_outlined, color: Color(0xFFD92D20), size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Supervisor Override PIN',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Supervisor Override PIN',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
@@ -793,24 +824,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    isSuperAdmin
-                        ? 'HQ Management Hub'
-                        : (isBranchManager
-                            ? 'Branch Operations'
-                            : (isLoanOfficer
-                                ? 'Credit Operations'
-                                : (isStorekeeper
-                                    ? 'Logistics Operations'
-                                    : 'Counter POS Actions'))),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                      color: Color(0xFF0F172A),
+                  Expanded(
+                    child: Text(
+                      isSuperAdmin
+                          ? 'HQ Management Hub'
+                          : (isBranchManager
+                              ? 'Branch Operations'
+                              : (isLoanOfficer
+                                  ? 'Credit Operations'
+                                  : (isStorekeeper
+                                      ? 'Logistics Operations'
+                                      : 'Counter POS Actions'))),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                   ),
-                  Container(
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE9F2FE),
@@ -831,6 +868,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1E60F2),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     ),
                   ),
                 ],
@@ -1340,21 +1380,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.insights_rounded, size: 18, color: AppTheme.brand600),
-                  SizedBox(width: 8),
-                  Text(
-                    'Branch Operations Pulse',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+              const Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.insights_rounded, size: 18, color: AppTheme.brand600),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Branch Operations Pulse',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Container(
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFF5FE),
@@ -1362,11 +1410,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 child: Text(
                   activeBranch,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.brand600,
                   ),
+                ),
                 ),
               ),
             ],
@@ -1484,14 +1535,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Critical Collections & Arrears',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                const Expanded(
+                  child: Text(
+                    'Critical Collections & Arrears',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 InkWell(
                   onTap: () => context.go('/loans'),
                   child: const Text(
@@ -1877,21 +1933,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.local_fire_department_rounded, size: 18, color: Color(0xFFEF4444)),
-                SizedBox(width: 6),
-                Text(
-                  'Featured Phone Deals & Loan Offers',
-                  style: TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: Color(0xFF0F172A),
+            const Expanded(
+              child: Row(
+                children: [
+                  Icon(Icons.local_fire_department_rounded, size: 18, color: Color(0xFFEF4444)),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Featured Phone Deals & Loan Offers',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
               decoration: BoxDecoration(
@@ -1919,6 +1982,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Hero Card (Today's Sales)
+  // Product renders ship on BLACK backgrounds, so hero art always sits on
+  // a white photo tile to stay visible on the dark hero gradients.
+  Widget _buildHeroPhonePhoto(String asset) {
+    return Container(
+      width: 148,
+      height: 168,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Image.asset(
+        asset,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (context, error, stackTrace) => _buildDualPhoneArtwork(),
+      ),
+    );
+  }
+
   Widget _buildHeroCard(int todaySales, int todayTx) {
     return Container(
       constraints: const BoxConstraints(minHeight: 164),
@@ -2026,18 +2117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: SizedBox(
-                width: 148,
-                height: 168,
-                child: Image.asset(
-                  'assets/images/blue_iphones_duo.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildDualPhoneArtwork();
-                  },
-                ),
-              ),
+              child: _buildHeroPhonePhoto('assets/images/blue_iphones_duo.png'),
             ),
           ],
         ),
@@ -2147,16 +2227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: SizedBox(
-                width: 148,
-                height: 168,
-                child: Image.asset(
-                  'assets/images/samsung_galaxy_ultra.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (context, error, stackTrace) => _buildDualPhoneArtwork(),
-                ),
-              ),
+              child: _buildHeroPhonePhoto('assets/images/samsung_galaxy_ultra.png'),
             ),
           ],
         ),
@@ -2258,16 +2329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: SizedBox(
-                width: 148,
-                height: 168,
-                child: Image.asset(
-                  'assets/images/redmi_note_13_pro.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (context, error, stackTrace) => _buildDualPhoneArtwork(),
-                ),
-              ),
+              child: _buildHeroPhonePhoto('assets/images/redmi_note_13_pro.png'),
             ),
           ],
         ),
@@ -2369,16 +2431,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: SizedBox(
-                width: 148,
-                height: 168,
-                child: Image.asset(
-                  'assets/images/tecno_camon_30.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (context, error, stackTrace) => _buildDualPhoneArtwork(),
-                ),
-              ),
+              child: _buildHeroPhonePhoto('assets/images/tecno_camon_30.png'),
             ),
           ],
         ),
@@ -2480,16 +2533,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: SizedBox(
-                width: 148,
-                height: 168,
-                child: Image.asset(
-                  'assets/images/blue_iphones_duo.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (context, error, stackTrace) => _buildDualPhoneArtwork(),
-                ),
-              ),
+              child: _buildHeroPhonePhoto('assets/images/blue_iphones_duo.png'),
             ),
           ],
         ),
@@ -2518,40 +2562,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF5FE),
-                      borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF5FE),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.manage_accounts_rounded, color: AppTheme.brand600, size: 20),
                     ),
-                    child: const Icon(Icons.manage_accounts_rounded, color: AppTheme.brand600, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Branch Supervisor Hub',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.ink900,
-                        ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Branch Supervisor Hub',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.ink900,
+                            ),
+                          ),
+                          Text(
+                            '$activeBranch · Drawer & Staff Shift Audit',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.ink500,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '$activeBranch · Drawer & Staff Shift Audit',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.ink500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
               InkWell(
                 onTap: () => context.push('/reports'),
@@ -3458,40 +3510,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0EBFF),
-                      borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0EBFF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF7C5CFC), size: 20),
                     ),
-                    child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF7C5CFC), size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Admin Executive Hub',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.ink900,
-                        ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Admin Executive Hub',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.ink900,
+                            ),
+                          ),
+                          Text(
+                            'HQ Multi-Branch Oversight & Audits',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.ink500,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'HQ Multi-Branch Oversight & Audits',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.ink500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
               InkWell(
                 onTap: () => context.push('/admin'),

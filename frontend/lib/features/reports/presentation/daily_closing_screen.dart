@@ -213,21 +213,30 @@ class _DailyClosingScreenState extends ConsumerState<DailyClosingScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 13.5 : 12.5,
-              fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
-              color: isTotal ? AppTheme.ink900 : AppTheme.ink500,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: isTotal ? 13.5 : 12.5,
+                fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
+                color: isTotal ? AppTheme.ink900 : AppTheme.ink500,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isTotal ? 15 : 13,
-              fontWeight: FontWeight.w800,
-              color: valueColor ?? AppTheme.ink900,
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: isTotal ? 15 : 13,
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? AppTheme.ink900,
+              ),
             ),
           ),
         ],

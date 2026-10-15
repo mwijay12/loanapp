@@ -359,27 +359,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Default Down-Payment',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.ink900,
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Default Down-Payment',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.ink900,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Standard customer deposit for phone financing',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.ink500,
+                              Text(
+                                'Standard customer deposit for phone financing',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.ink500,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         DropdownButton<String>(
                           value: _loanDownPayment,
                           underline: const SizedBox(),
@@ -522,34 +529,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Payment Grace Period',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                            ),
-                            Text(
-                              'Muda wa msamaha kabla ya hatua za madai kuanza',
-                              style: TextStyle(fontSize: 11, color: AppTheme.ink500),
-                            ),
-                          ],
-                        ),
-                        DropdownButton<String>(
-                          value: _paymentGracePeriod,
-                          underline: const SizedBox(),
-                          items: ['Siku 1', 'Siku 3 (Grace Period)', 'Siku 5', 'Siku 7'].map((val) {
-                            return DropdownMenuItem(
-                              value: val,
-                              child: Text(
-                                val,
-                                style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
+                        const Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Payment Grace Period',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                               ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) setState(() => _paymentGracePeriod = val);
-                          },
+                              Text(
+                                'Muda wa msamaha kabla ya hatua za madai kuanza',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11, color: AppTheme.ink500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: DropdownButton<String>(
+                            value: _paymentGracePeriod,
+                            isExpanded: true,
+                            underline: const SizedBox(),
+                            items: ['Siku 1', 'Siku 3 (Grace Period)', 'Siku 5', 'Siku 7'].map((val) {
+                              return DropdownMenuItem(
+                                value: val,
+                                child: Text(
+                                  val,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) setState(() => _paymentGracePeriod = val);
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -560,38 +581,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Arrears Escalation Policy',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                            ),
-                            Text(
-                              'Hatua za kisheria kwa mujibu wa PDPA & Mkopo',
-                              style: TextStyle(fontSize: 11, color: AppTheme.ink500),
-                            ),
-                          ],
-                        ),
-                        DropdownButton<String>(
-                          value: _escalationPolicy,
-                          underline: const SizedBox(),
-                          items: [
-                            'SMS & Piga Simu kwa Mdhamini',
-                            'Notisi Rasmi ya Madai (Legal Notice)',
-                            'Kufuatilia Handset kwa Makubaliano',
-                          ].map((val) {
-                            return DropdownMenuItem(
-                              value: val,
-                              child: Text(
-                                val,
-                                style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
+                        const Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Arrears Escalation Policy',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                               ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) setState(() => _escalationPolicy = val);
-                          },
+                              Text(
+                                'Hatua za kisheria kwa mujibu wa PDPA & Mkopo',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11, color: AppTheme.ink500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: DropdownButton<String>(
+                            value: _escalationPolicy,
+                            isExpanded: true,
+                            underline: const SizedBox(),
+                            items: [
+                              'SMS & Piga Simu kwa Mdhamini',
+                              'Notisi Rasmi ya Madai (Legal Notice)',
+                              'Kufuatilia Handset kwa Makubaliano',
+                            ].map((val) {
+                              return DropdownMenuItem(
+                                value: val,
+                                child: Text(
+                                  val,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) setState(() => _escalationPolicy = val);
+                            },
+                          ),
                         ),
                       ],
                     ),

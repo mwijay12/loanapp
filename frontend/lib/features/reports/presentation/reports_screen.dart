@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -66,32 +67,40 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: const Icon(Icons.verified_outlined, color: Color(0xFF1E60F2), size: 22),
                         ),
-                        child: const Icon(Icons.verified_outlined, color: Color(0xFF1E60F2), size: 22),
-                      ),
-                      const SizedBox(width: 10),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Official Financial Audit',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Official Financial Audit',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              ),
+                              Text(
+                                'DOC-FIN-2026-10-8841 · EFD Signed',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'DOC-FIN-2026-10-8841 · EFD Signed',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 22),
@@ -121,29 +130,40 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'LIMS TANZANIA LTD',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5, color: Color(0xFF0F172A)),
-                                ),
-                                Text(
-                                  'Loan & Investment Management System Ltd',
-                                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: const Color(0xFF10B981)),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'LIMS TANZANIA LTD',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5, color: Color(0xFF0F172A)),
+                                  ),
+                                  Text(
+                                    'Loan & Investment Management System Ltd',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                                  ),
+                                ],
                               ),
-                              child: const Text(
-                                'TRA VERIFIED',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF065F46)),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF10B981)),
+                                ),
+                                child: const Text(
+                                  'TRA VERIFIED',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF065F46)),
+                                ),
                               ),
                             ),
                           ],
@@ -276,13 +296,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         child: Text('Download PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                       ),
                       onPressed: () async {
+                        final screenContext = context;
                         Navigator.pop(ctx);
+                        await AppPermissionsService.ensureStorage();
+                        if (!screenContext.mounted) return;
                         final activeBranch = ref.read(activeBranchProvider);
                         final products = ref.read(inventoryProvider);
                         final loans = ref.read(loansProvider);
                         final totalStock = products.fold<int>(0, (sum, p) => sum + p.stock);
 
-                        LimsToast.show(context, 'Generating official PDF document...', isSuccess: true);
+                        LimsToast.show(screenContext, 'Generating official PDF document...', isSuccess: true);
                         try {
                           await PdfReportService.generateAndDownloadFinancialReport(
                             branchName: activeBranch,
@@ -292,8 +315,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                             totalStock: totalStock,
                           );
                         } catch (e) {
-                          if (context.mounted) {
-                            LimsToast.show(context, 'PDF generation error: $e', isError: true);
+                          if (screenContext.mounted) {
+                            LimsToast.show(screenContext, 'PDF generation error: $e', isError: true);
                           }
                         }
                       },
@@ -318,9 +341,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-          Text(value, style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A), fontWeight: FontWeight.w700)),
+          Expanded(
+            child: Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A), fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
@@ -331,21 +366,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: isBold || isHighlight ? FontWeight.w800 : FontWeight.w500,
-              color: isHighlight ? const Color(0xFF10B981) : const Color(0xFF1E293B),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: isBold || isHighlight ? FontWeight.w800 : FontWeight.w500,
+                color: isHighlight ? const Color(0xFF10B981) : const Color(0xFF1E293B),
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              color: isHighlight ? const Color(0xFF10B981) : (isBold ? const Color(0xFF0F172A) : const Color(0xFF334155)),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                color: isHighlight ? const Color(0xFF10B981) : (isBold ? const Color(0xFF0F172A) : const Color(0xFF334155)),
+              ),
             ),
           ),
         ],
@@ -567,7 +611,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
 
   Widget _buildPlTab(int todaySales, int grossProfit) {
     return ListView(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         // Daily Close Quick Action Banner
         Container(
@@ -644,7 +688,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
 
   Widget _buildLoanBookTab(int totalLoans, int totalCollected, double collectionRate, List<dynamic> overdue, List<dynamic> performingLoans) {
     return ListView(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         Container(
           padding: const EdgeInsets.all(16),
@@ -659,11 +703,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Loan Portfolio Recovery', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6)),
-                    child: Text('${(collectionRate * 100).toStringAsFixed(0)}% on track', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                  const Expanded(
+                    child: Text(
+                      'Loan Portfolio Recovery',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(6)),
+                      child: Text(
+                        '${(collectionRate * 100).toStringAsFixed(0)}% on track',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -739,7 +798,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
 
   Widget _buildInventoryAssetTab(int totalPhones, int costVal, int retailVal, List<dynamic> topProducts) {
     return ListView(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         Container(
           padding: const EdgeInsets.all(16),

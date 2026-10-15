@@ -390,31 +390,39 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                         Flexible(
                           child: Text(
                             _model,
+                            maxLines: 1,
                             style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        _buildStatusBadge(),
+                        const SizedBox(width: 8),
+                        Flexible(child: _buildStatusBadge()),
                       ],
                     ),
                     const SizedBox(height: 3),
                     Text(
                       _variant,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 12, color: AppTheme.ink500, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Text(
-                            'IMEI: $_imei',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Text(
+                              'IMEI: $_imei',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -465,18 +473,35 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-      child: Text(label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: text)),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: text),
+      ),
     );
   }
 
   Widget _buildParamItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.ink500)),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
-      ],
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+          ),
+        ],
+      ),
     );
   }
 
@@ -499,36 +524,45 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isOverdue ? const Color(0xFFFFEDF1) : const Color(0xFFE9F2FE),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      isOverdue ? Icons.warning_amber_rounded : Icons.verified_user_rounded,
-                      color: isOverdue ? AppTheme.errorColor : AppTheme.brand600,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Hire-Purchase Recovery & Actions',
-                        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isOverdue ? const Color(0xFFFFEDF1) : const Color(0xFFE9F2FE),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      Text(
-                        isOverdue ? 'Rejesho Limechelewa · Fuatilia Mkopaji & Mdhamini' : 'Mkopo Unaendelea Vizuri · Rekodi ya Kisheria',
-                        style: TextStyle(fontSize: 11.5, color: isOverdue ? AppTheme.errorColor : AppTheme.ink500, fontWeight: FontWeight.w600),
+                      child: Icon(
+                        isOverdue ? Icons.warning_amber_rounded : Icons.verified_user_rounded,
+                        color: isOverdue ? AppTheme.errorColor : AppTheme.brand600,
+                        size: 20,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Hire-Purchase Recovery & Actions',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                          ),
+                          Text(
+                            isOverdue ? 'Rejesho Limechelewa · Fuatilia Mkopaji & Mdhamini' : 'Mkopo Unaendelea Vizuri · Rekodi ya Kisheria',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11.5, color: isOverdue ? AppTheme.errorColor : AppTheme.ink500, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -628,9 +662,13 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Mteja / Taarifa za Mkopo',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+              const Expanded(
+                child: Text(
+                  'Mteja / Taarifa za Mkopo',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                ),
               ),
               if (_loanId != null)
                 InkWell(
@@ -675,9 +713,19 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_borrowerName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
+                    Text(
+                      _borrowerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                    ),
                     const SizedBox(height: 2),
-                    Text('Simu: $_borrowerPhone · NIDA: $_borrowerNida', style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500)),
+                    Text(
+                      'Simu: $_borrowerPhone · NIDA: $_borrowerNida',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+                    ),
                   ],
                 ),
               ),
@@ -687,24 +735,37 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Salio Lililobaki', style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
-                  const SizedBox(height: 2),
-                  Text(
-                    'TZS ${LimsFormatters.formatNumber(_remainingBalance)}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.brand600),
-                  ),
-                ],
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Salio Lililobaki', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'TZS ${LimsFormatters.formatNumber(_remainingBalance)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.brand600),
+                    ),
+                  ],
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text('Tarehe ya Rejesho', style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
-                  const SizedBox(height: 2),
-                  Text(_nextDueDate, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
-                ],
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('Tarehe ya Rejesho', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
+                    const SizedBox(height: 2),
+                    Text(
+                      _nextDueDate,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -747,11 +808,26 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Hali ya Waranti (Warranty)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: const Color(0xFFE7F8F0), borderRadius: BorderRadius.circular(8)),
-                child: Text('Siku $_warrantyDaysLeft zimebaki', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF12B76A))),
+              const Expanded(
+                child: Text(
+                  'Hali ya Waranti (Warranty)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: const Color(0xFFE7F8F0), borderRadius: BorderRadius.circular(8)),
+                  child: Text(
+                    'Siku $_warrantyDaysLeft zimebaki',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF12B76A)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -816,13 +892,32 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
-              Text(sub, style: const TextStyle(fontSize: 11, color: AppTheme.ink500)),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+              ),
+              Text(
+                sub,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
+              ),
               const SizedBox(height: 10),
             ],
           ),
         ),
-        Text(date, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink400)),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            date,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink400),
+          ),
+        ),
       ],
     );
   }

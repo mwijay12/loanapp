@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/app_permissions_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,6 +19,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passCtrl = TextEditingController(text: 'demo1234');
 
   @override
+  void initState() {
+    super.initState();
+    // Mtumiaji akiruka onboarding, ruhusa zinaombwa hapa (kimya, bila sheet)
+    // ili zisiwakatishe baadaye wakiwa kazini.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      AppPermissionsService.requestEarlyPermissions(
+        context,
+        showRationale: false,
+      );
+    });
+  }
+
+  @override
   void dispose() {
     _phoneCtrl.dispose();
     _passCtrl.dispose();
@@ -25,19 +41,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _doLogin() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 700));
+    final user = await ApiService().login(_phoneCtrl.text, _passCtrl.text);
     if (mounted) {
       setState(() => _isLoading = false);
-      if (_selectedRole == 'admin') {
+      final role = (user['role'] as String? ?? '').toLowerCase();
+      final isAdmin = _selectedRole == 'admin' || role.contains('admin');
+      if (isAdmin) {
         context.go('/admin');
       } else {
         context.go('/home');
       }
+      final name = user['name'] ?? 'User';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppTheme.ink900,
-          content: Text(_selectedRole == 'admin' ? 'Welcome to Admin Console' : 'Welcome back, Neema'),
+          content: Text(isAdmin ? 'Welcome to Admin Console, $name' : 'Welcome back, $name'),
         ),
       );
     }

@@ -303,14 +303,23 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500)),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-              color: isBold ? AppTheme.brand600 : AppTheme.ink900,
+          Expanded(
+            child: Text(label, style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500)),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+                color: isBold ? AppTheme.brand600 : AppTheme.ink900,
+              ),
             ),
           ),
         ],
@@ -788,16 +797,26 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Repayment Status & Balance',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+              const Expanded(
+                child: Text(
+                  'Repayment Status & Balance',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                ),
               ),
-              Text(
-                '${loan.paid}% Repaid',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.brand600,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '${loan.paid}% Repaid',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.brand600,
+                  ),
                 ),
               ),
             ],
@@ -849,16 +868,32 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
-                  children: [
-                    Icon(Icons.calendar_month_rounded, size: 16, color: AppTheme.brand600),
-                    SizedBox(width: 6),
-                    Text('Weekly Due:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.ink700)),
-                  ],
+                const Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.calendar_month_rounded, size: 16, color: AppTheme.brand600),
+                      SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Weekly Due:',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.ink700),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Text(
-                  '${loan.formattedWeeklyInstallment} / week (${loan.due})',
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.brand600),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    '${loan.formattedWeeklyInstallment} / week (${loan.due})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.brand600),
+                  ),
                 ),
               ],
             ),
@@ -978,15 +1013,21 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.badge_rounded, color: AppTheme.brand600, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Borrower Identity & KYC Details',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-                  ),
-                ],
+              const Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_rounded, color: AppTheme.brand600, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Borrower Identity & KYC Details',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (ref.watch(userRoleProvider) != 'Counter Cashier')
                 InkWell(

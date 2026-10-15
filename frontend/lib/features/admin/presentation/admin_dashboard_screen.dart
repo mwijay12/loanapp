@@ -303,26 +303,35 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Network revenue · this week',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.ink900,
+                      const Expanded(
+                        child: Text(
+                          'Network revenue · this week',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.ink900,
+                          ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.brand100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'TZS 126.8M',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.brand600,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.brand100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'TZS 126.8M',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.brand600,
+                            ),
                           ),
                         ),
                       ),
@@ -661,27 +670,34 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Staff Directory & Credentials',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.ink900,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Staff Directory & Credentials',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.ink900,
+                    ),
                   ),
-                ),
-                Text(
-                  '${staffList.length} staff registered across branches',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.ink500,
+                  Text(
+                    '${staffList.length} staff registered across branches',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.ink500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             ElevatedButton.icon(
               onPressed: _showAddStaffModal,
               icon: const Icon(Icons.person_add_rounded, size: 16),
@@ -690,6 +706,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 backgroundColor: AppTheme.brand600,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
@@ -882,28 +900,40 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.phone_rounded, size: 13, color: AppTheme.ink500),
-                    const SizedBox(width: 6),
-                    Text(
-                      s.phone,
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.ink700),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3E4),
-                    borderRadius: BorderRadius.circular(6),
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.phone_rounded, size: 13, color: AppTheme.ink500),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          s.phone,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.ink700),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    'Supervisor PIN: ${s.supervisorPin}',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFB54708),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3E4),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Supervisor PIN: ${s.supervisorPin}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFB54708),
+                      ),
                     ),
                   ),
                 ),
@@ -1442,24 +1472,53 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Shift Custodian (Active Staff):', style: TextStyle(fontSize: 12, color: AppTheme.ink500)),
-                      Text('David Erick Mwijage', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
+                      Expanded(
+                        child: Text('Shift Custodian (Active Staff):', style: TextStyle(fontSize: 12, color: AppTheme.ink500)),
+                      ),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'David Erick Mwijage',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(height: 16, color: Color(0xFFEDF2F7)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Today's Net Sales:", style: TextStyle(fontSize: 12, color: AppTheme.ink500)),
-                      Text(b['sales'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.brand600)),
+                      const Expanded(child: Text("Today's Net Sales:", style: TextStyle(fontSize: 12, color: AppTheme.ink500))),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          b['sales'] as String,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.brand600),
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(height: 16, color: Color(0xFFEDF2F7)),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Cash in Branch Safe / Drawer:', style: TextStyle(fontSize: 12, color: AppTheme.ink500)),
-                      Text('TZS 3,840,000', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF12B76A))),
+                      Expanded(child: Text('Cash in Branch Safe / Drawer:', style: TextStyle(fontSize: 12, color: AppTheme.ink500))),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'TZS 3,840,000',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF12B76A)),
+                        ),
+                      ),
                     ],
                   ),
                 ],

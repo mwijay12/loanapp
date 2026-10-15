@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ui_kit.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -99,6 +101,18 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   void _runScan() async {
     if (_isScanning) return;
+    // Kamera lazima iruhusiwe kabla ya scan (runtime permission).
+    final allowed = await AppPermissionsService.ensureCamera(context);
+    if (!allowed) {
+      if (mounted) {
+        LimsToast.show(
+          context,
+          'Camera permission required to scan IMEI barcodes.',
+          isError: true,
+        );
+      }
+      return;
+    }
     setState(() {
       _isScanning = true;
       _hasResult = false;
@@ -302,21 +316,27 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                   if (_imeiCtrl.text.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 18, color: AppTheme.ink400),
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: EdgeInsets.zero,
                       onPressed: () {
                         _imeiCtrl.clear();
                         setState(() {});
                       },
                     ),
+                  const SizedBox(width: 4),
                   ElevatedButton(
                     onPressed: () => _lookupImei(_imeiCtrl.text),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
                     ),
-                    child: const Text('Lookup', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    child: const Text('Lookup', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -465,19 +485,26 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     // Status Pill at bottom of viewfinder
                     Positioned(
                       bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                        ),
-                        child: Text(
-                          _statusText,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                      left: 12,
+                      right: 12,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                          ),
+                          child: Text(
+                            _statusText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -526,6 +553,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                             children: [
                               Text(
                                 _deviceName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w900,
@@ -535,6 +564,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                               const SizedBox(height: 2),
                               Text(
                                 _deviceVariant,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -544,6 +575,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                               const SizedBox(height: 4),
                               Text(
                                 'IMEI: $_imeiNumber',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'monospace',
@@ -561,7 +594,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     const SizedBox(height: 12),
 
                     // Velocity & Ageing Intelligence Badges
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         // Ageing Badge
                         Container(
@@ -593,8 +628,6 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-
                         // Stock Status Badge
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
@@ -626,20 +659,24 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Column(
-                            children: [
-                              const Text('Cash Price', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 2),
-                              Text('TZS ${_formatNumber(_cashPrice)}', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: AppTheme.brand600)),
-                            ],
+                          Flexible(
+                            child: Column(
+                              children: [
+                                const Text('Cash Price', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 2),
+                                Text('TZS ${_formatNumber(_cashPrice)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: AppTheme.brand600)),
+                              ],
+                            ),
                           ),
                           Container(width: 1, height: 26, color: const Color(0xFFCBD5E1)),
-                          Column(
-                            children: [
-                              const Text('Loan Total', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 2),
-                              Text('TZS ${_formatNumber(_loanPrice)}', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF7C5CFC))),
-                            ],
+                          Flexible(
+                            child: Column(
+                              children: [
+                                const Text('Loan Total', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 2),
+                                Text('TZS ${_formatNumber(_loanPrice)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF7C5CFC))),
+                              ],
+                            ),
                           ),
                         ],
                       ),

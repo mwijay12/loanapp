@@ -673,6 +673,9 @@ class LimsBottomSheet extends StatelessWidget {
       enableDrag: enableDrag,
       backgroundColor: Colors.transparent,
       elevation: 0,
+      useSafeArea: true,
+      // Tablet/desktop: sheet inabana katikati badala ya kunyoosha.
+      constraints: const BoxConstraints(maxWidth: 640),
       builder: (ctx) {
         if (builder != null) return builder(ctx);
         return LimsBottomSheet(
@@ -688,79 +691,101 @@ class LimsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.rXl)),
-        boxShadow: AppTheme.shadowLg,
+    // Sheet haivunji kamwe: content ndefu inascroll ndani (max 92% ya screen),
+    // keyboard inapoinuka sheet inapanda (viewInsets), hakuna overflow.
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 10),
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppTheme.sheetHandle,
-                  borderRadius: BorderRadius.circular(99),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.rXl)),
+          boxShadow: AppTheme.shadowLg,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 10),
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppTheme.sheetHandle,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
               ),
-            ),
-            if (title != null) ...[
-              const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title!,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
-                              color: AppTheme.ink900,
-                            ),
-                          ),
-                          if (subtitle != null) ...[
-                            const SizedBox(height: 2),
+              if (title != null) ...[
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              subtitle!,
+                              title!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 13,
-                                color: AppTheme.ink500,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                                color: AppTheme.ink900,
                               ),
                             ),
+                            if (subtitle != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle!,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.ink500,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    if (trailing != null) trailing!,
-                    if (showClose)
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20, color: AppTheme.ink500),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                  ],
+                      if (trailing != null) ...[
+                        const SizedBox(width: 8),
+                        Flexible(child: trailing!),
+                      ],
+                      if (showClose)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20, color: AppTheme.ink500),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: AppTheme.divider),
+              ],
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: Padding(
+                    padding: padding,
+                    child: child,
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              const Divider(height: 1, color: AppTheme.divider),
             ],
-            Padding(
-              padding: padding,
-              child: child,
-            ),
-          ],
+          ),
         ),
       ),
     );

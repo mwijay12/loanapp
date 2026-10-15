@@ -845,29 +845,36 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Kariakoo Branch',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.ink500,
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Kariakoo Branch',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.ink500,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Inventory',
-                      style: TextStyle(
+                      SizedBox(height: 2),
+                      Text(
+                        'Inventory',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.4,
                         color: AppTheme.ink900,
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: _showAddPhoneModal,
                   icon: const Icon(Icons.add_rounded, size: 18),
@@ -1251,30 +1258,37 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Add Phone to Stock',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.ink900,
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add Phone to Stock',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.ink900,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Serialized Handset Intake · Kariakoo Hub',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: AppTheme.ink500,
-                              fontWeight: FontWeight.w500,
+                            SizedBox(height: 2),
+                            Text(
+                              'Serialized Handset Intake · Kariakoo Hub',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: AppTheme.ink500,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close_rounded, color: AppTheme.ink500),
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -1288,12 +1302,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           children: [
                             Icon(Icons.bolt_rounded, size: 16, color: Color(0xFFEAB308)),
                             SizedBox(width: 5),
-                            Text(
-                              'Quick Setup Presets (Jaza Taarifa Haraka):',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.ink700,
+                            Expanded(
+                              child: Text(
+                                'Quick Setup Presets (Jaza Taarifa Haraka):',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.ink700,
+                                ),
                               ),
                             ),
                           ],
@@ -1651,17 +1669,24 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Serialized IMEI Tracking',
-                                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE7F8F0),
-                                      borderRadius: BorderRadius.circular(6),
+                                  const Expanded(
+                                    child: Text(
+                                      'Serialized IMEI Tracking',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                                     ),
-                                    child: const Text('Luhn Validated', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF12B76A))),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE7F8F0),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text('Luhn Validated', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF12B76A))),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1755,20 +1780,30 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Unit Profit: TZS ${profit.toStringAsFixed(0)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: profit >= 0 ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                              Flexible(
+                                child: Text(
+                                  'Unit Profit: TZS ${profit.toStringAsFixed(0)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: profit >= 0 ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                                  ),
                                 ),
                               ),
-                              Text(
-                                'Margin: ${margin.toStringAsFixed(1)}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: profit >= 0 ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'Margin: ${margin.toStringAsFixed(1)}%',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: profit >= 0 ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                                  ),
                                 ),
                               ),
                             ],

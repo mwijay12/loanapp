@@ -126,9 +126,14 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildRouteBox('From', 'Mbezi Branch'),
-                      const Icon(Icons.arrow_forward_rounded, color: AppTheme.brand600, size: 20),
-                      _buildRouteBox('To', _selectedDestination),
+                      Expanded(child: _buildRouteBox('From', 'Mbezi Branch')),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(Icons.arrow_forward_rounded, color: AppTheme.brand600, size: 20),
+                      ),
+                      Expanded(
+                        child: _buildRouteBox('To', _selectedDestination, alignRight: true),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -311,9 +316,9 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     );
   }
 
-  Widget _buildRouteBox(String label, String branch) {
+  Widget _buildRouteBox(String label, String branch, {bool alignRight = false}) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -326,6 +331,9 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         const SizedBox(height: 2),
         Text(
           branch,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: alignRight ? TextAlign.right : TextAlign.left,
           style: const TextStyle(
             fontSize: 13.5,
             fontWeight: FontWeight.w800,

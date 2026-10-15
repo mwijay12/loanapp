@@ -1,0 +1,44 @@
+name: Supabase Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Run every 2 days at 06:00 UTC to permanently prevent Supabase 7-day free-tier pause
+    - cron: '0 6 */2 * *'
+  workflow_dispatch: # Allow manual trigger anytime
+
+jobs:
+  heartbeat:
+    name: Ping & Keep Supabase Active
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive Read & Write to Supabase
+        run: |
+          echo "Sending keep-alive ping and write to Supabase (Project: fzlykkwgkydswvnlryhk)..."
+          
+          SUPABASE_URL="https://fzlykkwgkydswvnlryhk.supabase.co"
+          ANON_KEY="${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHlra3dna3lkc3d2bmxyeWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNTA1NTAsImV4cCI6MjEwNzYyNjU1MH0.5WsVDMjEPBRDIlYcUge9anedGq59p3_6Ewxfso6LWGk' }}"
+          
+          # 1. Read Query (Products)
+          READ_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET \
+            "$SUPABASE_URL/rest/v1/products?select=id&limit=1" \
+            -H "apikey: $ANON_KEY" \
+            -H "Authorization: Bearer $ANON_KEY")
+          echo "Read status: $READ_CODE"
+          
+          # 2. Write Query (Record Heartbeat in heartbeat_pings table)
+          WRITE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}\n" -X POST \
+            "$SUPABASE_URL/rest/v1/heartbeat_pings" \
+            -H "apikey: $ANON_KEY" \
+            -H "Authorization: Bearer $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"source": "github-actions-cron", "metadata": {"repo": "mwijay12/loanapp", "author": "David Erick Mwijage"}}')
+          
+          STATUS=$(echo "$WRITE_RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          echo "Write status: $STATUS"
+          
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+            echo "SUCCESS: Supabase heartbeat and database write successful! 7-day pause counter reset."
+          else
+            echo "Notice: Keep-alive ping executed (Read: $READ_CODE, Write: $STATUS)."
+          fi

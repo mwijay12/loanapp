@@ -245,20 +245,36 @@ class FeaturedPhoneDealCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Right floating smartphone hardware presentation
+                    // Right floating smartphone hardware presentation.
+                    // NOTE: product renders ship on BLACK backgrounds, so they
+                    // sit on a white photo tile to stay visible on the dark card.
                     Expanded(
                       flex: 8,
                       child: Center(
-                        child: deal.imageAsset != null && deal.imageAsset!.isNotEmpty
-                            ? SizedBox(
-                                height: 145,
-                                child: Image.asset(
+                        child: Container(
+                          height: 148,
+                          width: 132,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.35),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: deal.imageAsset != null && deal.imageAsset!.isNotEmpty
+                              ? Image.asset(
                                   deal.imageAsset!,
                                   fit: BoxFit.contain,
                                   errorBuilder: (_, __, ___) => _buildFramedDevice(deal),
-                                ),
-                              )
-                            : _buildFramedDevice(deal),
+                                )
+                              : _buildFramedDevice(deal),
+                        ),
                       ),
                     ),
                   ],

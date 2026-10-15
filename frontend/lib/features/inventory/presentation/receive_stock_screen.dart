@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
@@ -75,7 +76,14 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
           children: [
             Icon(Icons.qr_code_scanner_rounded, color: AppTheme.brand600),
             SizedBox(width: 8),
-            Text('Scan / Intake IMEI', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            Expanded(
+              child: Text(
+                'Scan / Intake IMEI',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -238,7 +246,13 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          final allowed = await AppPermissionsService.ensureCamera(context);
+                          if (!mounted) return;
+                          if (!allowed) {
+                            LimsToast.show(context, 'Camera permission required kupiga picha.', isError: true);
+                            return;
+                          }
                           setModalState(() {
                             currentAsset = 'assets/images/blue_iphones_duo.png';
                             currentUrl = null;
@@ -257,7 +271,9 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          await AppPermissionsService.ensureStorage();
+                          if (!mounted) return;
                           setModalState(() {
                             currentAsset = null;
                             currentUrl = 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80';
@@ -657,16 +673,21 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.verified_rounded, size: 14, color: AppTheme.successColor),
                 const SizedBox(width: 4),
-                Text(
-                  '24 units in PO · ${_scannedImeis.length} IMEIs scanned & verified',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.ink700,
+                Flexible(
+                  child: Text(
+                    '24 units in PO · ${_scannedImeis.length} IMEIs scanned & verified',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.ink700,
+                    ),
                   ),
                 ),
               ],

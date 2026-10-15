@@ -29,6 +29,8 @@ class AppShell extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: 640),
       builder: (ctx) {
         final List<Widget> opButtons = [];
 
@@ -155,28 +157,43 @@ class AppShell extends ConsumerWidget {
           ]);
         }
 
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.92,
           ),
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD4E0F0),
-                    borderRadius: BorderRadius.circular(99),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              14,
+              20,
+              20 + MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4E0F0),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
-
+                const SizedBox(height: 18),
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
               // Active Role Scope Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -206,6 +223,8 @@ class AppShell extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         'Role: $currentRole',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -215,9 +234,14 @@ class AppShell extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      isCashier ? 'Till Scope' : (isStorekeeper ? 'Warehouse' : 'Full Admin'),
-                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        isCashier ? 'Till Scope' : (isStorekeeper ? 'Warehouse' : 'Full Admin'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                      ),
                     ),
                   ],
                 ),
@@ -316,7 +340,12 @@ class AppShell extends ConsumerWidget {
                   context.go('/login');
                 },
               ),
-            ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

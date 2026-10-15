@@ -1,105 +1,118 @@
-# Loan & Inventory Management System
+# LIMS — Loan & Inventory Management System (Tanzania)
 
-A Flutter mobile application for managing mobile phone loans, inventory, sales, and attendance across multiple branches (TZ). English + Kiswahili.
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
+[![Cloudinary](https://img.shields.io/badge/Cloudinary-Media%20CDN-3448C5?logo=cloudinary)](https://cloudinary.com)
+[![License](https://img.shields.io/badge/Author-David%20Erick%20Mwijage-1B6EF3)](https://github.com/mwijay12)
 
-## Download the app (APK)
+Enterprise mobile phone retail loan, hire-purchase credit, dual-IMEI inventory ledger, and multi-branch attendance system tailored for Tanzanian smartphone dealerships (Kariakoo, Mbezi, Arusha, Mwanza, Dodoma). Full English + Kiswahili support.
 
-No need to build locally — GitHub builds the release automatically:
+---
 
-- **Latest release:** `https://github.com/godfrey125/loan-investment/releases/latest`
-- Download **`app-arm64-v8a-release.apk`** (for real phones, ~15–25 MB).
-- Every push to `main` also builds APKs under the **Actions** tab → latest run → Artifacts.
-- New release: `git tag -a vX.Y.Z -m "..."` + `git push origin vX.Y.Z`.
+## 🌟 Lead Architecture & Maintainer
+* **Architect & Developer:** David Erick Mwijage ([@mwijay12](https://github.com/mwijay12))
+* **Repository:** [https://github.com/mwijay12/loanapp](https://github.com/mwijay12/loanapp)
+* **Target Environment:** Tanzania Mobile Phone Retail & Credit Financing
 
-## Frontend work done (`frontend/`)
+---
 
-### Screens & flows (`lib/features/`)
+## 🚀 Key Architectural Capabilities
 
-| Area | What was built |
-|---|---|
-| Onboarding | 3-slide intro (stock / IMEI / loans) → login |
-| Auth | Phone + password login, branch/admin toggle → home or admin console |
-| Home dashboard | Branch selector, role switcher, sync status |
-| Stock | Searchable inventory, filters (phones / accessories / low stock / on-loan), product detail bottom-sheet |
-| Loans | Loan list (all / overdue / current / locked), disburse-loan KYC sheet |
-| Borrower details | 3-tab borrower view, M-Pesa record-payment modal, masked NIDA |
-| Sell / Loan (POS) | SELL vs LOAN form, borrower + guarantor KYC, deposit / PIN / repayment schedule breakdown |
-| Receive stock | Inbound verification, preset IMEIs/items, scan-IMEI dialog |
-| Transfers | Inter-branch transfer (destination + qty), decrements inventory |
-| Scanner | Animated laser viewfinder, manual IMEI entry, sample phones with cash/loan prices |
-| IMEI inspector | IMEI lookup: model / serial / status / borrower / balance / warranty → loan details |
-| Attendance | Live clock, GPS clock-in/out with **300–350 m branch geofence** (Super Admin exempt) |
-| Reports | Today / Week / Month tabs + official **PDF preview** sheet |
-| Daily closing | Z-report: drawer count vs expected, logs to activity feed |
-| AI assistant | Mercury 2.5 chat, suggestion chips, history + animated mascot card on home |
-| Admin console | HQ dashboard, weekly bar chart, branch list, staff + RBAC tabs, branch performance view |
-| Notifications | Localized notification center, "mark all read" |
-| Settings | Branch / biometrics / SMS / receipt toggles, M-Pesa + Tigo numbers, language switch |
-| Account | Profile, English/Kiswahili selector |
+1. **Credit-First Loan Engine:**
+   - 20-digit NIDA validation, biometric & ID scan verification, guarantor mapping.
+   - Flexible repayment schedules (daily, weekly, monthly installments via M-Pesa Till/Paybill, Airtel Money, Tigo Pesa).
+   - Dynamic interest & penalty calculations with automated overdue flagging.
 
-### Platform / UX foundations (`lib/core/`)
+2. **Serialized Dual-IMEI Inventory & Ledger:**
+   - Primary & secondary IMEI tracking to eliminate anti-carrier bypass.
+   - Barcode laser viewfinder scanner for instant stock-in, transfers, and sales.
+   - High-resolution phone renders hosted on **Cloudinary CDN** (`fbwhgkbe`).
 
-- **Routing** (`core/routing/app_router.dart`) — GoRouter + `AppShell` bottom-nav shell: `/home /stock /loans /reports /account`, plus `/ai /scan /sell-loan /imei-inspector /receive /transfer /attendance /daily-closing /admin /branch-performance /notifications /settings /loan-details /onboarding /login`.
-- **State** (`core/data/inventory_provider.dart`) — Riverpod: user role, active branch, inventory, loans, activities, attendance + derived totals.
-- **Design system** (`core/theme/app_theme.dart`, `core/widgets/ui_kit.dart`) — brand tokens (blue `#1B6EF3` / `#0B4FCE`), `LimsCard`, stat tiles, gradient hero, status pills, bottom sheets, toasts, loading/empty/error states.
-- **Two languages** — full `en`/`sw` localization (`core/theme/app_localizations.dart`), switchable in Settings/Account.
-- **Role-based access** — Super Admin / Manager / Officer / Storekeeper / Cashier gates admin console, stock reception, NIDA unmasking.
-- **Services** — geofenced attendance GPS (`location_service.dart`), A4 financial PDFs (`pdf_report_service.dart` via `pdf`/`printing`), call/WhatsApp/SMS collections with +255 sanitizing (`telecom_service.dart`), Mercury AI chat (`mercury_ai_service.dart`).
-- **Data layer** — `MockLimsRepository` (quotes, loan schedules, POS) behind `LimsRepository`, ready to swap for Supabase (`api_service.dart` has the TODO).
+3. **Supabase Cloud Backend & Database:**
+   - PostgreSQL tables: `profiles`, `products`, `loans`, `branches`, `activities`, `attendance`, `heartbeat_pings`.
+   - Live Supabase authentication with role-based access control (Super Admin vs Branch Staff).
 
-## Project structure
+4. **Permanent Supabase Keep-Alive & Heartbeat Automation:**
+   - Supabase free-tier automatically pauses projects after 7 days of inactivity.
+   - **Automated Solution:** GitHub Action (`.github/workflows/supabase-heartbeat.yml`) runs every 2 days to ping and write an active heartbeat entry into `heartbeat_pings`.
+   - **In-App Touch:** `ApiService().sendHeartbeatPing()` executes upon mobile app launch.
+   - **Local Script:** `run_heartbeat.bat` & `scripts/supabase_heartbeat.ps1` for on-demand keep-alive triggers.
 
-```
-loan-investment/
-├── frontend/          # Flutter mobile application
+5. **Cloudinary Media Storage:**
+   - Cloud Name: `fbwhgkbe`
+   - Unsigned Preset: `loan app tz`
+   - Used for borrower KYC documents, identity cards, receipt photos, and device condition captures.
+
+6. **Tamper-Proof Geofenced Attendance:**
+   - 300–350m branch geofence enforcement using device GPS + server timestamp.
+
+---
+
+## 📱 Mobile App Downloads (APK)
+
+GitHub Actions builds release APKs automatically on every push:
+* **Repository Releases:** [https://github.com/mwijay12/loanapp/releases](https://github.com/mwijay12/loanapp/releases)
+* **Recommended APK:** `app-arm64-v8a-release.apk` (Optimized for modern Android devices).
+
+---
+
+## 🔑 Login & Demo Credentials
+
+| Role | Username / Identifier | Password | Access Level |
+|---|---|---|---|
+| **Super Admin** | `+255 712 990 001` or `admin@lims.co.tz` | `demo1234` | Full HQ Dashboard, Staff RBAC, Audit, Branch Performance |
+| **Branch Staff** | `+255 754 221 008` or `staff@lims.co.tz` | `demo1234` | Point of Sale, Issue Loans, Stock Intake, Attendance |
+
+---
+
+## 📂 Project Structure
+
+```text
+loanapp/
+├── .github/workflows/
+│   ├── android-apk.yml          # GitHub CI/CD: Builds release APK on push/tag
+│   └── supabase-heartbeat.yml   # Keep-Alive: Cron job every 2 days to prevent pause
+├── backend/
+│   ├── supabase/
+│   │   └── schema.sql           # Complete PostgreSQL DDL schema & indexes
 │   ├── lib/
-│   │   ├── features/  # 16 feature modules (screens)
-│   │   ├── core/      # routing, theme, widgets, services, data
-│   │   └── main.dart  # ProviderScope + MaterialApp.router (en/sw)
-│   ├── android/       # Android platform files (AGP 9.x, Java 17)
-│   ├── web/           # Web platform files
-│   └── pubspec.yaml   # Flutter dependencies
-├── backend/           # Supabase backend configuration
-│   ├── supabase/      # Database schema (schema.sql)
-│   ├── lib/          # Supabase client service
-│   └── .env.example  # Environment variables template
-├── .github/workflows/ # CI: builds release APK on push/tag
-└── README.md          # This file
+│   │   └── supabase_client.dart # Supabase service client
+│   └── API_AND_SCHEMA_SPECIFICATION.md
+├── frontend/
+│   ├── lib/
+│   │   ├── core/                # Theme, routing, services (Supabase, Cloudinary, Telecom, GPS)
+│   │   ├── features/            # 16 Modules: Auth, Home, Stock, Loans, POS, Scanner, Reports, etc.
+│   │   └── main.dart            # Flutter entrypoint (ProviderScope + Multi-lingual)
+│   ├── android/                 # Android platform configuration (Camera, GPS, Storage permissions)
+│   ├── assets/                  # High-res device images & icons
+│   └── pubspec.yaml             # Flutter dependencies
+├── scripts/
+│   └── supabase_heartbeat.ps1   # PowerShell keep-alive script
+├── run_heartbeat.bat            # Windows 1-click heartbeat runner
+└── README.md
 ```
 
-## Getting started
+---
 
-### Frontend (Flutter)
+## 🛠️ Local Development
 
+### 1. Run Flutter Mobile App
 ```bash
 cd frontend
 flutter pub get
 flutter run
 ```
 
-Release APK locally (small, split per ABI):
-
+### 2. Manual Heartbeat Ping
 ```bash
-cd frontend
-flutter build apk --release --split-per-abi
-# install build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+# Windows 1-click
+./run_heartbeat.bat
+
+# Or PowerShell
+powershell -ExecutionPolicy Bypass -File scripts/supabase_heartbeat.ps1
 ```
 
-### Backend (Supabase)
+---
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Run `backend/supabase/schema.sql` in the SQL editor
-3. Copy `backend/.env.example` to `backend/.env`
-4. Update credentials in `backend/lib/supabase_client.dart`
-
-## Demo credentials
-
-- **Email:** john@branch.com
-- **Password:** 123456
-
-## Technology stack
-
-- **Frontend:** Flutter 3 (stable) + Dart + Riverpod + GoRouter
-- **Backend:** Supabase (PostgreSQL + Auth + Realtime)
-- **On-device:** geolocator, pdf/printing, url_launcher, intl, http
-- **CI:** GitHub Actions (Java 17 + Flutter stable → split-per-ABI release APKs)
+## ⚖️ License
+Developed by **David Erick Mwijage** ([@mwijay12](https://github.com/mwijay12)). All Rights Reserved.

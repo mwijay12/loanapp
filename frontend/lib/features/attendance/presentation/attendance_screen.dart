@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -66,7 +67,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
     }
 
     if (currentRecord == null) {
-      // Clock In - Real GPS Geofence Check
+      // Clock In - omba ruhusa ya GPS kwanza, kisha Real GPS Geofence Check
+      final locationAllowed = await AppPermissionsService.ensureLocation(context);
+      if (!mounted) return;
+      if (!locationAllowed) {
+        _showTopAlert(
+          context,
+          title: 'Location Permission Required',
+          message: 'Clock-in needs GPS to verify branch presence. Enable Location and try again.',
+          isSuccess: false,
+        );
+        return;
+      }
       setState(() => _isCheckingGps = true);
       _showTopAlert(
         context,
@@ -175,32 +187,40 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: const Icon(Icons.description_rounded, color: Color(0xFF1E60F2), size: 22),
                         ),
-                        child: const Icon(Icons.description_rounded, color: Color(0xFF1E60F2), size: 22),
-                      ),
-                      const SizedBox(width: 10),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Official Timesheet Audit',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Official Timesheet Audit',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              ),
+                              Text(
+                                'LIMS Tanzania Ltd · Payroll Compliance',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'LIMS Tanzania Ltd · Payroll Compliance',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 22),
@@ -322,6 +342,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                       label: const Text('Print / PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                       onPressed: () async {
                         Navigator.pop(ctx);
+                        await AppPermissionsService.ensureStorage();
+                        if (!mounted) return;
                         _showTopAlert(context, title: 'Generating Audit PDF', message: 'Preparing official timesheet report...', isSuccess: true);
                         try {
                           await PdfReportService.generateAndDownloadTimesheetReport(
@@ -355,9 +377,19 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-          Text(value, style: const TextStyle(fontSize: 11.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w700)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 11.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
@@ -498,32 +530,35 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _currentTime,
-                        style: const TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'monospace',
-                          letterSpacing: 2,
-                          color: Colors.white,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentTime,
+                          style: const TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
+                            letterSpacing: 2,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _currentAmPm,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white),
+                          ),
                         ),
-                        child: Text(
-                          _currentAmPm,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -726,7 +761,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
 
   Widget _buildTodayRosterList(List<AttendanceRecord> todayLogs) {
     return ListView(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: todayLogs.map((log) {
         final isLate = log.status.contains('Late');
         final isCompleted = log.status == 'Completed';
@@ -806,7 +841,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
 
   Widget _buildTimesheetAuditReport(List<AttendanceRecord> records, String branchName) {
     return ListView(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         // 4 KPI Summary Cards
         Row(

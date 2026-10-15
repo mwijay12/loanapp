@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -40,13 +41,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _next() {
+  void _next() async {
     if (_currentPage < _slides.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOutCubic,
       );
     } else {
+      // Omba ruhusa za Android MAPEEMA (kamera, GPS, arifa, simu/SMS,
+      // files) kabla ya kuingia — na maelezo mafupi kwa mtumiaji.
+      await AppPermissionsService.requestEarlyPermissions(
+        context,
+        showRationale: true,
+      );
+      if (!mounted) return;
       context.go('/login');
     }
   }

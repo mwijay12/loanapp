@@ -390,17 +390,27 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Orodha ya Mikopo na Vifaa',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.ink900,
+                const Expanded(
+                  child: Text(
+                    'Orodha ya Mikopo na Vifaa',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.ink900,
+                    ),
                   ),
                 ),
-                Text(
-                  'Jumla: ${filteredLoans.length}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Jumla: ${filteredLoans.length}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                  ),
                 ),
               ],
             ),

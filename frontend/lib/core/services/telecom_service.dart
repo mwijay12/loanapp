@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'app_permissions_service.dart';
 import '../widgets/ui_kit.dart';
 
 /// Telecom and messaging service to initiate real phone calls, WhatsApp messages, and SMS.
@@ -29,6 +30,8 @@ class TelecomService {
 
   /// Make a real voice call using native phone dialer
   static Future<bool> makePhoneCall(BuildContext context, String rawPhone, {String? recipientName}) async {
+    // Hakikisha ruhusa ya simu (ikiwa haijaombwa mapeema).
+    await AppPermissionsService.ensureTelecom();
     final clean = sanitizePhone(rawPhone);
     final uri = Uri.parse('tel:$clean');
     final name = recipientName != null ? ' ($recipientName)' : '';
@@ -94,6 +97,7 @@ class TelecomService {
     String rawPhone, {
     String? body,
   }) async {
+    await AppPermissionsService.ensureTelecom();
     final clean = sanitizePhone(rawPhone);
     final text = body ?? 'LIMS payment reminder';
     final uri = Uri.parse('sms:$clean?body=${Uri.encodeComponent(text)}');
