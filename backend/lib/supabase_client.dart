@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseConfig {
-  static const String supabaseUrl = 'https://fzlykkwgkydswvnlryhk.supabase.co';
-  static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHlra3dna3lkc3d2bmxyeWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNTA1NTAsImV4cCI6MjEwNzYyNjU1MH0.5WsVDMjEPBRDIlYcUge9anedGq59p3_6Ewxfso6LWGk';
+  // Injected at build time via --dart-define. No hardcoded keys in repo.
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 }
 
 class SupabaseService {

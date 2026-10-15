@@ -35,3 +35,8 @@ linux/flutter/ephemeral/
 # Secrets
 *.jks
 *.keystore
+.env
+*.env
+backend/.env
+frontend/.env
+**/.env.local

@@ -12,11 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Keep-Alive Read & Write to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "Sending keep-alive ping and write to Supabase (Project: fzlykkwgkydswvnlryhk)..."
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "ERROR: Missing SUPABASE_URL / SUPABASE_ANON_KEY secrets. Set them in GitHub repo secrets."
+            exit 1
+          fi
+          echo "Sending keep-alive ping and write to Supabase..."
           
-          SUPABASE_URL="https://fzlykkwgkydswvnlryhk.supabase.co"
-          ANON_KEY="${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHlra3dna3lkc3d2bmxyeWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNTA1NTAsImV4cCI6MjEwNzYyNjU1MH0.5WsVDMjEPBRDIlYcUge9anedGq59p3_6Ewxfso6LWGk' }}"
+          SUPABASE_URL="$SUPABASE_URL"
+          ANON_KEY="$SUPABASE_ANON_KEY"
           
           # 1. Read Query (Products)
           READ_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET \

@@ -6,27 +6,22 @@ import 'package:http/http.dart' as http;
 /// Ultra-fast response with high quality retail loan and inventory reasoning.
 class MercuryAiService {
   static const String _endpoint = 'https://api.inceptionlabs.ai/v1/chat/completions';
-  
-  // Rotating pool of API keys for redundancy & rate limit safety
-  static const List<String> _apiKeys = [
-    'sk_eff3a31e7d6aeec77e7b45e40a574f86',
-    'sk_308880d258ef71af54d48b61e55e939c',
-    'sk_647c05488d7b64d729a0890b8caa870c',
-    'sk_0ba0790d0f0ceaf436ace61072dbb430',
-    'sk_521513547a4c3030f16b4b6f76f6056c',
-    'sk_8138349fe5dd2d13ab546f5c23a9c181',
-    'sk_21528d3e9b1a2beffe7469dd9fadfd94',
-    'sk_7d7855c453218999b2782e29988df0cc',
-    'sk_c53761277e7766b64a18020e92ce9991',
-    'sk_382ab5982dbf695c9a085b5a781fb9a4',
-    'sk_fd804749fa087972bfc239a54d1bf1a1',
-  ];
+
+  // API keys injected at build time, comma-separated:
+  // flutter run --dart-define=MERCURY_API_KEYS=sk_xxx,sk_yyy
+  // Never hardcode live keys in source control.
+  static const String _keysRaw = String.fromEnvironment('MERCURY_API_KEYS');
+
+  List<String> get _apiKeys =>
+      _keysRaw.isEmpty ? const [] : _keysRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
   int _keyIndex = 0;
 
-  String get _currentKey => _apiKeys[_keyIndex % _apiKeys.length];
+  String get _currentKey =>
+      _apiKeys.isEmpty ? '' : _apiKeys[_keyIndex % _apiKeys.length];
 
   void _rotateKey() {
+    if (_apiKeys.isEmpty) return;
     _keyIndex = (_keyIndex + 1) % _apiKeys.length;
   }
 
@@ -36,6 +31,10 @@ class MercuryAiService {
     required List<Map<String, String>> chatHistory,
     Map<String, dynamic>? branchContext,
   }) async {
+    if (_apiKeys.isEmpty) {
+      // No API key configured at build time - use offline fallback.
+      return _localFallbackResponse(userPrompt);
+    }
     final systemPrompt = '''
 Wewe ni LIMS AI Copilot (Loan & Inventory Management System) kwa ajili ya maduka ya simu Tanzania.
 Mazingira ya tawi la leo:

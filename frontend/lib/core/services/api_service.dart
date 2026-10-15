@@ -5,9 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Organization: hvqssaxwrrmewmvqujus
 /// Lead Architect: David Erick Mwijage (mwijay12)
 class SupabaseConfig {
-  static const String supabaseUrl = 'https://fzlykkwgkydswvnlryhk.supabase.co';
-  static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHlra3dna3lkc3d2bmxyeWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNTA1NTAsImV4cCI6MjEwNzYyNjU1MH0.5WsVDMjEPBRDIlYcUge9anedGq59p3_6Ewxfso6LWGk';
+  // Injected at build time: flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
+  // Never hardcode JWTs in source - use CI secrets / local --dart-define.
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 }
 
 /// Central API Service connecting Flutter UI with Supabase Cloud Database

@@ -6,10 +6,16 @@ import 'package:http/http.dart' as http;
 /// Cloudinary Media Service for LIMS (Tanzania Phone Loan & Inventory)
 /// Configured for David Erick Mwijage (mwijay12)
 class CloudinaryConfig {
-  static const String cloudName = 'fbwhgkbe';
-  static const String apiKey = '525153827353587';
-  static const String apiSecret = 'GIPN40HsDhbjtYcJ45ZJuKSSkXA';
-  static const String uploadPreset = 'loan app tz';
+  // Public Cloudinary settings only - never commit apiSecret in client code.
+  // Secrets must live in CI secrets / backend only. Uploads use unsigned preset.
+  static const String cloudName = String.fromEnvironment(
+    'CLOUDINARY_CLOUD_NAME',
+    defaultValue: 'fbwhgkbe',
+  );
+  static const String uploadPreset = String.fromEnvironment(
+    'CLOUDINARY_UPLOAD_PRESET',
+    defaultValue: 'loan app tz',
+  );
   static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
 
   // Cloudinary Hosted Assets for Phones & Hardware Inventory
