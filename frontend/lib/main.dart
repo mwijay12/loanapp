@@ -12,7 +12,29 @@ import 'core/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ApiService().init();
+  // P0: init() throws when --dart-define config is missing. Fail loud with
+  // a readable screen instead of running misconfigured or red-screening.
+  try {
+    await ApiService().init();
+  } catch (e) {
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Configuration missing:\n$e',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
   runApp(
     const ProviderScope(
       child: LoanInventoryApp(),

@@ -12,6 +12,9 @@ build/
 # Android
 android/.gradle/
 android/local.properties
+# P0: the pattern above misses frontend/android/local.properties —
+# glob must match at any depth.
+**/android/local.properties
 android/key.properties
 *.apk
 *.aab

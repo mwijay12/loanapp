@@ -1,13 +1,22 @@
-# Supabase Keep-Alive Heartbeat Script
-# Pings & records heartbeat in Supabase to permanently prevent the 7-day free-tier pause
+# Supabase Keep-Alive Heartbeat Script - LOCAL ONLY (never called by CI).
+# CI uses .github/workflows/supabase-heartbeat.yml with its own curl + secrets.
+# Pings & records heartbeat in Supabase to permanently prevent the 7-day free-tier pause.
+# P0: no hardcoded keys. Set env vars before running:
+#   $env:SUPABASE_URL = "https://<ref>.supabase.co"
+#   $env:SUPABASE_ANON_KEY = "<anon key>"
 
-$SUPABASE_URL = "https://fzlykkwgkydswvnlryhk.supabase.co"
-$ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHlra3dna3lkc3d2bmxyeWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNTA1NTAsImV4cCI6MjEwNzYyNjU1MH0.5WsVDMjEPBRDIlYcUge9anedGq59p3_6Ewxfso6LWGk"
+$SUPABASE_URL = $env:SUPABASE_URL
+$ANON_KEY = $env:SUPABASE_ANON_KEY
+
+if ([string]::IsNullOrWhiteSpace($SUPABASE_URL) -or [string]::IsNullOrWhiteSpace($ANON_KEY)) {
+    Write-Host "[ERROR] Missing SUPABASE_URL / SUPABASE_ANON_KEY env vars. Refusing to run with hardcoded keys." -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host " [LIMS] Pinging Supabase Heartbeat Keep-Alive" -ForegroundColor Cyan
 Write-Host " Owner: David Erick Mwijage (mwijay12)" -ForegroundColor White
-Write-Host " Project: fzlykkwgkydswvnlryhk" -ForegroundColor DarkGray
+Write-Host " Project: (from SUPABASE_URL env)" -ForegroundColor DarkGray
 Write-Host " URL: $SUPABASE_URL" -ForegroundColor DarkGray
 Write-Host "=============================================" -ForegroundColor Cyan
 

@@ -2,12 +2,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'mock_lims_data.dart';
 
-/// User Role State ('Super Admin', 'Branch Manager', 'Loan Officer', 'Storekeeper', 'Counter Cashier')
+/// User Role State — SERVER-OWNED, read-only projection.
+/// P0: the client can never invent or switch roles. The role starts as
+/// 'noSession' (most restrictive) and is set exactly once per login from
+/// the server profile via [hydrateFromSession]. No client-side role writer exists.
 class UserRoleNotifier extends StateNotifier<String> {
-  UserRoleNotifier() : super('Super Admin');
+  UserRoleNotifier() : super('noSession');
 
-  void setRole(String role) => state = role;
-  void toggle() => state = (state == 'Staff' || state == 'Counter Cashier') ? 'Super Admin' : 'Counter Cashier';
+  static const Set<String> _knownRoles = {
+    'Super Admin',
+    'Branch Manager',
+    'Loan Officer',
+    'Storekeeper',
+    'Inventory Officer',
+    'Counter Cashier',
+    'Staff',
+  };
+
+  /// One-way hydration from the server session. Unknown/empty roles stay
+  /// on the restrictive 'noSession' sentinel instead of defaulting upward.
+  void hydrateFromSession(String? serverRole) {
+    final role = (serverRole ?? '').trim();
+    if (role.isEmpty || !_knownRoles.contains(role)) return;
+    state = role;
+  }
+
+  void clearSession() => state = 'noSession';
 }
 
 final userRoleProvider = StateNotifierProvider<UserRoleNotifier, String>((ref) {

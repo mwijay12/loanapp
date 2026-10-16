@@ -31,159 +31,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     'Zanzibar Branch',
   ];
 
-  void _openRoleSelector() {
-    final currentRole = ref.read(userRoleProvider);
-    final roles = [
-      {
-        'role': 'Super Admin',
-        'title': 'Super Admin',
-        'badge': 'HQ Executive',
-        'persona': 'David Erick Mwijage · HQ Central',
-        'desc': 'Full company oversight: P&L margins, staff RBAC permissions, multi-branch audits & financial health.',
-        'icon': Icons.admin_panel_settings_rounded,
-        'color': const Color(0xFF7C3AED),
-      },
-      {
-        'role': 'Branch Manager',
-        'title': 'Branch Manager',
-        'badge': 'Branch Oversight',
-        'persona': 'Neema Julius · Kariakoo Branch',
-        'desc': 'Branch sales reconciliation, supervisor discount PIN overrides (8821), staff attendance audit & branch buffer.',
-        'icon': Icons.manage_accounts_rounded,
-        'color': const Color(0xFF1E60F2),
-      },
-      {
-        'role': 'Loan Officer',
-        'title': 'Loan Officer',
-        'badge': 'Credit Risk',
-        'persona': 'Baraka Mushi · Credit & Recovery',
-        'desc': 'Borrower KYC scoring, loan approval/rejection, collections follow-up and legal recovery escalation.',
-        'icon': Icons.verified_user_rounded,
-        'color': const Color(0xFF059669),
-      },
-      {
-        'role': 'Storekeeper',
-        'title': 'Storekeeper',
-        'badge': 'Logistics & PO',
-        'persona': 'Peter Msechu · Warehouse & Stock',
-        'desc': 'Inbound supplier PO shipments intake, serialized IMEI barcode intake, inventory audits & transfers.',
-        'icon': Icons.inventory_2_rounded,
-        'color': const Color(0xFF0284C7),
-      },
-      {
-        'role': 'Counter Cashier',
-        'title': 'Counter Cashier',
-        'badge': 'Retail POS',
-        'persona': 'Zawadi Nnaji · Counter POS Desk',
-        'desc': 'Fast POS cash/M-Pesa sales, customer loan KYC application intake, cabinet stock scan, shift clock-in.',
-        'icon': Icons.point_of_sale_rounded,
-        'color': const Color(0xFFEA580C),
-      },
-    ];
-
-    LimsBottomSheet.show(
-      context: context,
-      builder: (ctx) => LimsBottomSheet(
-        title: 'Switch Role (RBAC)',
-        subtitle: 'Select role to test strict separation of duties and UI controls',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: roles.map((r) {
-            final roleKey = r['role'] as String;
-            final isSelected = currentRole == roleKey ||
-                (roleKey == 'Storekeeper' && currentRole == 'Inventory Officer') ||
-                (roleKey == 'Counter Cashier' && currentRole == 'Staff');
-            final color = r['color'] as Color;
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                color: isSelected ? color.withValues(alpha: 0.06) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? color : const Color(0xFFE2E8F0),
-                  width: isSelected ? 1.8 : 1,
-                ),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                leading: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(r['icon'] as IconData, color: color, size: 20),
-                ),
-                title: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        r['title'] as String,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: isSelected ? color : const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: isSelected ? color : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        r['badge'] as String,
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: isSelected ? Colors.white : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 2),
-                    Text(
-                      r['persona'] as String,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? color.withValues(alpha: 0.9) : const Color(0xFF334155),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      r['desc'] as String,
-                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), height: 1.25),
-                    ),
-                  ],
-                ),
-                trailing: isSelected
-                    ? Icon(Icons.check_circle_rounded, color: color, size: 20)
-                    : const Icon(Icons.radio_button_unchecked_rounded, color: Color(0xFFCBD5E1), size: 18),
-                onTap: () {
-                  ref.read(userRoleProvider.notifier).setRole(roleKey);
-                  Navigator.pop(ctx);
-                  LimsToast.show(
-                    context,
-                    'Switched to ${r['title']} · Persona: ${r['persona']}',
-                    isSuccess: true,
-                  );
-                },
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
+  // P0: client-side role switcher removed. Role is server-assigned and
+  // shown read-only in the header chip below.
 
   void _triggerSync() async {
     if (_isSyncing) return;
@@ -697,7 +546,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Discount authorized! OTP PIN 8821 dispatched to Till #2.'),
+                          content: Text('Discount authorized! OTP PIN dispatched to Till #2.'),
                           backgroundColor: Color(0xFF10B981),
                         ),
                       );
@@ -1674,46 +1523,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(width: 6),
                         Flexible(
-                          child: InkWell(
-                            onTap: _openRoleSelector,
-                            borderRadius: BorderRadius.circular(99),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                              decoration: BoxDecoration(
-                                color: roleColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(99),
-                                border: Border.all(
-                                  color: roleColor.withValues(alpha: 0.35),
-                                ),
+                          // P0: read-only role badge. No tap — role is server-assigned.
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: roleColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(
+                                color: roleColor.withValues(alpha: 0.35),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    roleIcon,
-                                    size: 11,
-                                    color: roleColor,
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Flexible(
-                                    child: Text(
-                                      currentRole,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: roleColor,
-                                      ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  roleIcon,
+                                  size: 11,
+                                  color: roleColor,
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    currentRole,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: roleColor,
                                     ),
                                   ),
-                                  const SizedBox(width: 2),
-                                  Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 13,
-                                    color: roleColor,
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -2645,7 +2485,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: 'Overrides',
                   val: '1 Pending',
                   color: const Color(0xFFF79009),
-                  sub: 'PIN: 8821',
+                  sub: 'Awaiting approval',
                 ),
               ),
               const SizedBox(width: 8),

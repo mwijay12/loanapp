@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/data/inventory_provider.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ui_kit.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  String _selectedRole = 'branch'; // 'branch' or 'admin'
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberMe = true;
   bool _isLoading = false;
-  final TextEditingController _phoneCtrl = TextEditingController(text: '+255 754 221 008');
-  final TextEditingController _passCtrl = TextEditingController(text: 'demo1234');
+  // P0: no prefilled demo credentials.
+  final TextEditingController _phoneCtrl = TextEditingController();
+  final TextEditingController _passCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -39,26 +42,39 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // P0: role comes from the server profile only. The client never picks
+  // a role — it only hydrates the read-only projection after a successful
+  // login, then routes on that server role.
   void _doLogin() async {
     setState(() => _isLoading = true);
-    final user = await ApiService().login(_phoneCtrl.text, _passCtrl.text);
-    if (mounted) {
-      setState(() => _isLoading = false);
-      final role = (user['role'] as String? ?? '').toLowerCase();
-      final isAdmin = _selectedRole == 'admin' || role.contains('admin');
+    try {
+      final user = await ApiService().login(_phoneCtrl.text, _passCtrl.text);
+      if (!mounted) return;
+      final rawRole = user['role'];
+      final role = rawRole is String ? rawRole : '';
+      final nameValue = user['name'];
+      final name = nameValue is String && nameValue.isNotEmpty ? nameValue : 'User';
+      if (role.isEmpty) {
+        throw StateError('Server returned no role. Access denied.');
+      }
+      ref.read(userRoleProvider.notifier).hydrateFromSession(role);
+      final isAdmin = role.toLowerCase().contains('admin');
       if (isAdmin) {
         context.go('/admin');
       } else {
         context.go('/home');
       }
-      final name = user['name'] ?? 'User';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppTheme.ink900,
-          content: Text(isAdmin ? 'Welcome to Admin Console, $name' : 'Welcome back, $name'),
-        ),
+      LimsToast.show(
+        context,
+        isAdmin ? 'Welcome to Admin Console, $name' : 'Welcome back, $name',
+        isSuccess: true,
       );
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e is StateError ? e.message : 'Login failed. Check connection and try again.';
+      LimsToast.show(context, msg, isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -126,90 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 22),
 
-                // Role Pills
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x0A0F3478),
-                        blurRadius: 16,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedRole = 'branch'),
-                          borderRadius: BorderRadius.circular(11),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _selectedRole == 'branch' ? AppTheme.brand600 : Colors.transparent,
-                              borderRadius: BorderRadius.circular(11),
-                              boxShadow: _selectedRole == 'branch'
-                                  ? [
-                                      BoxShadow(
-                                        color: AppTheme.brand600.withValues(alpha: 0.3),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              'Branch Staff',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _selectedRole == 'branch' ? Colors.white : AppTheme.ink500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedRole = 'admin'),
-                          borderRadius: BorderRadius.circular(11),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _selectedRole == 'admin' ? AppTheme.brand600 : Colors.transparent,
-                              borderRadius: BorderRadius.circular(11),
-                              boxShadow: _selectedRole == 'admin'
-                                  ? [
-                                      BoxShadow(
-                                        color: AppTheme.brand600.withValues(alpha: 0.3),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              'Admin',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _selectedRole == 'admin' ? Colors.white : AppTheme.ink500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // P0: role pills removed — role is server-owned, never user-picked.
 
                 // Phone Field
                 _buildInputField(
@@ -251,7 +184,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () => LimsToast.show(
+                        context,
+                        'Contact your administrator to reset your password.',
+                      ),
                       child: const Text(
                         'Forgot password?',
                         style: TextStyle(
@@ -283,42 +219,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 22,
                             child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                           )
-                        : Text(
-                            _selectedRole == 'admin' ? 'Log in to Admin Console' : 'Log in to Branch App',
-                            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+                        : const Text(
+                            'Log in',
+                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),
                 const SizedBox(height: 14),
-
-                // Face ID button
-                Center(
-                  child: TextButton.icon(
-                    onPressed: _doLogin,
-                    icon: const Icon(Icons.fingerprint_rounded, color: AppTheme.brand600, size: 20),
-                    label: const Text(
-                      'Sign in with Face ID / Biometrics',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.brand600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Demo Note
-                const Center(
-                  child: Text(
-                    'Demo build — tap Log in to enter the app',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF9AA8BF),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

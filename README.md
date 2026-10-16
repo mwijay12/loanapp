@@ -39,9 +39,8 @@ Enterprise mobile phone retail loan, hire-purchase credit, dual-IMEI inventory l
    - **Local Script:** `run_heartbeat.bat` & `scripts/supabase_heartbeat.ps1` for on-demand keep-alive triggers.
 
 5. **Cloudinary Media Storage:**
-   - Cloud Name: `fbwhgkbe`
-   - Unsigned Preset: `loan app tz`
    - Used for borrower KYC documents, identity cards, receipt photos, and device condition captures.
+   - Uploads go through a signed preset configured in CI secrets (never commit secrets here).
 
 6. **Tamper-Proof Geofenced Attendance:**
    - 300–350m branch geofence enforcement using device GPS + server timestamp.
@@ -58,10 +57,9 @@ GitHub Actions builds release APKs automatically on every push:
 
 ## 🔑 Login & Demo Credentials
 
-| Role | Username / Identifier | Password | Access Level |
-|---|---|---|---|
-| **Super Admin** | `+255 712 990 001` or `admin@lims.co.tz` | `demo1234` | Full HQ Dashboard, Staff RBAC, Audit, Branch Performance |
-| **Branch Staff** | `+255 754 221 008` or `staff@lims.co.tz` | `demo1234` | Point of Sale, Issue Loans, Stock Intake, Attendance |
+> P0: demo credentials were removed from this file and from the login screen.
+> Contact your administrator for credentials. Never commit real passwords.
+> Production builds contain no demo login path.
 
 ---
 

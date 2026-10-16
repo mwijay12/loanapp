@@ -997,6 +997,12 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
 
   // TAB 2: KYC & Guarantor
   Widget _buildKycDetailsCard(LoanItem loan) {
+    // P0: PII unmask is allow-listed. Unknown sessions ('noSession'),
+    // cashiers and storekeepers always see masked PII.
+    final viewerRole = ref.watch(userRoleProvider);
+    final canViewPii = viewerRole == 'Super Admin' ||
+        viewerRole == 'Branch Manager' ||
+        viewerRole == 'Loan Officer';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1029,7 +1035,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                   ],
                 ),
               ),
-              if (ref.watch(userRoleProvider) != 'Counter Cashier')
+              if (canViewPii)
                 InkWell(
                   onTap: () => setState(() => _unmaskNida = !_unmaskNida),
                   borderRadius: BorderRadius.circular(8),
@@ -1056,7 +1062,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('PII Masked · Cashier Scope', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                  child: const Text('PII Masked · Restricted Scope', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
                 ),
             ],
           ),
@@ -1116,7 +1122,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           _infoRow('Legal Full Name', loan.name),
           _infoRowWithCopy(
             'National NIDA ID',
-            (ref.watch(userRoleProvider) != 'Counter Cashier' && _unmaskNida)
+            (canViewPii && _unmaskNida)
                 ? loan.nida
                 : (loan.nida.length >= 10
                     ? '${loan.nida.substring(0, 8)}-••••-••••-${loan.nida.substring(loan.nida.length - 2)}'
@@ -1132,12 +1138,16 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
   }
 
   Widget _buildGuarantorCard(LoanItem loan) {
-    final isCashier = ref.watch(userRoleProvider) == 'Counter Cashier';
-    final displayedGuarantorPhone = isCashier
-        ? (loan.guarantorPhone.length >= 8
+    // P0: same allow-list as NIDA above — mask by default.
+    final viewerRole = ref.watch(userRoleProvider);
+    final canViewPii = viewerRole == 'Super Admin' ||
+        viewerRole == 'Branch Manager' ||
+        viewerRole == 'Loan Officer';
+    final displayedGuarantorPhone = canViewPii
+        ? loan.guarantorPhone
+        : (loan.guarantorPhone.length >= 8
             ? '${loan.guarantorPhone.substring(0, 4)} *** **${loan.guarantorPhone.substring(loan.guarantorPhone.length - 2)}'
-            : loan.guarantorPhone)
-        : loan.guarantorPhone;
+            : loan.guarantorPhone);
 
     return Container(
       padding: const EdgeInsets.all(16),

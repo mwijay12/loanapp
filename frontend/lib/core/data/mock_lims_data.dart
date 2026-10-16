@@ -321,7 +321,7 @@ class StaffMember {
   final String phone;
   final String branch;
   final String staffCode;
-  final String supervisorPin; // e.g. '8821'
+  final String supervisorPin; // server-issued per-staff PIN; never a shared default
   final String status; // 'Active', 'Suspended'
   final bool canDisburseLoans;
   final bool canKnoxLock;
@@ -339,7 +339,7 @@ class StaffMember {
     required this.phone,
     required this.branch,
     required this.staffCode,
-    this.supervisorPin = '8821',
+    this.supervisorPin = '',
     this.status = 'Active',
     this.canDisburseLoans = true,
     this.canKnoxLock = true,
@@ -944,7 +944,7 @@ class MockLimsData {
       phone: '0754 892 314',
       branch: 'Kariakoo Main Branch',
       staffCode: 'MGR-104',
-      supervisorPin: '8821',
+      supervisorPin: '',
       status: 'Active',
       canDisburseLoans: true,
       canKnoxLock: true,
@@ -1118,7 +1118,7 @@ class AttendanceRecord {
     required this.status,
     required this.shiftHours,
     this.isGeofenceVerified = true,
-    this.verifiedBy = 'Supervisor PIN: 8821',
+    this.verifiedBy = 'Supervisor verified',
   });
 
   AttendanceRecord copyWith({

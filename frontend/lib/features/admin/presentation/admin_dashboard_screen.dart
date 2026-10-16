@@ -559,7 +559,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
-        // Persona Live Role Switcher Card
+        // P0: persona switcher removed. Role is server-assigned and shown
+        // read-only — the client can never elevate itself.
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -586,15 +587,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       color: const Color(0xFFE9F2FF),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.swap_horiz_rounded, color: AppTheme.brand600, size: 20),
+                    child: const Icon(Icons.verified_user_rounded, color: AppTheme.brand600, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Switch Active Role (Live Persona)',
+                        const Text(
+                          'Active Role (server-assigned)',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
@@ -602,7 +603,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           ),
                         ),
                         Text(
-                          'Switch persona to inspect role-specific UI, Bento actions, and permissions:',
+                          'Signed in as $currentRole. Role changes happen server-side.',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -615,20 +616,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-
-              // 5 Persona Chips Row
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildPersonaChip('Super Admin', currentRole, const Color(0xFF1B6EF3)),
-                  _buildPersonaChip('Branch Manager', currentRole, const Color(0xFF7C5CFC)),
-                  _buildPersonaChip('Loan Officer', currentRole, const Color(0xFF12B76A)),
-                  _buildPersonaChip('Storekeeper', currentRole, const Color(0xFF0284C7)),
-                  _buildPersonaChip('Counter Cashier', currentRole, const Color(0xFFF79009)),
-                ],
-              ),
-              const SizedBox(height: 12),
 
               // Persona Privileges Summary
               Container(
@@ -719,48 +706,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         // Staff Cards List
         ...staffList.map((s) => _buildStaffCard(s)),
       ],
-    );
-  }
-
-  Widget _buildPersonaChip(String role, String activeRole, Color color) {
-    final isSelected = role == activeRole;
-    return InkWell(
-      onTap: () {
-        ref.read(userRoleProvider.notifier).setRole(role);
-        LimsToast.show(context, 'Umebadili jukumu kuwa $role!');
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : const Color(0xFFE2E8F0),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-              size: 14,
-              color: isSelected ? Colors.white : AppTheme.ink500,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              role,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? Colors.white : AppTheme.ink900,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1126,7 +1071,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 2),
                   decoration: InputDecoration(
                     counterText: '',
-                    hintText: '8821',
+                    hintText: '••••',
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -1153,7 +1098,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       final updated = staff.copyWith(
                         role: currentRole,
                         branch: currentBranch,
-                        supervisorPin: pinCtrl.text.trim().isEmpty ? '8821' : pinCtrl.text.trim(),
+                        supervisorPin: pinCtrl.text.trim(),
                         canDisburseLoans: canDisburse,
                         canKnoxLock: canKnox,
                         canViewMargins: canMargins,
@@ -1209,7 +1154,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final phoneCtrl = TextEditingController(text: '07');
     final emailCtrl = TextEditingController();
     final staffCodeCtrl = TextEditingController(text: 'STF-${DateTime.now().millisecondsSinceEpoch % 1000}');
-    final pinCtrl = TextEditingController(text: '8821');
+    final pinCtrl = TextEditingController();
     String selectedRole = 'Loan Officer';
     String selectedBranch = 'Kariakoo Main Branch';
 
@@ -1344,7 +1289,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         phone: phoneCtrl.text.trim(),
                         branch: selectedBranch,
                         staffCode: staffCodeCtrl.text.trim(),
-                        supervisorPin: pinCtrl.text.trim().isEmpty ? '8821' : pinCtrl.text.trim(),
+                        supervisorPin: pinCtrl.text.trim(),
                         status: 'Active',
                         canDisburseLoans: selectedRole != 'Counter Cashier',
                         canKnoxLock: selectedRole == 'Super Admin' || selectedRole == 'Branch Manager' || selectedRole == 'Loan Officer',

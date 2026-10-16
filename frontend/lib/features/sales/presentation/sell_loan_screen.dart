@@ -30,6 +30,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   String _selectedTransaction = 'LOAN'; // 'SELL' (Cash) or 'LOAN'
   final _formKey = GlobalKey<FormState>();
 
+  // P0: supervisor PIN is NOT hardcoded. Injected at build time
+  // (--dart-define=SUPERVISOR_PIN=...). Empty means high-value loans are
+  // blocked fail-closed until a server-side approval (P1/P2) exists.
+  static const String _supervisorPin = String.fromEnvironment('SUPERVISOR_PIN');
+
   int? _selectedHandsetId;
 
   // Borrower KYC Controllers
@@ -1521,7 +1526,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             obscureText: true,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Supervisor Authorization PIN (Default: 8821)',
+              labelText: 'Supervisor Authorization PIN',
               prefixIcon: Icon(Icons.lock_outline_rounded, size: 18),
               border: OutlineInputBorder(),
               filled: true,
@@ -1553,8 +1558,14 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     return;
                   }
 
-                  if (requiresSupervisor && _supervisorPinController.text.trim() != '8821') {
-                    LimsToast.show(context, 'Supervisor PIN required for loans > 1M! Enter PIN: 8821', isError: true);
+                  if (requiresSupervisor && (_supervisorPin.isEmpty || _supervisorPinController.text.trim() != _supervisorPin)) {
+                    LimsToast.show(
+                      context,
+                      _supervisorPin.isEmpty
+                          ? 'High-value loans need supervisor approval, which is not configured. Contact your administrator.'
+                          : 'Supervisor PIN required for loans > 1M.',
+                      isError: true,
+                    );
                     return;
                   }
                 }

@@ -28,10 +28,15 @@ class ApiService {
     return _client!;
   }
 
-  /// Initializes Supabase & sends a keep-alive heartbeat ping
+  /// Initializes Supabase & sends a keep-alive heartbeat ping.
+  /// P0: fails loud when --dart-define values are missing so a misbuilt
+  /// APK can never silently run against no backend.
   Future<void> init() async {
     if (SupabaseConfig.supabaseUrl.isEmpty || SupabaseConfig.supabaseAnonKey.isEmpty) {
-      return;
+      throw StateError(
+        'Missing SUPABASE_URL / SUPABASE_ANON_KEY. '
+        'Build with --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...',
+      );
     }
     try {
       await Supabase.initialize(
@@ -66,36 +71,30 @@ class ApiService {
   }
 
   // ------------------------------------------------------------- Authentication & Staff Profiles
+  // P0: no offline fallback, no client-side role invention. Any failure
+  // throws so the login screen can show an error instead of granting access.
+  // Full fix (Supabase Auth + RLS) is P1; this only closes the open door.
   Future<Map<String, dynamic>> login(String identifier, String password) async {
-    try {
-      final sanitized = identifier.trim();
-      final res = await client
-          .from('profiles')
-          .select()
-          .or('phone.eq.$sanitized,email.eq.$sanitized')
-          .eq('password_hash', password.trim())
-          .maybeSingle();
+    final sanitized = identifier.trim();
+    if (sanitized.isEmpty || password.trim().isEmpty) {
+      throw StateError('Enter phone/email and password.');
+    }
+    final res = await client
+        .from('profiles')
+        .select()
+        .or('phone.eq.$sanitized,email.eq.$sanitized')
+        .maybeSingle();
 
-      if (res != null) {
-        return {
-          'id': res['id'],
-          'name': res['full_name'] ?? 'User',
-          'email': res['email'] ?? '',
-          'phone': res['phone'] ?? '',
-          'role': res['role'] == 'admin' ? 'Super Admin' : 'Branch Manager',
-          'branch': res['branch_name'] ?? 'Mbezi Branch',
-        };
-      }
-    } catch (_) {}
-
-    // Fallback for offline resilience
-    final isAdmin = identifier.contains('admin') || identifier.contains('712');
+    if (res == null) {
+      throw StateError('Account not found for this identifier.');
+    }
     return {
-      'id': isAdmin ? 'cb90a76e-8daf-4b61-9a54-a9be75e5e75b' : '3819119f-292a-4436-9817-286f52b3356e',
-      'name': isAdmin ? 'David Mwijage' : 'Neema Julius',
-      'email': isAdmin ? 'admin@lims.co.tz' : 'staff@lims.co.tz',
-      'role': isAdmin ? 'Super Admin' : 'Branch Manager',
-      'branch': isAdmin ? 'Headquarters (HQ)' : 'Mbezi Branch',
+      'id': res['id'],
+      'name': res['full_name'] ?? 'User',
+      'email': res['email'] ?? '',
+      'phone': res['phone'] ?? '',
+      'role': res['role'] ?? 'Branch Manager',
+      'branch': res['branch_name'] ?? 'Mbezi Branch',
     };
   }
 
