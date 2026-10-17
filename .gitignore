@@ -40,6 +40,9 @@ linux/flutter/ephemeral/
 *.keystore
 .env
 *.env
+# CI writes build-time dart-defines here; it must never be committed.
+dart_defines.json
+**/dart_defines.json
 backend/.env
 frontend/.env
 **/.env.local

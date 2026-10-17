@@ -38,22 +38,82 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Split-per-abi => ~15-25 MB per APK instead of one giant
-      # universal APK. Real phones need the arm64-v8a file.
-      - name: Build release APK (split per ABI)
+      # ------------------------------------------------------------------
+      # Build inputs are written to a JSON file instead of being appended to
+      # the flutter command line.
+      #
+      # Why: a secret whose value contains a line break, a quote or a comma
+      # corrupts the argument vector. flutter then stops treating the token as
+      # an option and tries to read it as the entrypoint, which is exactly the
+      # failure: Target file "--dart-define=..." not found.
+      # Writing a JSON file sidesteps quoting entirely, and we fail fast with a
+      # readable message when a value is malformed instead of shipping a broken
+      # or unreachable APK.
+      # ------------------------------------------------------------------
+      - name: Write dart-defines file
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_UPLOAD_PRESET: ${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
-          MERCURY_API_KEYS: ${{ secrets.MERCURY_API_KEYS }}
         run: |
-          flutter build apk --release --split-per-abi \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-            --dart-define=CLOUDINARY_CLOUD_NAME="$CLOUDINARY_CLOUD_NAME" \
-            --dart-define=CLOUDINARY_UPLOAD_PRESET="$CLOUDINARY_UPLOAD_PRESET" \
-            --dart-define=MERCURY_API_KEYS="$MERCURY_API_KEYS"
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+
+          required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
+          optional = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_UPLOAD_PRESET"]
+
+          def clean(name):
+              raw = os.environ.get(name, "")
+              value = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
+              if "\n" in value:
+                  print("ERROR: secret %s contains a line break. "
+                        "Re-save it as a single line with no trailing newline." % name,
+                        file=sys.stderr)
+                  sys.exit(1)
+              return value
+
+          out = {}
+          for name in required:
+              value = clean(name)
+              if not value:
+                  print("ERROR: repository secret %s is missing." % name, file=sys.stderr)
+                  print("Add it under Settings > Secrets and variables > Actions.",
+                        file=sys.stderr)
+                  sys.exit(1)
+              out[name] = value
+
+          for name in optional:
+              value = clean(name)
+              if value:
+                  out[name] = value
+              else:
+                  print("note: %s not set - that feature stays disabled in this build." % name)
+
+          # MERCURY_API_KEYS is deliberately NOT shipped. A key compiled into an
+          # APK can be extracted from the APK by anyone who downloads it, so the
+          # AI copilot runs on its offline knowledge fallback in release builds.
+          # The correct long-term path is a server-side proxy (Supabase Edge
+          # Function) that holds the key and forwards the request.
+          # If you knowingly accept the risk for a private/demo build only,
+          # add MERCURY_API_KEYS to the `optional` list above and to the step env.
+
+          with open("dart_defines.json", "w", encoding="utf-8") as handle:
+              json.dump(out, handle, indent=2, sort_keys=True)
+
+          print("dart-defines written for: %s" % ", ".join(sorted(out)))
+          PY
+
+      # Split-per-abi => ~15-25 MB per APK instead of one giant
+      # universal APK. Real phones need the arm64-v8a file.
+      # Single line on purpose: no shell line-continuation to get mangled.
+      - name: Build release APK (split per ABI)
+        run: flutter build apk --release --split-per-abi --dart-define-from-file=dart_defines.json
+
+      - name: Remove dart-defines file
+        if: always()
+        run: rm -f dart_defines.json
 
       # NOTE: defaults.run.working-directory does NOT apply to
       # uses: steps, so paths below must include the frontend/ prefix.
