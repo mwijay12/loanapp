@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../constants/app_constants.dart';
 import '../data/mock_lims_data.dart';
 
 class PdfReportService {
@@ -144,7 +145,7 @@ class PdfReportService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Prepared By: Branch Cashier / Storekeeper', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  pw.Text('Prepared By: ${UserRoles.counterCashier} / ${UserRoles.storekeeper}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),
@@ -154,7 +155,7 @@ class PdfReportService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('Verified By: Branch Manager / HQ Super Admin', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  pw.Text('Verified By: ${UserRoles.branchManager} / ${UserRoles.superAdmin}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),
@@ -226,7 +227,7 @@ class PdfReportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
                     pw.Text('AUDIT REF: $reportId', style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
-                    pw.Text('TIN: 142-998-314 | VRN: 40-028912-K', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+                    pw.Text(AppConstants.fiscalLine(), style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
                     pw.Text('TRA EFD Station Verified', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green800)),
                   ],
                 ),
@@ -280,7 +281,7 @@ class PdfReportService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Prepared By: HR & Shift Supervisor', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  pw.Text('Prepared By: ${UserRoles.branchManager}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),

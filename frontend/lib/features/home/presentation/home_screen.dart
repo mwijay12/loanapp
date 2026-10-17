@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
@@ -50,7 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openBranchSelector() {
     final currentRole = ref.read(userRoleProvider);
-    final isSuperAdmin = currentRole == 'Super Admin';
+    final isSuperAdmin = UserRoles.normalize(currentRole) == UserRoles.superAdmin;
     final activeBranch = ref.read(activeBranchProvider);
 
     if (!isSuperAdmin) {
@@ -572,10 +573,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final currentRole = ref.watch(userRoleProvider);
     final activeStaff = ref.watch(activeStaffMemberProvider);
-    final isSuperAdmin = currentRole == 'Super Admin';
-    final isBranchManager = currentRole == 'Branch Manager';
-    final isLoanOfficer = currentRole == 'Loan Officer';
-    final isStorekeeper = currentRole == 'Storekeeper' || currentRole == 'Inventory Officer';
+    final isSuperAdmin = currentRole == UserRoles.superAdmin;
+    final isBranchManager = currentRole == UserRoles.branchManager;
+    final isLoanOfficer = currentRole == UserRoles.loanOfficer;
+    final isStorekeeper = currentRole == UserRoles.storekeeper;
+    final isAuditor = currentRole == UserRoles.auditor;
 
     final activeBranch = ref.watch(activeBranchProvider);
     final totalStock = ref.watch(totalPhonesCountProvider);
@@ -621,8 +623,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ] else if (isStorekeeper) ...[
                 _buildStorekeeperHeroCard(totalStock, allLowStock.length),
                 const SizedBox(height: 16),
+              ] else if (isAuditor) ...[
+                // Read-only role: no till figure, no sales actions.
+                _buildAuditorNoticeCard(),
+                const SizedBox(height: 16),
               ] else ...[
-                // Counter Cashier Hero
+                // Counter Cashier Hero (the only remaining operational role)
                 _buildCashierTillHeroCard(680000, 8),
                 const SizedBox(height: 16),
                 _buildFeaturedDealsSection(context),
@@ -702,16 +708,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: const Color(0xFFE9F2FE),
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    // Show the real session role. The old nested ternary had no
+                    // Auditor branch, so an Auditor was displayed as
+                    // 'Counter Cashier'.
                     child: Text(
-                      isSuperAdmin
-                          ? 'Super Admin'
-                          : (isBranchManager
-                              ? 'Branch Manager'
-                              : (isLoanOfficer
-                                  ? 'Loan Officer'
-                                  : (isStorekeeper
-                                      ? 'Storekeeper'
-                                      : 'Counter Cashier'))),
+                      UserRoles.normalize(currentRole) ?? '—',
                       style: const TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
@@ -1126,7 +1127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showPhoneQuickAction(String name, int left) {
     final activeBranch = ref.read(activeBranchProvider);
     final currentRole = ref.read(userRoleProvider);
-    final isCashier = currentRole == 'Counter Cashier' || currentRole == 'Staff';
+    final isCashier = currentRole == UserRoles.counterCashier;
 
     LimsBottomSheet.show(
       context: context,
@@ -1423,10 +1424,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ------------------------------------------------------------- Header
   Widget _buildHeader(BuildContext context, String currentRole, String activeBranch, StaffMember activeStaff) {
-    final isSuperAdmin = currentRole == 'Super Admin';
-    final isBranchManager = currentRole == 'Branch Manager';
-    final isLoanOfficer = currentRole == 'Loan Officer';
-    final isStorekeeper = currentRole == 'Storekeeper' || currentRole == 'Inventory Officer';
+    final isSuperAdmin = currentRole == UserRoles.superAdmin;
+    final isBranchManager = currentRole == UserRoles.branchManager;
+    final isLoanOfficer = currentRole == UserRoles.loanOfficer;
+    final isStorekeeper = currentRole == UserRoles.storekeeper;
 
     final Color roleColor = isSuperAdmin
         ? const Color(0xFF7C3AED)
@@ -2177,6 +2178,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Auditor landing card.
+  ///
+  /// The Auditor role is read-only. It deliberately shows no till balance, no
+  /// sales figure and no action button, so a reader cannot mistake oversight
+  /// access for operating access.
+  Widget _buildAuditorNoticeCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E293B), Color(0xFF334155)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F334155),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0x1AFFFFFF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.visibility_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Read-only audit access',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'You can inspect registers, loan history and reports. Creating, editing, approving or disbursing is not available to this role.',
+            style: TextStyle(fontSize: 12.5, height: 1.5, color: Color(0xFFCBD5E1)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStorekeeperHeroCard(int totalStock, int lowStockCount) {
     return Container(
       constraints: const BoxConstraints(minHeight: 164),
@@ -2897,7 +2957,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (lowItems.isEmpty) return const SizedBox.shrink();
 
     final currentRole = ref.watch(userRoleProvider);
-    final isCashier = currentRole == 'Counter Cashier' || currentRole == 'Staff';
+    final isCashier = currentRole == UserRoles.counterCashier;
     final itemNames = lowItems.take(2).map((p) => '${p.name} (${p.stock} left)').join(', ');
     final moreCount = lowItems.length > 2 ? ' +${lowItems.length - 2} more' : '';
 

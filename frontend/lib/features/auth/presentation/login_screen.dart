@@ -50,23 +50,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final user = await ApiService().login(_phoneCtrl.text, _passCtrl.text);
       if (!mounted) return;
+      // The server returns the canonical role. Normalise anyway so a legacy
+      // row cannot slip through, and never invent one.
       final rawRole = user['role'];
-      final role = rawRole is String ? rawRole : '';
+      final role = UserRoles.normalize(rawRole is String ? rawRole : null);
       final nameValue = user['name'];
       final name = nameValue is String && nameValue.isNotEmpty ? nameValue : 'User';
-      if (role.isEmpty) {
-        throw StateError('Server returned no role. Access denied.');
+      if (role == null || role == UserRoles.pending) {
+        throw StateError('Server returned no usable role. Access denied.');
       }
       ref.read(userRoleProvider.notifier).hydrateFromSession(role);
-      final isAdmin = role.toLowerCase().contains('admin');
-      if (isAdmin) {
+      // Routing is on the canonical role, not on a substring of the label.
+      // The old `role.toLowerCase().contains('admin')` test sent a Branch
+      // Manager to /home and would have sent an 'Auditor' anywhere it liked.
+      final landsOnAdmin = role == UserRoles.superAdmin ||
+          role == UserRoles.branchManager;
+      if (landsOnAdmin) {
         context.go('/admin');
       } else {
         context.go('/home');
       }
       LimsToast.show(
         context,
-        isAdmin ? 'Welcome to Admin Console, $name' : 'Welcome back, $name',
+        landsOnAdmin ? 'Welcome to Admin Console, $name' : 'Welcome back, $name',
         isSuccess: true,
       );
     } catch (e) {
@@ -144,11 +150,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // P0: role pills removed — role is server-owned, never user-picked.
 
-                // Phone Field
+                // Email Field.
+                //
+                // Was labelled "Phone number". Staff are provisioned with a
+                // work email that doubles as the username (a driver without a
+                // personal address still gets e.g. driver01@mbagala.lims.co.tz),
+                // and Supabase Auth signs in by email.
                 _buildInputField(
                   controller: _phoneCtrl,
-                  icon: Icons.phone_android_rounded,
-                  hint: 'Phone number',
+                  icon: Icons.alternate_email_rounded,
+                  hint: 'Work email',
                 ),
                 const SizedBox(height: 12),
 
