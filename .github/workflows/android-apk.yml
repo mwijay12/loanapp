@@ -9,6 +9,11 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+  # Build every pull request too. Without this the first time Dart is compiled
+  # is after the merge, which is too late for anybody working without a local
+  # Flutter toolchain.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
