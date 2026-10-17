@@ -152,11 +152,53 @@ class ApiService {
 
     // 2. Read the server-owned role. This is display/routing data only; RLS on
     //    every table is what actually enforces access.
-    final res = await client
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+    //
+    //    The live `public.profiles` table does NOT use the auth user id as its
+    //    primary key. It carries a separate nullable `auth_user_id` column, and
+    //    rows are keyed by their own `id`. Reading the profile by `.eq('id',
+    //    user.id)` therefore matched nothing and every real account fell through
+    //    to the fail-closed path — the accounts existed, the roles did not.
+    //
+    //    Resolution order, most authoritative first:
+    //      1. auth_user_id  — the correct link on the live schema
+    //      2. id            — correct on a schema where they are the same value
+    //      3. email         — legacy rows written before the link existed
+    //    `eq` escapes its argument, so no filter expression is interpolated.
+    Map<String, dynamic>? res;
+
+    try {
+      res = await client
+          .from('profiles')
+          .select()
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+    } catch (_) {
+      // Column absent on this schema — fall through.
+    }
+
+    if (res == null) {
+      try {
+        res = await client
+            .from('profiles')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
+      } catch (_) {
+        // id is not an auth id on every schema — fall through.
+      }
+    }
+
+    if (res == null && (user.email ?? email).isNotEmpty) {
+      try {
+        res = await client
+            .from('profiles')
+            .select()
+            .eq('email', user.email ?? email)
+            .maybeSingle();
+      } catch (_) {
+        // Leave res null; the fail-closed branch below reports it.
+      }
+    }
 
     final rawRole = res == null ? null : res['role'] as String?;
     final role = UserRoles.normalize(rawRole);
