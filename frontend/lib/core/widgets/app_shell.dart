@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -20,10 +21,11 @@ class AppShell extends ConsumerWidget {
 
   void _openMoreSheet(BuildContext context, WidgetRef ref) {
     final currentRole = ref.watch(userRoleProvider);
-    final isSuperAdmin = currentRole == 'Super Admin';
-    final isBranchManager = currentRole == 'Branch Manager';
-    final isStorekeeper = currentRole == 'Storekeeper' || currentRole == 'Inventory Officer';
-    final isCashier = currentRole == 'Counter Cashier' || currentRole == 'Staff';
+    final isSuperAdmin = currentRole == UserRoles.superAdmin;
+    final isBranchManager = currentRole == UserRoles.branchManager;
+    final isStorekeeper = currentRole == UserRoles.storekeeper;
+    final isCashier = currentRole == UserRoles.counterCashier;
+    final isAuditor = currentRole == UserRoles.auditor;
 
     showModalBottomSheet(
       context: context,
@@ -34,7 +36,44 @@ class AppShell extends ConsumerWidget {
       builder: (ctx) {
         final List<Widget> opButtons = [];
 
-        if (isCashier) {
+        // Auditor is read-only by definition: it gets no money, stock or
+        // approval action at all, only the registers it is meant to inspect.
+        if (isAuditor) {
+          opButtons.addAll([
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.receipt_long_rounded,
+              iconColor: AppTheme.brand600,
+              title: 'Reports',
+              sub: 'Read-only registers',
+              route: '/reports',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.account_balance_wallet_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'Loan Register',
+              sub: 'Inspect only',
+              route: '/loans',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.inventory_2_rounded,
+              iconColor: const Color(0xFF0EA5E9),
+              title: 'Stock Register',
+              sub: 'Inspect only',
+              route: '/stock',
+            ),
+            _buildOpButton(
+              context: ctx,
+              icon: Icons.auto_awesome_rounded,
+              iconColor: const Color(0xFF7C5CFC),
+              title: 'AI Assistant',
+              sub: 'Ask anything',
+              route: '/ai',
+            ),
+          ]);
+        } else if (isCashier) {
           opButtons.addAll([
             _buildOpButton(
               context: ctx,
@@ -195,29 +234,39 @@ class AppShell extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
               // Active Role Scope Badge
+              // Role scope badge. Every role maps to its own colour/scope so a
+              // read-only Auditor can never be labelled "Full Admin".
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isCashier
-                      ? const Color(0xFFFEF3E4)
-                      : (isStorekeeper ? const Color(0xFFF0EBFF) : const Color(0xFFEFF6FF)),
+                  color: isAuditor
+                      ? const Color(0xFFEEF2F6)
+                      : (isCashier
+                          ? const Color(0xFFFEF3E4)
+                          : (isStorekeeper ? const Color(0xFFF0EBFF) : const Color(0xFFEFF6FF))),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isCashier
-                        ? const Color(0xFFFDE68A)
-                        : (isStorekeeper ? const Color(0xFFD8B4FE) : const Color(0xFFBFDBFE)),
+                    color: isAuditor
+                        ? const Color(0xFFCBD5E1)
+                        : (isCashier
+                            ? const Color(0xFFFDE68A)
+                            : (isStorekeeper ? const Color(0xFFD8B4FE) : const Color(0xFFBFDBFE))),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      isCashier
-                          ? Icons.point_of_sale_rounded
-                          : (isStorekeeper ? Icons.inventory_2_rounded : Icons.shield_rounded),
+                      isAuditor
+                          ? Icons.visibility_rounded
+                          : (isCashier
+                              ? Icons.point_of_sale_rounded
+                              : (isStorekeeper ? Icons.inventory_2_rounded : Icons.shield_rounded)),
                       size: 16,
-                      color: isCashier
-                          ? const Color(0xFFD97706)
-                          : (isStorekeeper ? const Color(0xFF7C3AED) : AppTheme.brand600),
+                      color: isAuditor
+                          ? const Color(0xFF475569)
+                          : (isCashier
+                              ? const Color(0xFFD97706)
+                              : (isStorekeeper ? const Color(0xFF7C3AED) : AppTheme.brand600)),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -228,16 +277,20 @@ class AppShell extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: isCashier
-                              ? const Color(0xFF92400E)
-                              : (isStorekeeper ? const Color(0xFF5B21B6) : const Color(0xFF1E40AF)),
+                          color: isAuditor
+                              ? const Color(0xFF334155)
+                              : (isCashier
+                                  ? const Color(0xFF92400E)
+                                  : (isStorekeeper ? const Color(0xFF5B21B6) : const Color(0xFF1E40AF))),
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        isCashier ? 'Till Scope' : (isStorekeeper ? 'Warehouse' : 'Full Admin'),
+                        isAuditor
+                            ? 'Read-only'
+                            : (isCashier ? 'Till Scope' : (isStorekeeper ? 'Warehouse' : 'Branch Admin')),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
@@ -259,9 +312,11 @@ class AppShell extends ConsumerWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                isCashier
-                    ? 'Cashier till, sales & shift actions'
-                    : (isStorekeeper ? 'Warehouse & stock movements' : 'Core branch workflows & management'),
+                isAuditor
+                    ? 'Read-only inspection of registers and reports'
+                    : (isCashier
+                        ? 'Cashier till, sales & shift actions'
+                        : (isStorekeeper ? 'Warehouse & stock movements' : 'Core branch workflows & management')),
                 style: const TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,

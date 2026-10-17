@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/telecom_service.dart';
@@ -1000,9 +1001,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
     // P0: PII unmask is allow-listed. Unknown sessions ('noSession'),
     // cashiers and storekeepers always see masked PII.
     final viewerRole = ref.watch(userRoleProvider);
-    final canViewPii = viewerRole == 'Super Admin' ||
-        viewerRole == 'Branch Manager' ||
-        viewerRole == 'Loan Officer';
+    final canViewPii = UserRoles.canViewPii(viewerRole);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1140,9 +1139,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
   Widget _buildGuarantorCard(LoanItem loan) {
     // P0: same allow-list as NIDA above — mask by default.
     final viewerRole = ref.watch(userRoleProvider);
-    final canViewPii = viewerRole == 'Super Admin' ||
-        viewerRole == 'Branch Manager' ||
-        viewerRole == 'Loan Officer';
+    final canViewPii = UserRoles.canViewPii(viewerRole);
     final displayedGuarantorPhone = canViewPii
         ? loan.guarantorPhone
         : (loan.guarantorPhone.length >= 8
