@@ -1,46 +1,73 @@
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../constants/app_constants.dart';
 import 'mock_lims_data.dart';
 
 /// User Role State — SERVER-OWNED, read-only projection.
 /// P0: the client can never invent or switch roles. The role starts as
-/// 'noSession' (most restrictive) and is set exactly once per login from
-/// the server profile via [hydrateFromSession]. No client-side role writer exists.
+/// [UserRoles.noSession] (most restrictive) and is set exactly once per login
+/// from the server profile via [hydrateFromSession]. No client-side role
+/// writer exists.
 class UserRoleNotifier extends StateNotifier<String> {
-  UserRoleNotifier() : super('noSession');
+  UserRoleNotifier() : super(UserRoles.noSession);
 
-  static const Set<String> _knownRoles = {
-    'Super Admin',
-    'Branch Manager',
-    'Loan Officer',
-    'Storekeeper',
-    'Inventory Officer',
-    'Counter Cashier',
-    'Staff',
-  };
-
-  /// One-way hydration from the server session. Unknown/empty roles stay
-  /// on the restrictive 'noSession' sentinel instead of defaulting upward.
+  /// One-way hydration from the server session.
+  ///
+  /// Unknown or empty values are rejected outright so the state stays on the
+  /// restrictive [UserRoles.noSession] sentinel. [UserRoles.pending] is a real
+  /// state (invited, no access yet) and is preserved as-is — the router guard
+  /// is what keeps a pending user out of the app.
   void hydrateFromSession(String? serverRole) {
-    final role = (serverRole ?? '').trim();
-    if (role.isEmpty || !_knownRoles.contains(role)) return;
+    final role = UserRoles.normalize(serverRole);
+    if (role == null || role == UserRoles.noSession) return;
     state = role;
   }
 
-  void clearSession() => state = 'noSession';
+  void clearSession() => state = UserRoles.noSession;
 }
 
 final userRoleProvider = StateNotifierProvider<UserRoleNotifier, String>((ref) {
   return UserRoleNotifier();
 });
 
+/// The staff profile behind the current session.
+///
+/// SECURITY: this used to fall back to `allStaff.first`, which silently handed
+/// every unresolved session the first mock record — a Super Admin. The
+/// attendance and home screens then rendered elevated capabilities before any
+/// role was established. There is no fallback now: an unmatched session gets a
+/// locked-out placeholder with every capability denied, and its role is the
+/// real session role (or `Pending`, never an elevated one).
 final activeStaffMemberProvider = Provider<StaffMember>((ref) {
   final currentRole = ref.watch(userRoleProvider);
   final allStaff = ref.watch(staffProvider);
-  return allStaff.firstWhere(
-    (s) => s.role.toLowerCase() == currentRole.toLowerCase() ||
-           (currentRole == 'Storekeeper' && s.role == 'Inventory Officer'),
-    orElse: () => allStaff.first,
+
+  final normalizedRole = UserRoles.normalize(currentRole);
+
+  if (normalizedRole != null) {
+    for (final member in allStaff) {
+      if (UserRoles.normalize(member.role) == normalizedRole) return member;
+    }
+  }
+
+  return StaffMember(
+    id: 'noSession',
+    name: 'Signed out',
+    role: normalizedRole ?? UserRoles.pending,
+    email: '',
+    phone: '',
+    branch: ref.watch(activeBranchProvider),
+    staffCode: '—',
+    supervisorPin: '',
+    status: 'Inactive',
+    canDisburseLoans: false,
+    canKnoxLock: false,
+    canViewMargins: false,
+    canEditStock: false,
+    canApproveOverrides: false,
+    lastActive: '—',
+    grad: const [Color(0xFF94A3B8), Color(0xFF64748B)],
   );
 });
 
@@ -106,9 +133,9 @@ final staffProvider = StateNotifierProvider<StaffNotifier, List<StaffMember>>((r
   return StaffNotifier();
 });
 
-/// Active Branch State (default 'Kariakoo Main')
+/// Active Branch State (default: the launch branch, Mbagala).
 class ActiveBranchNotifier extends StateNotifier<String> {
-  ActiveBranchNotifier() : super('Kariakoo Main');
+  ActiveBranchNotifier() : super(AppConstants.launchBranch);
 
   void setBranch(String branch) => state = branch;
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/app_permissions_service.dart';
@@ -56,7 +57,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
   }
 
   Future<void> _handleClockAction(AttendanceRecord? currentRecord, StaffMember activeStaff, String branch) async {
-    if (activeStaff.role == 'Super Admin') {
+    if (UserRoles.normalize(activeStaff.role) == UserRoles.superAdmin) {
       _showTopAlert(
         context,
         title: 'Executive HQ Exemption',
@@ -91,7 +92,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
       if (!mounted) return;
       setState(() => _isCheckingGps = false);
 
-      if (!result.isWithinGeofence && result.isGpsHardwareActive) {
+      // Block only when a fence actually exists and the device is outside it.
+      // `isConfigured == false` means this branch has no coordinate on file —
+      // there is nothing to enforce, and reporting a distance would be a lie.
+      if (result.isConfigured &&
+          !result.isWithinGeofence &&
+          result.isGpsHardwareActive) {
         _showTopAlert(
           context,
           title: 'Geofence Verification Failed',
@@ -109,12 +115,22 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
             customTime: '$_currentTime $_currentAmPm',
           );
 
-      _showTopAlert(
-        context,
-        title: 'Clock-In Confirmed',
-        message: '${result.statusMessage} Logged at $branch.',
-        isSuccess: true,
-      );
+      if (!result.isConfigured) {
+        // Punch-in recorded, but the branch still needs a surveyed coordinate.
+        _showTopAlert(
+          context,
+          title: 'Clock-In Confirmed — Geofence Not Configured',
+          message: '${result.statusMessage} Logged at $branch.',
+          isSuccess: false,
+        );
+      } else {
+        _showTopAlert(
+          context,
+          title: 'Clock-In Confirmed',
+          message: '${result.statusMessage} Logged at $branch.',
+          isSuccess: true,
+        );
+      }
     } else if (currentRecord.clockOutTime == null) {
       // Clock Out
       ref.read(attendanceProvider.notifier).clockOut(currentRecord.id);
@@ -248,7 +264,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                       children: [
                         _buildTimesheetMetaRow('Company', 'Loan & Investment Management System Ltd'),
                         _buildTimesheetMetaRow('Branch', branchName),
-                        _buildTimesheetMetaRow('TIN / VRN', '142-998-314 / 40-028912-K'),
+                        _buildTimesheetMetaRow('TIN / VRN', AppConstants.fiscalLine().replaceAll('  |  ', ' / ')),
                         _buildTimesheetMetaRow('Pay Period', '01 Oct 2026 - 31 Oct 2026'),
                         _buildTimesheetMetaRow('Approved By', 'David Erick Mwijage · Managing Director'),
                       ],
@@ -572,7 +588,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                   const SizedBox(height: 20),
 
                   // Shift Action Buttons
-                  if (activeStaff.role == 'Super Admin') ...[
+                  if (UserRoles.normalize(activeStaff.role) == UserRoles.superAdmin) ...[
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -674,7 +690,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
 
                   // Status detail text
                   Text(
-                    activeStaff.role == 'Super Admin'
+                    UserRoles.normalize(activeStaff.role) == UserRoles.superAdmin
                         ? 'Executive privileges: Global management across 10 regions in Tanzania'
                         : (isClockedIn
                             ? 'Clocked in at ${currentStaffRecord.clockInTime} · GPS: Within 15m of $activeBranch'
@@ -884,7 +900,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
               child: _buildMetricTile(
                 title: 'Late Flags',
                 value: '1 Incident',
-                sub: 'Storekeeper 12m',
+                sub: 'Latest shift record',
                 color: const Color(0xFFF59E0B),
                 icon: Icons.warning_amber_rounded,
               ),

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../constants/app_constants.dart';
+
 /// Supabase Backend Configuration for LIMS
 /// Organization: hvqssaxwrrmewmvqujus
 /// Lead Architect: David Erick Mwijage (mwijay12)
@@ -56,45 +58,128 @@ class ApiService {
     }
   }
 
-  /// Sends a keep-alive touch to Supabase heartbeat_pings table
+  /// Sends a keep-alive touch so the free-tier Supabase project never hits the
+  /// 7-day inactivity pause.
+  ///
+  /// The column is `payload`, not `metadata`. The previous version inserted a
+  /// `metadata` key, which PostgREST rejected, and the surrounding `catch (_) {}`
+  /// hid the failure — so the in-app heartbeat never actually landed and the
+  /// only thing keeping the project awake was the scheduled workflow.
+  ///
+  /// Order matters. `init()` calls this before anybody is signed in, and an
+  /// anonymous INSERT into `heartbeat_pings` is the only write anon is allowed;
+  /// once a session exists the ping is attributed to the real user.
   Future<void> sendHeartbeatPing({String source = 'in-app-ping'}) async {
+    final payload = <String, dynamic>{
+      'app': 'LIMS Mobile App',
+      'source': source,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    // Preferred path: a real, attributable ping.
     try {
-      await client.from('heartbeat_pings').insert({
-        'source': source,
-        'metadata': {
-          'app': 'LIMS Mobile App',
-          'author': 'David Erick Mwijage',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      });
+      if (client.auth.currentSession != null) {
+        await client.from('heartbeat_pings').insert({
+          'source': source,
+          'payload': payload,
+        });
+        return;
+      }
+    } catch (_) {
+      // Fall through to the anonymous probe below.
+    }
+
+    // Anonymous path. `heartbeat_probe()` is SECURITY DEFINER, executable by
+    // anon, and returns aggregate counts only — never cost or selling price.
+    // Any successful request still counts as project activity.
+    try {
+      await client.rpc('heartbeat_probe');
     } catch (_) {}
   }
 
   // ------------------------------------------------------------- Authentication & Staff Profiles
-  // P0: no offline fallback, no client-side role invention. Any failure
-  // throws so the login screen can show an error instead of granting access.
-  // Full fix (Supabase Auth + RLS) is P1; this only closes the open door.
+  //
+  // SECURITY FIX — this method used to read the profile row and return a
+  // session WITHOUT ever checking the password:
+  //
+  //   final res = await client.from('profiles').select()
+  //       .or('phone.eq.$sanitized,email.eq.$sanitized').maybeSingle();
+  //   if (res == null) throw StateError('Account not found...');
+  //   return { ... 'role': res['role'] ?? 'Branch Manager' ... };
+  //
+  // Three separate problems, all fixed below:
+  //   1. Any password was accepted for any known email or phone. That is an
+  //      authentication bypass, not a bug.
+  //   2. A null/unknown role silently became 'Branch Manager'.
+  //   3. `.or('phone.eq.$sanitized,...')` interpolated user input straight into
+  //      a PostgREST filter expression.
+  //
+  // Passwords can only be verified server-side, so the check now goes through
+  // Supabase Auth (signInWithPassword) and the role is read back afterwards.
+  // Every role read is normalised and unknown values fail closed.
+  //
+  // NOTE: this requires the Supabase Auth users to exist. Until they are
+  // created (P1 Hatua 1), nobody can sign in — which is the correct behaviour:
+  // the alternative is an open door.
   Future<Map<String, dynamic>> login(String identifier, String password) async {
-    final sanitized = identifier.trim();
-    if (sanitized.isEmpty || password.trim().isEmpty) {
-      throw StateError('Enter phone/email and password.');
+    final email = identifier.trim().toLowerCase();
+    final secret = password.trim();
+
+    if (email.isEmpty || secret.isEmpty) {
+      throw StateError('Enter your email and password.');
     }
+    if (!email.contains('@')) {
+      throw StateError('Sign in with your work email address.');
+    }
+
+    // 1. Verify the password. On failure Supabase throws an AuthException; the
+    //    raw provider message is deliberately not surfaced, because it can
+    //    reveal whether an address exists.
+    final AuthResponse auth;
+    try {
+      auth = await client.auth.signInWithPassword(
+        email: email,
+        password: secret,
+      );
+    } on AuthException {
+      throw StateError('Invalid email or password.');
+    }
+
+    final user = auth.user;
+    if (user == null) {
+      throw StateError('Invalid email or password.');
+    }
+
+    // 2. Read the server-owned role. This is display/routing data only; RLS on
+    //    every table is what actually enforces access.
     final res = await client
         .from('profiles')
         .select()
-        .or('phone.eq.$sanitized,email.eq.$sanitized')
+        .eq('id', user.id)
         .maybeSingle();
 
-    if (res == null) {
-      throw StateError('Account not found for this identifier.');
+    final rawRole = res == null ? null : res['role'] as String?;
+    final role = UserRoles.normalize(rawRole);
+
+    // 3. Fail closed. An unrecognised or not-yet-activated account must not
+    //    inherit any access, and must not be left holding a valid session.
+    if (role == null || role == UserRoles.pending) {
+      await client.auth.signOut();
+      throw StateError(
+        'Your account has no role assigned yet. '
+        'Ask a Super Admin to activate it.',
+      );
     }
+
     return {
-      'id': res['id'],
-      'name': res['full_name'] ?? 'User',
-      'email': res['email'] ?? '',
-      'phone': res['phone'] ?? '',
-      'role': res['role'] ?? 'Branch Manager',
-      'branch': res['branch_name'] ?? 'Mbezi Branch',
+      'id': user.id,
+      'name': (res == null ? null : res['full_name'] as String?) ?? 'User',
+      'email': user.email ?? email,
+      'phone': (res == null ? null : res['phone'] as String?) ?? '',
+      'role': role,
+      'branch':
+          (res == null ? null : res['branch_name'] as String?) ??
+              AppConstants.launchBranch,
     };
   }
 

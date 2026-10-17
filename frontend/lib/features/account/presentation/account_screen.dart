@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/data/inventory_provider.dart';
 import '../../../core/theme/app_localizations.dart';
 
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
@@ -30,18 +31,32 @@ class AccountScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
-            _buildProfileSection(l10n),
+            _buildProfileSection(context, ref, l10n),
             const SizedBox(height: 20),
             _buildSettingsSection(context, ref, l10n, currentLocale),
             const SizedBox(height: 20),
-            _buildMenuSection(context, l10n),
+            _buildMenuSection(context, ref, l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileSection(AppLocalizations l10n) {
+  /// Renders the REAL signed-in identity.
+  ///
+  /// This used to read `AppConstants.employeeName` / `employeeRole`, which were
+  /// hardcoded strings ("John" / "Branch Manager"). Every user therefore saw the
+  /// same name and a role they might not hold. The values now come from the
+  /// session: the role is whatever the server granted, and the staff profile is
+  /// resolved from it. An unresolved session renders the locked-out placeholder
+  /// rather than an elevated identity.
+  Widget _buildProfileSection(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    final staff = ref.watch(activeStaffMemberProvider);
+    final rawRole = ref.watch(userRoleProvider);
+    final role = UserRoles.normalize(rawRole);
+    final hasSession = role != null && role != UserRoles.noSession;
+    final roleLabel = hasSession ? UserRoles.label(role) : 'Not signed in';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -54,8 +69,8 @@ class AccountScreen extends ConsumerWidget {
                 color: AppTheme.primaryLight,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.person_rounded,
+              child: Icon(
+                hasSession ? Icons.person_rounded : Icons.person_off_rounded,
                 color: AppTheme.primaryColor,
                 size: 32,
               ),
@@ -65,25 +80,33 @@ class AccountScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    AppConstants.employeeName,
-                    style: TextStyle(
+                  Text(
+                    staff.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    AppConstants.employeeRole,
-                    style: TextStyle(
+                  Text(
+                    roleLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    l10n.branch_name,
+                    hasSession && staff.branch.isNotEmpty
+                        ? '${staff.branch} · ${staff.staffCode}'
+                        : l10n.branch_name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppTheme.textTertiary,
@@ -180,7 +203,13 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMenuSection(BuildContext context, AppLocalizations l10n) {
+  Widget _buildMenuSection(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    final role = UserRoles.normalize(ref.watch(userRoleProvider));
+    // Only roles that actually administer people see the admin entry point.
+    // Hiding it is presentation only — the route guard and RLS are the real
+    // enforcement — but showing an admin door to a cashier is misleading.
+    final showAdmin = role == UserRoles.superAdmin || role == UserRoles.branchManager;
+
     return Card(
       child: Column(
         children: [
@@ -195,12 +224,14 @@ class AccountScreen extends ConsumerWidget {
             label: l10n.notifications,
             onTap: () => context.push('/notifications'),
           ),
-          const Divider(height: 1),
-          _MenuItem(
-            icon: Icons.admin_panel_settings_rounded,
-            label: l10n.admin_dashboard,
-            onTap: () => context.push('/admin'),
-          ),
+          if (showAdmin) ...[
+            const Divider(height: 1),
+            _MenuItem(
+              icon: Icons.admin_panel_settings_rounded,
+              label: l10n.admin_dashboard,
+              onTap: () => context.push('/admin'),
+            ),
+          ],
           const Divider(height: 1),
           _MenuItem(
             icon: Icons.store_rounded,
@@ -211,7 +242,12 @@ class AccountScreen extends ConsumerWidget {
           _MenuItem(
             icon: Icons.logout_rounded,
             label: l10n.sign_out,
-            onTap: () => context.go('/login'),
+            onTap: () {
+              // Drop the local session before leaving. Without this the next
+              // screen can still read the previous user's role.
+              ref.read(userRoleProvider.notifier).clearSession();
+              context.go('/login');
+            },
             isDestructive: true,
           ),
         ],

@@ -316,7 +316,10 @@ class ActivityItem {
 class StaffMember {
   final String id;
   final String name;
-  final String role; // 'Super Admin', 'Branch Manager', 'Loan Officer', 'Counter Cashier'
+  /// Canonical role string — see [UserRoles] in core/constants/app_constants.dart.
+  /// Never store a legacy alias here: 'Inventory Officer' and 'Staff' were
+  /// retired in favour of 'Storekeeper' and 'Counter Cashier'.
+  final String role;
   final String email;
   final String phone;
   final String branch;
@@ -993,7 +996,7 @@ class MockLimsData {
     StaffMember(
       id: 'STF-05',
       name: 'Peter Msechu',
-      role: 'Inventory Officer',
+      role: 'Storekeeper',
       email: 'peter.m@limstanzania.co.tz',
       phone: '0655 491 203',
       branch: 'Mbezi Hub Branch',

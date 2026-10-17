@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -628,7 +629,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      currentRole == 'Super Admin' || currentRole == 'Branch Manager'
+                      UserRoles.canAdministerStaff(currentRole)
                           ? Icons.shield_rounded
                           : Icons.lock_outline_rounded,
                       size: 15,
@@ -710,19 +711,25 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   String _getRolePrivilegeDescription(String role) {
-    switch (role) {
-      case 'Super Admin':
+    // Normalise first so a legacy row ('Inventory Officer', 'Staff') still
+    // resolves to its canonical role instead of falling through to default.
+    switch (UserRoles.normalize(role)) {
+      case UserRoles.superAdmin:
         return 'Full Executive Access: Network revenue, P&L profit margins, staff RBAC permissions, and Knox master switch.';
-      case 'Branch Manager':
+      case UserRoles.branchManager:
         return 'Branch Supervision: Daily register & drawer audit, supervisor discount PIN overrides, staff shift audits.';
-      case 'Loan Officer':
+      case UserRoles.loanOfficer:
         return 'Credit & Risk: Customer KYC scoring, loan approval/rejection, remote Knox lock for defaulters, collections.';
-      case 'Storekeeper':
+      case UserRoles.storekeeper:
         return 'Logistics & Warehouse: Inbound PO shipments intake, serialized IMEI barcode intake, audits, and branch transfers.';
-      case 'Counter Cashier':
+      case UserRoles.counterCashier:
         return 'Retail POS: Fast cash & mobile money sales, customer loan KYC intake, stock scan, and shift clock-in.';
+      case UserRoles.auditor:
+        return 'Oversight Only: Read-only access to registers, loan history, stock movements and reports. Cannot create, approve, edit or disburse.';
+      case UserRoles.pending:
+        return 'Invited but not yet activated: the account exists but has no access until the invitation is accepted and a password is set.';
       default:
-        return 'Staff access with branch-level visibility.';
+        return 'Unrecognised role — treated as read-only until a Super Admin assigns a valid role.';
     }
   }
 
@@ -952,23 +959,36 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   Widget _buildRoleBadge(String role) {
     Color bg;
     Color fg;
+    final canonical = UserRoles.normalize(role) ?? role;
 
-    switch (role) {
-      case 'Super Admin':
+    switch (canonical) {
+      case UserRoles.superAdmin:
         bg = const Color(0xFFE9F2FF);
         fg = AppTheme.brand600;
         break;
-      case 'Branch Manager':
+      case UserRoles.branchManager:
         bg = const Color(0xFFF3E8FF);
         fg = const Color(0xFF7C5CFC);
         break;
-      case 'Loan Officer':
+      case UserRoles.loanOfficer:
         bg = const Color(0xFFE7F8F0);
         fg = const Color(0xFF12B76A);
         break;
-      case 'Counter Cashier':
+      case UserRoles.counterCashier:
         bg = const Color(0xFFFEF3E4);
         fg = const Color(0xFFF79009);
+        break;
+      case UserRoles.storekeeper:
+        bg = const Color(0xFFE0F2FE);
+        fg = const Color(0xFF0284C7);
+        break;
+      case UserRoles.auditor:
+        bg = const Color(0xFFEEF2F6);
+        fg = const Color(0xFF475569);
+        break;
+      case 'Pending':
+        bg = const Color(0xFFF1F5F9);
+        fg = const Color(0xFF64748B);
         break;
       default:
         bg = const Color(0xFFF1F5F9);
@@ -1042,14 +1062,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 const Text('Nafasi / Jukumu la Mfanyakazi:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  initialValue: currentRole,
-                  items: const [
-                    DropdownMenuItem(value: 'Super Admin', child: Text('Super Admin (Mamlaka Kamili)')),
-                    DropdownMenuItem(value: 'Branch Manager', child: Text('Branch Manager (Meneja wa Tawi)')),
-                    DropdownMenuItem(value: 'Loan Officer', child: Text('Loan Officer (Afisa Mkopo)')),
-                    DropdownMenuItem(value: 'Counter Cashier', child: Text('Counter Cashier (Mweka Hazina)')),
-                    DropdownMenuItem(value: 'Inventory Officer', child: Text('Inventory Officer (Afisa Stoo)')),
-                  ],
+                   initialValue: currentRole,
+                   // Built from the canonical role list so the dropdown can
+                   // never drift from what the database accepts.
+                   items: [
+                     for (final role in UserRoles.assignable)
+                       DropdownMenuItem(value: role, child: Text(UserRoles.label(role))),
+                   ],
                   onChanged: (v) {
                     if (v != null) setModalState(() => currentRole = v);
                   },
@@ -1155,8 +1174,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final emailCtrl = TextEditingController();
     final staffCodeCtrl = TextEditingController(text: 'STF-${DateTime.now().millisecondsSinceEpoch % 1000}');
     final pinCtrl = TextEditingController();
-    String selectedRole = 'Loan Officer';
-    String selectedBranch = 'Kariakoo Main Branch';
+    String selectedRole = UserRoles.loanOfficer;
+    String selectedBranch = AppConstants.launchBranch;
 
     LimsBottomSheet.show(
       context: context,
@@ -1220,14 +1239,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  initialValue: selectedRole,
-                  items: const [
-                    DropdownMenuItem(value: 'Super Admin', child: Text('Super Admin')),
-                    DropdownMenuItem(value: 'Branch Manager', child: Text('Branch Manager')),
-                    DropdownMenuItem(value: 'Loan Officer', child: Text('Loan Officer')),
-                    DropdownMenuItem(value: 'Counter Cashier', child: Text('Counter Cashier')),
-                    DropdownMenuItem(value: 'Inventory Officer', child: Text('Inventory Officer')),
-                  ],
+                   initialValue: selectedRole,
+                   items: [
+                     for (final role in UserRoles.assignable)
+                       DropdownMenuItem(value: role, child: Text(role)),
+                   ],
                   onChanged: (v) {
                     if (v != null) setModalState(() => selectedRole = v);
                   },
@@ -1241,11 +1257,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   initialValue: selectedBranch,
-                  items: const [
-                    DropdownMenuItem(value: 'Kariakoo Main Branch', child: Text('Kariakoo Main Branch')),
-                    DropdownMenuItem(value: 'Mbezi Hub Branch', child: Text('Mbezi Hub Branch')),
-                    DropdownMenuItem(value: 'Mwanza Branch', child: Text('Mwanza Branch')),
-                    DropdownMenuItem(value: 'Arusha Branch', child: Text('Arusha Branch')),
+                  // Driven by AppConstants.branches. The old hand-written list
+                  // omitted Mbagala entirely, so a Mbagala staff member could
+                  // not be assigned to their own branch.
+                  items: [
+                    for (final b in AppConstants.branches)
+                      DropdownMenuItem(value: b, child: Text(b)),
                   ],
                   onChanged: (v) {
                     if (v != null) setModalState(() => selectedBranch = v);
@@ -1291,11 +1308,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         staffCode: staffCodeCtrl.text.trim(),
                         supervisorPin: pinCtrl.text.trim(),
                         status: 'Active',
-                        canDisburseLoans: selectedRole != 'Counter Cashier',
-                        canKnoxLock: selectedRole == 'Super Admin' || selectedRole == 'Branch Manager' || selectedRole == 'Loan Officer',
-                        canViewMargins: selectedRole == 'Super Admin' || selectedRole == 'Branch Manager',
-                        canEditStock: selectedRole != 'Loan Officer',
-                        canApproveOverrides: selectedRole == 'Super Admin' || selectedRole == 'Branch Manager',
+                        canDisburseLoans: UserRoles.canHandleCash(selectedRole),
+                        canKnoxLock: UserRoles.canApprove(selectedRole) ||
+                            UserRoles.normalize(selectedRole) == UserRoles.loanOfficer,
+                        canViewMargins: UserRoles.canApprove(selectedRole),
+                        canEditStock: UserRoles.canManageStock(selectedRole),
+                        canApproveOverrides: UserRoles.canApprove(selectedRole),
                         lastActive: 'Active now',
                         grad: const [AppTheme.brand600, AppTheme.brand700],
                       );
