@@ -605,7 +605,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         ),
                         Text(
                           'Signed in as $currentRole. Role changes happen server-side.',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.ink500,
