@@ -151,6 +151,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // P0: role pills removed — role is server-owned, never user-picked.
 
+                // Showcase only. Lists the demo identities so a visitor can get
+                // in without being handed credentials out of band. Compiled out
+                // when DEMO_MODE is not true, so a production build never shows
+                // this card.
+                if (AppConstants.demoMode) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tap a demo account to fill the form · password ${AppConstants.demoPassword}',
+                          maxLines: 2,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.ink900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        for (final entry in AppConstants.demoAccounts.entries)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              _phoneCtrl.text = entry.key;
+                              _passCtrl.text = AppConstants.demoPassword;
+                            },
+                            child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: Text(
+                                    entry.value['role'] ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.ink700,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 7,
+                                  child: Text(
+                                    entry.key,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      color: AppTheme.ink500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+
                 // Email Field.
                 //
                 // Was labelled "Phone number". Staff are provisioned with a

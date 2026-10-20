@@ -18,19 +18,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'title': 'Every device, accounted for',
       'subtitle': 'Live stock across all your branches, down to the last IMEI number with zero discrepancy.',
-      'icon': Icons.inventory_2_rounded,
+      'image': 'assets/images/onb_devices.png',
       'badge': '100% AUDITABLE',
     },
     {
       'title': 'Scan IMEI in seconds',
       'subtitle': 'Verify devices, receive stock, and disburse customer loans — all straight from the counter.',
-      'icon': Icons.qr_code_scanner_rounded,
+      'image': 'assets/images/onb_scan.png',
       'badge': 'INSTANT LOOKUP',
     },
     {
       'title': 'Loans without the chaos',
       'subtitle': 'Track flexible repayment installments, smart reminders, and daily collection balances.',
-      'icon': Icons.handshake_rounded,
+      'image': 'assets/images/onb_loans.png',
       'badge': 'SMART FINANCING',
     },
   ];
@@ -131,19 +131,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: Center(
-                            child: Container(
-                              width: 88,
-                              height: 88,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(28),
-                                boxShadow: AppTheme.shadowMd,
-                              ),
-                              child: Icon(
-                                slide['icon'] as IconData,
-                                size: 42,
-                                color: AppTheme.brand600,
-                              ),
+                            child: Image.asset(
+                              slide['image'] as String,
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),

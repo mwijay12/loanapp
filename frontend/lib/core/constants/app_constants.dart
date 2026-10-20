@@ -267,6 +267,30 @@ class UserRoles {
   /// True when the session is real and known (not signed out, not pending).
   static bool hasAccess(String? raw) => isAssignable(raw);
 
+  /// Portrait shown for a role in the staff directory.
+  ///
+  /// These are demo illustrations, not real people. A member of staff replaces
+  /// their own from the profile screen; until then the role decides the
+  /// placeholder so the list never shows a blank circle.
+  static String avatarAsset(String? raw) {
+    switch (normalize(raw)) {
+      case superAdmin:
+        return 'assets/images/avatar_admin.png';
+      case branchManager:
+        return 'assets/images/avatar_manager.png';
+      case loanOfficer:
+        return 'assets/images/avatar_loan.png';
+      case storekeeper:
+        return 'assets/images/avatar_store.png';
+      case counterCashier:
+        return 'assets/images/avatar_cashier.png';
+      case auditor:
+        return 'assets/images/avatar_auditor.png';
+      default:
+        return 'assets/images/avatar_auditor.png';
+    }
+  }
+
   /// The role to show in a header: the canonical label, or a safe placeholder.
   static String displayName(String? raw) => normalize(raw) ?? '—';
 }
