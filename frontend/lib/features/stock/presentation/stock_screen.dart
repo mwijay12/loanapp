@@ -445,6 +445,37 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     return _buildFallbackIcon(p, iconSize);
   }
 
+  /// Product artwork for a stock row.
+  ///
+  /// Rows used to fall back to a generic glyph chosen by a coarse category, so
+  /// a power bank rendered as headphones and a watch rendered as a laptop. The
+  /// mapping now looks at the product name first, then the category, and the
+  /// last resort is a real device render rather than an icon.
+  String _fallbackAsset(ProductItem p) {
+    final cat = p.cat.toLowerCase();
+    final name = p.name.toLowerCase();
+
+    if (cat.contains('laptop') || name.contains('laptop')) {
+      return 'assets/images/laptop.png';
+    }
+    if (name.contains('power bank') || name.contains('powerbank')) {
+      return 'assets/images/powerbank.png';
+    }
+    if (name.contains('watch')) {
+      return 'assets/images/smartwatch.png';
+    }
+    if (name.contains('earbud') ||
+        name.contains('pods') ||
+        name.contains('headphone') ||
+        name.contains('headset')) {
+      return 'assets/images/earbuds.png';
+    }
+    if (cat.contains('acc')) {
+      return 'assets/images/earbuds.png';
+    }
+    return 'assets/images/hero_phones.png';
+  }
+
   Widget _buildFallbackIcon(ProductItem p, double size) {
     return Container(
       decoration: BoxDecoration(
@@ -455,12 +486,17 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ),
       ),
       child: Center(
-        child: Icon(
-          p.cat == 'phones'
-              ? Icons.smartphone_rounded
-              : (p.cat == 'acc' ? Icons.headphones_rounded : Icons.laptop_rounded),
-          color: Colors.white,
-          size: size,
+        child: Padding(
+          padding: EdgeInsets.all(size * 0.18),
+          child: Image.asset(
+            _fallbackAsset(p),
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Icon(
+              Icons.devices_other_rounded,
+              color: Colors.white,
+              size: size,
+            ),
+          ),
         ),
       ),
     );
