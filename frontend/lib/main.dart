@@ -8,12 +8,21 @@ import 'core/services/app_permissions_service.dart';
 import 'core/widgets/responsive.dart';
 import 'features/account/presentation/account_screen.dart';
 
+import 'core/constants/app_constants.dart';
 import 'core/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // P0: init() throws when --dart-define config is missing. Fail loud with
-  // a readable screen instead of running misconfigured or red-screening.
+
+  // Demo builds run entirely on bundled mock data: no Supabase, no secrets,
+  // and therefore nothing to leak if the link is shared publicly.
+  if (AppConstants.demoMode) {
+    runApp(const ProviderScope(child: LoanInventoryApp()));
+    return;
+  }
+
+  // P0: init() throws when --dart-define config is missing. Fail loud with a
+  // readable screen instead of running misconfigured or red-screening.
   try {
     await ApiService().init();
   } catch (e) {
@@ -35,11 +44,8 @@ void main() async {
     );
     return;
   }
-  runApp(
-    const ProviderScope(
-      child: LoanInventoryApp(),
-    ),
-  );
+
+  runApp(const ProviderScope(child: LoanInventoryApp()));
 }
 
 class LoanInventoryApp extends ConsumerStatefulWidget {

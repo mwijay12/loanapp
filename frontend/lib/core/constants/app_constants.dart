@@ -30,6 +30,52 @@ class AppConstants {
   ];
 
   // ---------------------------------------------------------------------
+  // Showcase / demo build.
+  //
+  // FALSE unless the build passes --dart-define=DEMO_MODE=true. When true the
+  // app never talks to Supabase: it runs on the bundled mock data, and the
+  // login screen accepts the demo accounts below instead of calling Supabase
+  // Auth. That keeps a publicly shared demo link from exposing a database.
+  //
+  // A production build MUST NOT set this flag. The branch is compiled out when
+  // it is false, so a release APK cannot be talked into demo mode at runtime.
+  // ---------------------------------------------------------------------
+  static const bool demoMode =
+      bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+
+  static const String demoPassword = 'Demo@2026';
+
+  /// Demo identities. Deliberately hardcoded and deliberately obvious: these
+  /// are throwaway accounts for a showcase, never real staff.
+  static const Map<String, Map<String, String>> demoAccounts =
+      <String, Map<String, String>>{
+    'demo.admin@example.com': {
+      'name': 'Demo Super Admin',
+      'role': UserRoles.superAdmin,
+    },
+    'demo.manager@example.com': {
+      'name': 'Demo Branch Manager',
+      'role': UserRoles.branchManager,
+    },
+    'demo.loan@example.com': {
+      'name': 'Demo Loan Officer',
+      'role': UserRoles.loanOfficer,
+    },
+    'demo.store@example.com': {
+      'name': 'Demo Storekeeper',
+      'role': UserRoles.storekeeper,
+    },
+    'demo.cashier@example.com': {
+      'name': 'Demo Counter Cashier',
+      'role': UserRoles.counterCashier,
+    },
+    'demo.audit@example.com': {
+      'name': 'Demo Auditor',
+      'role': UserRoles.auditor,
+    },
+  };
+
+  // ---------------------------------------------------------------------
   // Company identity used on printed documents.
   //
   // These were previously typed out inside the PDF service, so the receipt,

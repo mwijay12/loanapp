@@ -132,6 +132,26 @@ class ApiService {
       throw StateError('Sign in with your work email address.');
     }
 
+    // DEMO BUILD ONLY. Compiled out when --dart-define=DEMO_MODE is not true,
+    // so a production APK cannot reach this branch. It exists because the
+    // showcase runs on mock data with no Supabase project behind it.
+    if (AppConstants.demoMode) {
+      final account = AppConstants.demoAccounts[email];
+      if (account == null || secret != AppConstants.demoPassword) {
+        throw StateError(
+          'Demo login failed. Use one of the demo accounts shown on this screen.',
+        );
+      }
+      return {
+        'id': 'demo-${account['role']}',
+        'name': account['name'] ?? 'Demo User',
+        'email': email,
+        'phone': '',
+        'role': account['role'],
+        'branch': AppConstants.launchBranch,
+      };
+    }
+
     // 1. Verify the password. On failure Supabase throws an AuthException; the
     //    raw provider message is deliberately not surfaced, because it can
     //    reveal whether an address exists.
