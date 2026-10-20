@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../constants/app_constants.dart';
+import '../data/lims_repository.dart';
 import '../data/mock_lims_data.dart';
 
 class PdfReportService {
@@ -408,6 +409,102 @@ class PdfReportService {
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: 'LIMS_Risiti_$receiptNo.pdf',
+    );
+  }
+
+  // ------------------------------------------------------------ POS receipt
+  /// Counter receipt for a completed sale, printed while the customer is still
+  /// at the till. Cash and loan sales both land here.
+  static Future<void> generateAndDownloadSaleReceipt({
+    required POSSaleResult sale,
+    required String branchName,
+    required String servedBy,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Center(
+              child: pw.Column(
+                children: [
+                  pw.Text('LIMS',
+                      style: pw.TextStyle(
+                          fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 2),
+                  pw.Text('Smartphone Retail & Hire Purchase',
+                      style: const pw.TextStyle(fontSize: 8)),
+                  pw.Text(branchName, style: const pw.TextStyle(fontSize: 8)),
+                  pw.SizedBox(height: 6),
+                  pw.Text(
+                    sale.transactionType == 'LOAN'
+                        ? 'RISITI YA MKOPO'
+                        : 'RISITI YA MAUZO',
+                    style: pw.TextStyle(
+                        fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(),
+            _row('Risiti Na.', sale.receiptId),
+            _row('Tarehe',
+                DateFormat('dd/MM/yyyy HH:mm').format(sale.timestamp)),
+            _row('Aliyehudumia', servedBy),
+            pw.Divider(),
+            _row('Mteja', sale.customerName),
+            _row('Simu', sale.customerPhone),
+            pw.Divider(),
+            _row('Bidhaa', sale.phoneModel),
+            _row('IMEI', sale.primaryImei),
+            if ((sale.secondaryImei ?? '').isNotEmpty)
+              _row('IMEI 2', sale.secondaryImei!),
+            pw.Divider(),
+            _row('Jumla', _tzs(sale.totalAmount)),
+            _row('Imelipwa', _tzs(sale.amountPaid)),
+            _row('Salio', _tzs(sale.balanceRemaining)),
+            _row('Njia ya malipo', sale.paymentChannel),
+            pw.Divider(),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              'Bidhaa hii imeandikishwa kwa IMEI hapo juu. Hifadhi risiti hii '
+              'kwa dhamana ya kifaa na mkataba wa malipo.',
+              style: const pw.TextStyle(fontSize: 7),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(children: [
+                  pw.Container(width: 70, height: 1, color: PdfColors.grey500),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Mteja', style: const pw.TextStyle(fontSize: 7)),
+                ]),
+                pw.Column(children: [
+                  pw.Container(width: 70, height: 1, color: PdfColors.grey500),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Muuzaji', style: const pw.TextStyle(fontSize: 7)),
+                ]),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Center(
+              child: pw.Text('Asante kwa kuchagua LIMS',
+                  style: const pw.TextStyle(fontSize: 8)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'LIMS_Risiti_${sale.receiptId}.pdf',
     );
   }
 

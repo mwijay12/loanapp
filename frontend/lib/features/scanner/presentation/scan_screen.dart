@@ -136,7 +136,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _loanPrice = phone['loan'] as int;
       _daysInStock = phone['days'] as int;
       _stockStatus = phone['status'] as String;
-      _statusText = 'Physical handset resolved · Serialized & tracked';
+      _statusText = 'Kifaa kimetambuliwa · IMEI imesajiliwa';
       _imeiCtrl.text = _imeiNumber;
     });
   }

@@ -29,7 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
     {
       'title': 'Loans without the chaos',
-      'subtitle': 'Track flexible repayment installments, smart reminders, and daily collection balances.',
+      'subtitle': 'Follow every instalment, send reminders before a due date passes, and close the day with a balanced collection sheet.',
       'image': 'assets/images/mascot_loans.png',
       'badge': 'SMART FINANCING',
     },

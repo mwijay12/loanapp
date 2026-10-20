@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_localizations.dart';
@@ -1883,9 +1884,22 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
+                      // This button used to promise an SMS and print nothing. It
+                      // now opens the actual receipt for printing, and only says
+                      // what happened.
+                      await PdfReportService.generateAndDownloadSaleReceipt(
+                        sale: result,
+                        branchName: ref.read(activeBranchProvider),
+                        servedBy: ref.read(activeStaffMemberProvider).name,
+                      );
+                      if (!mounted) return;
                       Navigator.pop(ctx);
-                      LimsToast.show(context, 'Receipt #${result.receiptId} sent via SMS and ready to print.', isSuccess: true);
+                      LimsToast.show(
+                        context,
+                        'Risiti ${result.receiptId} imefunguliwa — tayari kwa print.',
+                        isSuccess: true,
+                      );
                       context.pop();
                     },
                     icon: const Icon(Icons.receipt_long_rounded, size: 16),

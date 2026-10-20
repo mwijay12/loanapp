@@ -611,7 +611,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             items: [
                               'SMS & Piga Simu kwa Mdhamini',
                               'Notisi Rasmi ya Madai (Legal Notice)',
-                              'Kufuatilia Handset kwa Makubaliano',
+                              'Mazungumzo ya Makubaliano na Mteja',
                             ].map((val) {
                               return DropdownMenuItem(
                                 value: val,

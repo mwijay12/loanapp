@@ -1708,7 +1708,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 children: [
                                   const Expanded(
                                     child: Text(
-                                      'Serialized IMEI Tracking',
+                                      'IMEI ya Kila Kifaa',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
