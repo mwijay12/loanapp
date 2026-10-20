@@ -1080,7 +1080,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     color: const Color(0xFFFFEDF1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text('LOCKED', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: AppTheme.errorColor)),
+                                  child: const Text('ON HOLD', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: AppTheme.errorColor)),
                                 ),
                               ],
                             ],
@@ -1330,7 +1330,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Knox Lock & Collection Quick Row
+          // Device hold & collection quick row
           InkWell(
             onTap: () => context.go('/loans'),
             borderRadius: BorderRadius.circular(12),
@@ -1483,14 +1483,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      activeStaff.initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
+                  child: ClipOval(
+                    child: Image.asset(
+                      UserRoles.avatarAsset(activeStaff.role),
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                          activeStaff.initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
                   ),

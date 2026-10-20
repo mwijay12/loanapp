@@ -784,11 +784,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     // resolves to its canonical role instead of falling through to default.
     switch (UserRoles.normalize(role)) {
       case UserRoles.superAdmin:
-        return 'Full Executive Access: Network revenue, P&L profit margins, staff RBAC permissions, and Knox master switch.';
+        return 'Full Executive Access: network revenue, P&L profit margins, staff RBAC permissions, and the device-hold policy switch.';
       case UserRoles.branchManager:
         return 'Branch Supervision: Daily register & drawer audit, supervisor discount PIN overrides, staff shift audits.';
       case UserRoles.loanOfficer:
-        return 'Credit & Risk: Customer KYC scoring, loan approval/rejection, remote Knox lock for defaulters, collections.';
+        return 'Credit & Risk: customer KYC scoring, loan approval or rejection, device-hold flags for defaulters, and collections.';
       case UserRoles.storekeeper:
         return 'Logistics & Warehouse: Inbound PO shipments intake, serialized IMEI barcode intake, audits, and branch transfers.';
       case UserRoles.counterCashier:
@@ -987,7 +987,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             runSpacing: 6,
             children: [
               _buildPermBadge('Mikopo > 1M', s.canDisburseLoans),
-              _buildPermBadge('Knox Lock', s.canKnoxLock),
+              _buildPermBadge('Device hold', s.canKnoxLock),
               _buildPermBadge('Faida / Margins', s.canViewMargins),
               _buildPermBadge('Hariri Stock', s.canEditStock),
               _buildPermBadge('Overrides', s.canApproveOverrides),
@@ -1228,7 +1228,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 // Switch tiles
                 _buildSwitchRow('Approve Loans > TZS 1M', canDisburse,
                     (v) => setModalState(() => canDisburse = v)),
-                _buildSwitchRow('Knox Remote Lock / Unlock', canKnox,
+                _buildSwitchRow('Device hold policy', canKnox,
                     (v) => setModalState(() => canKnox = v)),
                 _buildSwitchRow('View Cost Price & Margins', canMargins,
                     (v) => setModalState(() => canMargins = v)),
@@ -1743,7 +1743,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
-                  'Sera ya LIMS Knox: Kifaa cha mteja kinaweza kufungwa papo hapo kuzuia hasara ya mikopo.',
+                  'Sera ya LIMS: kifaa cha mteja kinatiwa alama ya "hold" kwenye mfumo hadi deni lilipwe. Hii ni rekodi ya biashara — LIMS haiwezi kufunga simu kwa mbali.',
                   style: TextStyle(
                       fontSize: 12,
                       color: Color(0xFF9F1239),
@@ -1758,12 +1758,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     Navigator.pop(ctx);
                     LimsToast.show(
                       context,
-                      'Knox Lock Dispatched! Device screen locked with overdue payment notice.',
+                      'Hold imewekwa. Kifaa kimetiwa alama kwenye mfumo; mteja ataarifiwa kwa simu au SMS.',
                       isError: true,
                     );
                   },
                   icon: const Icon(Icons.lock_person_rounded, size: 18),
-                  label: const Text('Trigger Knox Remote Device Lock',
+                  label: const Text('Weka Device Hold',
                       style: TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF43F5E),

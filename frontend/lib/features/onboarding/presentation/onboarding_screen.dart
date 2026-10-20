@@ -18,19 +18,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'title': 'Every device, accounted for',
       'subtitle': 'Live stock across all your branches, down to the last IMEI number with zero discrepancy.',
-      'image': 'assets/images/onb_devices.png',
+      'image': 'assets/images/mascot_stock.png',
       'badge': '100% AUDITABLE',
     },
     {
       'title': 'Scan IMEI in seconds',
       'subtitle': 'Verify devices, receive stock, and disburse customer loans — all straight from the counter.',
-      'image': 'assets/images/onb_scan.png',
+      'image': 'assets/images/mascot_scan.png',
       'badge': 'INSTANT LOOKUP',
     },
     {
       'title': 'Loans without the chaos',
       'subtitle': 'Track flexible repayment installments, smart reminders, and daily collection balances.',
-      'image': 'assets/images/onb_loans.png',
+      'image': 'assets/images/mascot_loans.png',
       'badge': 'SMART FINANCING',
     },
   ];

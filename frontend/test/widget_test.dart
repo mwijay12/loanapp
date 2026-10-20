@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:loan_inventory_app/core/constants/app_constants.dart';
-import 'package:loan_inventory_app/core/data/inventory_provider.dart';
 import 'package:loan_inventory_app/core/theme/app_theme.dart';
 import 'package:loan_inventory_app/features/onboarding/presentation/onboarding_screen.dart';
 
