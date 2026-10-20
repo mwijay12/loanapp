@@ -20,15 +20,39 @@ import '../../features/loans/presentation/borrower_loan_details_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/scanner/presentation/device_imei_inspector_screen.dart';
+import '../constants/app_constants.dart';
+import '../data/inventory_provider.dart';
 import '../data/mock_lims_data.dart';
 import '../widgets/app_shell.dart';
 
-/// Where the app boots. Defaults to /home so the app is immediately visible and never blank.
-final initialRouteProvider = Provider<String>((ref) => '/home');
+/// Where the app boots.
+///
+/// This used to be '/home', which dropped every visitor straight into the
+/// signed-out shell: the header rendered "Signed out" with a `noSession` role
+/// pill, because no session had been established yet. A showcase must open on
+/// the login screen.
+final initialRouteProvider = Provider<String>((ref) => '/login');
+
+/// Routes reachable without a session.
+const Set<String> _publicRoutes = <String>{'/login', '/onboarding'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: ref.watch(initialRouteProvider),
+    // Auth guard. `UserRoles.noSession` is the fail-closed default, so anything
+    // that is not a real role is treated as signed out. Enforcement in the UI is
+    // cosmetic; the database is the real boundary once RLS lands.
+    redirect: (context, state) {
+      final role = ref.read(userRoleProvider);
+      final signedIn =
+          role != UserRoles.noSession && role != UserRoles.pending;
+      final path = state.matchedLocation;
+      final isPublic = _publicRoutes.contains(path);
+
+      if (!signedIn && !isPublic) return '/login';
+      if (signedIn && path == '/login') return '/home';
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
