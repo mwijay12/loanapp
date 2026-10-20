@@ -14,7 +14,8 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key, this.initialTab});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
@@ -44,12 +45,42 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     ];
 
     final branches = [
-      {'name': 'Mbezi Branch', 'sales': 'TZS 4.85M', 'low': 12, 'color': const Color(0xFF12B76A)},
-      {'name': 'Kariakoo Branch', 'sales': 'TZS 3.92M', 'low': 5, 'color': const Color(0xFF12B76A)},
-      {'name': 'Mwanza Branch', 'sales': 'TZS 2.71M', 'low': 8, 'color': const Color(0xFFF79009)},
-      {'name': 'Arusha Branch', 'sales': 'TZS 2.34M', 'low': 3, 'color': const Color(0xFF12B76A)},
-      {'name': 'Dodoma Branch', 'sales': 'TZS 1.88M', 'low': 0, 'color': const Color(0xFF12B76A)},
-      {'name': 'Zanzibar Branch', 'sales': 'TZS 1.42M', 'low': 6, 'color': const Color(0xFFF43F5E)},
+      {
+        'name': 'Mbezi Branch',
+        'sales': 'TZS 4.85M',
+        'low': 12,
+        'color': const Color(0xFF12B76A)
+      },
+      {
+        'name': 'Kariakoo Branch',
+        'sales': 'TZS 3.92M',
+        'low': 5,
+        'color': const Color(0xFF12B76A)
+      },
+      {
+        'name': 'Mwanza Branch',
+        'sales': 'TZS 2.71M',
+        'low': 8,
+        'color': const Color(0xFFF79009)
+      },
+      {
+        'name': 'Arusha Branch',
+        'sales': 'TZS 2.34M',
+        'low': 3,
+        'color': const Color(0xFF12B76A)
+      },
+      {
+        'name': 'Dodoma Branch',
+        'sales': 'TZS 1.88M',
+        'low': 0,
+        'color': const Color(0xFF12B76A)
+      },
+      {
+        'name': 'Zanzibar Branch',
+        'sales': 'TZS 1.42M',
+        'low': 6,
+        'color': const Color(0xFFF43F5E)
+      },
     ];
 
     final alerts = [
@@ -157,7 +188,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _selectedTab == 0 ? AppTheme.brand600 : const Color(0xFFF1F5F9),
+                        color: _selectedTab == 0
+                            ? AppTheme.brand600
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -165,7 +198,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: _selectedTab == 0 ? Colors.white : AppTheme.ink600,
+                          color: _selectedTab == 0
+                              ? Colors.white
+                              : AppTheme.ink600,
                         ),
                       ),
                     ),
@@ -181,7 +216,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _selectedTab == 1 ? AppTheme.brand600 : const Color(0xFFF1F5F9),
+                        color: _selectedTab == 1
+                            ? AppTheme.brand600
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -190,15 +227,23 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           Icon(
                             Icons.badge_rounded,
                             size: 15,
-                            color: _selectedTab == 1 ? Colors.white : AppTheme.ink600,
+                            color: _selectedTab == 1
+                                ? Colors.white
+                                : AppTheme.ink600,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Wafanyakazi & RBAC',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: _selectedTab == 1 ? Colors.white : AppTheme.ink600,
+                          Flexible(
+                            child: Text(
+                              'Wafanyakazi & RBAC',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: _selectedTab == 1
+                                    ? Colors.white
+                                    : AppTheme.ink600,
+                              ),
                             ),
                           ),
                         ],
@@ -213,7 +258,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ),
       body: SafeArea(
         child: _selectedTab == 0
-            ? _buildNetworkOverviewTab(todaySales, activeLoansTotal, lowStockCount, bars, branches, alerts)
+            ? _buildNetworkOverviewTab(todaySales, activeLoansTotal,
+                lowStockCount, bars, branches, alerts)
             : _buildStaffRbacTab(),
       ),
     );
@@ -230,327 +276,345 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-            // 4 KPI Cards
-            Row(
-              children: [
-                Expanded(
-                  child: _buildKpiCard(
-                    label: 'Revenue today',
-                    value: LimsFormatters.currencyCompact(todaySales > 0 ? todaySales * 4 : 18200000),
-                    trend: '+9% vs yesterday',
-                    icon: Icons.trending_up_rounded,
-                    color: const Color(0xFF12B76A),
-                    bg: const Color(0xFFE7F8F0),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildKpiCard(
-                    label: 'Active Branches',
-                    value: '12',
-                    trend: 'All synced',
-                    icon: Icons.storefront_rounded,
-                    color: AppTheme.brand600,
-                    bg: AppTheme.brand100,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildKpiCard(
-                    label: 'Loans Outstanding',
-                    value: LimsFormatters.currencyCompact(activeLoansTotal > 0 ? activeLoansTotal : 96000000),
-                    trend: '21 overdue',
-                    icon: Icons.handshake_rounded,
-                    color: const Color(0xFFF43F5E),
-                    bg: const Color(0xFFFFEDF1),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildKpiCard(
-                    label: 'Alerts',
-                    value: '${lowStockCount + 2}',
-                    trend: 'Needs review',
-                    icon: Icons.warning_amber_rounded,
-                    color: const Color(0xFFF79009),
-                    bg: const Color(0xFFFEF3E4),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Network Revenue Chart Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Network revenue · this week',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.ink900,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.brand100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'TZS 126.8M',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.brand600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    height: 84,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: bars.map((b) {
-                        final isToday = b['today'] as bool;
-                        final h = b['height'] as double;
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Container(
-                                  height: 60 * h,
-                                  decoration: BoxDecoration(
-                                    gradient: isToday ? AppTheme.brandGradient : null,
-                                    color: isToday ? null : const Color(0xFFE2EAF8),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  b['day'] as String,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                                    color: isToday ? AppTheme.brand600 : const Color(0xFF9AA8BF),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
+        // 4 KPI Cards
+        Row(
+          children: [
+            Expanded(
+              child: _buildKpiCard(
+                label: 'Revenue today',
+                value: LimsFormatters.currencyCompact(
+                    todaySales > 0 ? todaySales * 4 : 18200000),
+                trend: '+9% vs yesterday',
+                icon: Icons.trending_up_rounded,
+                color: const Color(0xFF12B76A),
+                bg: const Color(0xFFE7F8F0),
               ),
             ),
-            const SizedBox(height: 20),
-
-            const Text(
-              'Branches',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Branch List
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: branches.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final b = entry.value;
-                  final isLast = idx == branches.length - 1;
-
-                  return InkWell(
-                    onTap: () => _showBranchAuditModal(context, b),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: b['color'] as Color,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  b['name'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.ink900,
-                                  ),
-                                ),
-                                Text(
-                                  '${b['low']} low-stock models',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.ink500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            b['sales'] as String,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.ink900,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFFCBD5E1)),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            const Text(
-              'Alerts & Escalations',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Alerts List
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: alerts.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final a = entry.value;
-                  final isLast = idx == alerts.length - 1;
-
-                  return InkWell(
-                    onTap: () => _showAlertActionModal(context, a),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: a['bg'] as Color,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(a['icon'] as IconData, size: 18, color: a['color'] as Color),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  a['title'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.ink900,
-                                  ),
-                                ),
-                                Text(
-                                  a['sub'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.ink500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFFCBD5E1)),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildKpiCard(
+                label: 'Active Branches',
+                value: '12',
+                trend: 'All synced',
+                icon: Icons.storefront_rounded,
+                color: AppTheme.brand600,
+                bg: AppTheme.brand100,
               ),
             ),
           ],
-        );
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildKpiCard(
+                label: 'Loans Outstanding',
+                value: LimsFormatters.currencyCompact(
+                    activeLoansTotal > 0 ? activeLoansTotal : 96000000),
+                trend: '21 overdue',
+                icon: Icons.handshake_rounded,
+                color: const Color(0xFFF43F5E),
+                bg: const Color(0xFFFFEDF1),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildKpiCard(
+                label: 'Alerts',
+                value: '${lowStockCount + 2}',
+                trend: 'Needs review',
+                icon: Icons.warning_amber_rounded,
+                color: const Color(0xFFF79009),
+                bg: const Color(0xFFFEF3E4),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Network Revenue Chart Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0C0F3478),
+                blurRadius: 20,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Network revenue · this week',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.brand100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'TZS 126.8M',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.brand600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 84,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: bars.map((b) {
+                    final isToday = b['today'] as bool;
+                    final h = b['height'] as double;
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                              height: 60 * h,
+                              decoration: BoxDecoration(
+                                gradient:
+                                    isToday ? AppTheme.brandGradient : null,
+                                color: isToday ? null : const Color(0xFFE2EAF8),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              b['day'] as String,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight:
+                                    isToday ? FontWeight.w800 : FontWeight.w600,
+                                color: isToday
+                                    ? AppTheme.brand600
+                                    : const Color(0xFF9AA8BF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Branches',
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.ink900,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Branch List
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0C0F3478),
+                blurRadius: 20,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: branches.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final b = entry.value;
+              final isLast = idx == branches.length - 1;
+
+              return InkWell(
+                onTap: () => _showBranchAuditModal(context, b),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: isLast
+                        ? null
+                        : const Border(
+                            bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: b['color'] as Color,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              b['name'] as String,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.ink900,
+                              ),
+                            ),
+                            Text(
+                              '${b['low']} low-stock models',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.ink500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        b['sales'] as String,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.ink900,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 16, color: Color(0xFFCBD5E1)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Alerts & Escalations',
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.ink900,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Alerts List
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0C0F3478),
+                blurRadius: 20,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: alerts.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final a = entry.value;
+              final isLast = idx == alerts.length - 1;
+
+              return InkWell(
+                onTap: () => _showAlertActionModal(context, a),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: isLast
+                        ? null
+                        : const Border(
+                            bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: a['bg'] as Color,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(a['icon'] as IconData,
+                            size: 18, color: a['color'] as Color),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              a['title'] as String,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.ink900,
+                              ),
+                            ),
+                            Text(
+                              a['sub'] as String,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.ink500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded,
+                          size: 12, color: Color(0xFFCBD5E1)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildStaffRbacTab() {
@@ -588,7 +652,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       color: const Color(0xFFE9F2FF),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.verified_user_rounded, color: AppTheme.brand600, size: 20),
+                    child: const Icon(Icons.verified_user_rounded,
+                        color: AppTheme.brand600, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -620,7 +685,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
               // Persona Privileges Summary
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(10),
@@ -689,14 +755,17 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ElevatedButton.icon(
               onPressed: _showAddStaffModal,
               icon: const Icon(Icons.person_add_rounded, size: 16),
-              label: const Text('Ongeza Staff', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+              label: const Text('Ongeza Staff',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.brand600,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
             ),
@@ -830,7 +899,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         height: 6,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isActive ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                          color: isActive
+                              ? const Color(0xFF12B76A)
+                              : const Color(0xFFF43F5E),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -839,7 +910,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: isActive ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                          color: isActive
+                              ? const Color(0xFF12B76A)
+                              : const Color(0xFFF43F5E),
                         ),
                       ),
                     ],
@@ -865,14 +938,18 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.phone_rounded, size: 13, color: AppTheme.ink500),
+                      const Icon(Icons.phone_rounded,
+                          size: 13, color: AppTheme.ink500),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           s.phone,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.ink700),
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.ink700),
                         ),
                       ),
                     ],
@@ -881,7 +958,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF3E4),
                       borderRadius: BorderRadius.circular(6),
@@ -926,19 +1004,28 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     ref.read(staffProvider.notifier).toggleStatus(s.id);
                     LimsToast.show(
                       context,
-                      isActive ? 'Akaunti ya ${s.name} imesimamishwa.' : 'Akaunti ya ${s.name} imewezeshwa.',
+                      isActive
+                          ? 'Akaunti ya ${s.name} imesimamishwa.'
+                          : 'Akaunti ya ${s.name} imewezeshwa.',
                       isError: isActive,
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isActive ? const Color(0xFFF43F5E) : const Color(0xFF12B76A),
-                    side: BorderSide(color: isActive ? const Color(0xFFFECDD3) : const Color(0xFFA7F3D0)),
+                    foregroundColor: isActive
+                        ? const Color(0xFFF43F5E)
+                        : const Color(0xFF12B76A),
+                    side: BorderSide(
+                        color: isActive
+                            ? const Color(0xFFFECDD3)
+                            : const Color(0xFFA7F3D0)),
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   child: Text(
                     isActive ? 'Simamisha' : 'Wezesha',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 11.5),
                   ),
                 ),
               ),
@@ -948,12 +1035,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () => _showEditStaffModal(s),
                   icon: const Icon(Icons.manage_accounts_rounded, size: 15),
-                  label: const Text('Hariri Majukumu & PIN', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5)),
+                  label: const Text('Hariri Majukumu & PIN',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 11.5)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.brand600,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
                 ),
@@ -1012,7 +1102,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ),
       child: Text(
         role,
-        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: fg),
+        style:
+            TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: fg),
       ),
     );
   }
@@ -1028,9 +1119,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isEnabled ? Icons.check_circle_rounded : Icons.remove_circle_outline_rounded,
+            isEnabled
+                ? Icons.check_circle_rounded
+                : Icons.remove_circle_outline_rounded,
             size: 11,
-            color: isEnabled ? const Color(0xFF12B76A) : const Color(0xFF94A3B8),
+            color:
+                isEnabled ? const Color(0xFF12B76A) : const Color(0xFF94A3B8),
           ),
           const SizedBox(width: 4),
           Text(
@@ -1038,7 +1132,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: isEnabled ? const Color(0xFF0E9355) : const Color(0xFF94A3B8),
+              color:
+                  isEnabled ? const Color(0xFF0E9355) : const Color(0xFF94A3B8),
             ),
           ),
         ],
@@ -1068,54 +1163,79 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Role Dropdown
-                const Text('Nafasi / Jukumu la Mfanyakazi:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
+                const Text('Nafasi / Jukumu la Mfanyakazi:',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink900)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                   initialValue: currentRole,
-                   // Built from the canonical role list so the dropdown can
-                   // never drift from what the database accepts.
-                   items: [
-                     for (final role in UserRoles.assignable)
-                       DropdownMenuItem(value: role, child: Text(UserRoles.label(role))),
-                   ],
+                  initialValue: currentRole,
+                  // Built from the canonical role list so the dropdown can
+                  // never drift from what the database accepts.
+                  items: [
+                    for (final role in UserRoles.assignable)
+                      DropdownMenuItem(
+                          value: role, child: Text(UserRoles.label(role))),
+                  ],
                   onChanged: (v) {
                     if (v != null) setModalState(() => currentRole = v);
                   },
                   decoration: InputDecoration(
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 14),
 
                 // Supervisor PIN field
-                const Text('PIN ya Uidhinishaji (Supervisor PIN):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
+                const Text('PIN ya Uidhinishaji (Supervisor PIN):',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink900)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: pinCtrl,
                   keyboardType: TextInputType.number,
                   maxLength: 4,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 2),
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2),
                   decoration: InputDecoration(
                     counterText: '',
                     hintText: '••••',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 14),
 
-                const Text('Granular RBAC Permissions:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
+                const Text('Granular RBAC Permissions:',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink900)),
                 const SizedBox(height: 8),
 
                 // Switch tiles
-                _buildSwitchRow('Approve Loans > TZS 1M', canDisburse, (v) => setModalState(() => canDisburse = v)),
-                _buildSwitchRow('Knox Remote Lock / Unlock', canKnox, (v) => setModalState(() => canKnox = v)),
-                _buildSwitchRow('View Cost Price & Margins', canMargins, (v) => setModalState(() => canMargins = v)),
-                _buildSwitchRow('Edit Stock & Inventory Levels', canStock, (v) => setModalState(() => canStock = v)),
-                _buildSwitchRow('Approve Overrides & Discounts', canOverrides, (v) => setModalState(() => canOverrides = v)),
+                _buildSwitchRow('Approve Loans > TZS 1M', canDisburse,
+                    (v) => setModalState(() => canDisburse = v)),
+                _buildSwitchRow('Knox Remote Lock / Unlock', canKnox,
+                    (v) => setModalState(() => canKnox = v)),
+                _buildSwitchRow('View Cost Price & Margins', canMargins,
+                    (v) => setModalState(() => canMargins = v)),
+                _buildSwitchRow('Edit Stock & Inventory Levels', canStock,
+                    (v) => setModalState(() => canStock = v)),
+                _buildSwitchRow('Approve Overrides & Discounts', canOverrides,
+                    (v) => setModalState(() => canOverrides = v)),
                 const SizedBox(height: 20),
 
                 // Save Button
@@ -1135,15 +1255,19 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       );
                       ref.read(staffProvider.notifier).updateStaff(updated);
                       Navigator.pop(ctx);
-                      LimsToast.show(context, 'Taarifa za ${staff.name} zimesasishwa!');
+                      LimsToast.show(
+                          context, 'Taarifa za ${staff.name} zimesasishwa!');
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
-                    label: const Text('Hifadhi Mabadiliko', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                    label: const Text('Hifadhi Mabadiliko',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 13.5)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
@@ -1155,7 +1279,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildSwitchRow(String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitchRow(
+      String label, bool value, ValueChanged<bool> onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1164,7 +1289,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.ink900),
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.ink900),
             ),
           ),
           Switch(
@@ -1181,7 +1309,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController(text: '07');
     final emailCtrl = TextEditingController();
-    final staffCodeCtrl = TextEditingController(text: 'STF-${DateTime.now().millisecondsSinceEpoch % 1000}');
+    final staffCodeCtrl = TextEditingController(
+        text: 'STF-${DateTime.now().millisecondsSinceEpoch % 1000}');
     final pinCtrl = TextEditingController();
     String selectedRole = UserRoles.loanOfficer;
     String selectedBranch = AppConstants.launchBranch;
@@ -1202,8 +1331,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   decoration: InputDecoration(
                     labelText: 'Jina Kamili la Mfanyakazi',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1216,8 +1347,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         decoration: InputDecoration(
                           labelText: 'Namba ya Simu',
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -1228,8 +1361,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         decoration: InputDecoration(
                           labelText: 'Staff ID / Code',
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -1242,25 +1377,29 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   decoration: InputDecoration(
                     labelText: 'Barua Pepe (Email)',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                   initialValue: selectedRole,
-                   items: [
-                     for (final role in UserRoles.assignable)
-                       DropdownMenuItem(value: role, child: Text(role)),
-                   ],
+                  initialValue: selectedRole,
+                  items: [
+                    for (final role in UserRoles.assignable)
+                      DropdownMenuItem(value: role, child: Text(role)),
+                  ],
                   onChanged: (v) {
                     if (v != null) setModalState(() => selectedRole = v);
                   },
                   decoration: InputDecoration(
                     labelText: 'Jukumu (Role)',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1279,8 +1418,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   decoration: InputDecoration(
                     labelText: 'Tawi Lililopangiwa',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1292,8 +1433,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     labelText: 'Supervisor Approval PIN',
                     counterText: '',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -1303,7 +1446,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     onPressed: () {
                       final name = nameCtrl.text.trim();
                       if (name.isEmpty) {
-                        LimsToast.show(context, 'Tafadhali ingiza jina la mfanyakazi', isError: true);
+                        LimsToast.show(
+                            context, 'Tafadhali ingiza jina la mfanyakazi',
+                            isError: true);
                         return;
                       }
 
@@ -1311,7 +1456,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         id: 'STF-${DateTime.now().millisecondsSinceEpoch % 10000}',
                         name: name,
                         role: selectedRole,
-                        email: emailCtrl.text.trim().isEmpty ? '$name@limstanzania.co.tz'.toLowerCase().replaceAll(' ', '.') : emailCtrl.text.trim(),
+                        email: emailCtrl.text.trim().isEmpty
+                            ? '$name@limstanzania.co.tz'
+                                .toLowerCase()
+                                .replaceAll(' ', '.')
+                            : emailCtrl.text.trim(),
                         phone: phoneCtrl.text.trim(),
                         branch: selectedBranch,
                         staffCode: staffCodeCtrl.text.trim(),
@@ -1319,7 +1468,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         status: 'Active',
                         canDisburseLoans: UserRoles.canHandleCash(selectedRole),
                         canKnoxLock: UserRoles.canApprove(selectedRole) ||
-                            UserRoles.normalize(selectedRole) == UserRoles.loanOfficer,
+                            UserRoles.normalize(selectedRole) ==
+                                UserRoles.loanOfficer,
                         canViewMargins: UserRoles.canApprove(selectedRole),
                         canEditStock: UserRoles.canManageStock(selectedRole),
                         canApproveOverrides: UserRoles.canApprove(selectedRole),
@@ -1332,12 +1482,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       LimsToast.show(context, '$name amesajiliwa kikamilifu!');
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
-                    label: const Text('Sajili Mfanyakazi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                    label: const Text('Sajili Mfanyakazi',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 13.5)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
@@ -1426,7 +1579,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             color: const Color(0xFFE7F8F0),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text('Operational', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF12B76A))),
+          child: const Text('Operational',
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF12B76A))),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1445,7 +1602,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text('Shift Custodian (Active Staff):', style: TextStyle(fontSize: 12, color: AppTheme.ink500)),
+                        child: Text('Shift Custodian (Active Staff):',
+                            style: TextStyle(
+                                fontSize: 12, color: AppTheme.ink500)),
                       ),
                       SizedBox(width: 8),
                       Flexible(
@@ -1454,7 +1613,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.right,
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900),
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.ink900),
                         ),
                       ),
                     ],
@@ -1463,7 +1625,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(child: Text("Today's Net Sales:", style: TextStyle(fontSize: 12, color: AppTheme.ink500))),
+                      const Expanded(
+                          child: Text("Today's Net Sales:",
+                              style: TextStyle(
+                                  fontSize: 12, color: AppTheme.ink500))),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
@@ -1471,7 +1636,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.right,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.brand600),
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.brand600),
                         ),
                       ),
                     ],
@@ -1480,7 +1648,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: Text('Cash in Branch Safe / Drawer:', style: TextStyle(fontSize: 12, color: AppTheme.ink500))),
+                      Expanded(
+                          child: Text('Cash in Branch Safe / Drawer:',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppTheme.ink500))),
                       SizedBox(width: 8),
                       Flexible(
                         child: Text(
@@ -1488,7 +1659,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.right,
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF12B76A)),
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF12B76A)),
                         ),
                       ),
                     ],
@@ -1507,9 +1681,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Full Ledger', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: const Text('Full Ledger',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1523,9 +1699,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Dispatch Stock', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: const Text('Dispatch Stock',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
@@ -1548,8 +1726,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         trailing: Container(
           width: 38,
           height: 38,
-          decoration: BoxDecoration(color: a['bg'] as Color, borderRadius: BorderRadius.circular(12)),
-          child: Icon(a['icon'] as IconData, color: a['color'] as Color, size: 20),
+          decoration: BoxDecoration(
+              color: a['bg'] as Color, borderRadius: BorderRadius.circular(12)),
+          child:
+              Icon(a['icon'] as IconData, color: a['color'] as Color, size: 20),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1564,7 +1744,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
                 child: const Text(
                   'Sera ya LIMS Knox: Kifaa cha mteja kinaweza kufungwa papo hapo kuzuia hasara ya mikopo.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF9F1239), fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF9F1239),
+                      fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1580,12 +1763,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     );
                   },
                   icon: const Icon(Icons.lock_person_rounded, size: 18),
-                  label: const Text('Trigger Knox Remote Device Lock', style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: const Text('Trigger Knox Remote Device Lock',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -1598,12 +1783,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     context.push('/receive');
                   },
                   icon: const Icon(Icons.check_circle_rounded, size: 18),
-                  label: const Text('Resolve & Restock Now', style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: const Text('Resolve & Restock Now',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.brand600,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),

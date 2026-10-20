@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'product_art.dart';
 
 class ProductItem {
   final int id;
@@ -425,6 +426,7 @@ class MockLimsData {
     ProductItem(
       id: 1,
       name: 'iPhone 15 Pro Max',
+      brand: 'Apple',
       variant: '256GB · Natural Titanium',
       sku: 'IP15PM-256-NT',
       price: 3850000,
@@ -446,6 +448,7 @@ class MockLimsData {
     ProductItem(
       id: 2,
       name: 'Galaxy S24 Ultra',
+      brand: 'Samsung',
       variant: '256GB · Titanium Gray',
       sku: 'SGS24U-256-TG',
       price: 3420000,
@@ -468,6 +471,7 @@ class MockLimsData {
     ProductItem(
       id: 3,
       name: 'Redmi Note 13 Pro',
+      brand: 'Xiaomi',
       variant: '256GB · Midnight Black',
       sku: 'RN13P-256-MB',
       price: 985000,
@@ -489,6 +493,7 @@ class MockLimsData {
     ProductItem(
       id: 4,
       name: 'Tecno Camon 30 Premier',
+      brand: 'Tecno',
       variant: '256GB · Serenity Blue',
       sku: 'TC30P-256-SB',
       price: 735000,
@@ -510,6 +515,8 @@ class MockLimsData {
     ProductItem(
       id: 5,
       name: 'AirPods Pro (2nd Gen)',
+      brand: 'Apple',
+      imageAsset: ProductArt.earbuds,
       variant: 'USB-C · White',
       sku: 'APP2-USB-W',
       price: 430000,
@@ -526,6 +533,8 @@ class MockLimsData {
     ProductItem(
       id: 6,
       name: 'Galaxy A55',
+      brand: 'Samsung',
+      imageAsset: ProductArt.samsung,
       variant: '128GB · Awesome Navy',
       sku: 'SGA55-128-NV',
       price: 1260000,
@@ -542,6 +551,7 @@ class MockLimsData {
     ProductItem(
       id: 7,
       name: 'iPhone 15',
+      brand: 'Apple',
       variant: '128GB · Starlight',
       sku: 'IP15-128-ST',
       price: 2950000,
@@ -562,6 +572,8 @@ class MockLimsData {
     ProductItem(
       id: 8,
       name: 'Infinix Zero 40',
+      brand: 'Infinix',
+      imageAsset: ProductArt.infinix,
       variant: '256GB · Stardust Silver',
       sku: 'IZ40-256-SS',
       price: 655000,
@@ -577,6 +589,8 @@ class MockLimsData {
     ProductItem(
       id: 9,
       name: 'itel Vision 3 Plus',
+      brand: 'itel',
+      imageAsset: ProductArt.itel,
       variant: '64GB · Blue',
       sku: 'IV3P-64-BL',
       price: 285000,
@@ -592,6 +606,7 @@ class MockLimsData {
     ProductItem(
       id: 10,
       name: 'Power Bank 20,000mAh',
+      imageAsset: ProductArt.powerBank,
       variant: '22.5W · Black',
       sku: 'PB20K-22W-BK',
       price: 89000,
@@ -607,6 +622,7 @@ class MockLimsData {
     ProductItem(
       id: 11,
       name: 'Smart Watch X2',
+      imageAsset: ProductArt.watch,
       variant: 'AMOLED · 46mm',
       sku: 'SWX2-AM-46',
       price: 210000,
@@ -622,6 +638,8 @@ class MockLimsData {
     ProductItem(
       id: 12,
       name: 'HP Laptop 15s',
+      brand: 'HP',
+      imageAsset: ProductArt.laptop,
       variant: 'Ryzen 5 · 8GB / 512GB',
       sku: 'HPL15S-R5-8512',
       price: 2150000,

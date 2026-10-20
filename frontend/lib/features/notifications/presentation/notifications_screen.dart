@@ -40,10 +40,14 @@ class NotificationsScreen extends ConsumerWidget {
                 isSuccess: true,
               );
             },
-            icon: const Icon(Icons.done_all_rounded, size: 16, color: AppTheme.brand600),
+            icon: const Icon(Icons.done_all_rounded,
+                size: 16, color: AppTheme.brand600),
             label: const Text(
               'Mark all read',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.brand600),
             ),
           ),
           const SizedBox(width: 8),
@@ -138,55 +142,64 @@ class _NotificationItem extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: _getBackgroundColor(),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            _getIcon(),
-            color: _getIconColor(),
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.ink900,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.ink500,
+      // The tile sits inside a DecoratedBox, so its ink splash had nothing to
+      // paint on and Flutter raised "ListTile background color or ink splashes
+      // may be invisible" on every notification. A transparent Material gives
+      // the splash a surface without changing the card look.
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _getBackgroundColor(),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              _getIcon(),
+              color: _getIconColor(),
+              size: 20,
             ),
           ),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              time,
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.ink900,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              subtitle,
               style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF94A3B8),
+                fontSize: 12,
+                color: AppTheme.ink500,
               ),
             ),
-            const SizedBox(height: 4),
-            const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFFCBD5E1)),
-          ],
+          ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 16, color: Color(0xFFCBD5E1)),
+            ],
+          ),
         ),
       ),
     );

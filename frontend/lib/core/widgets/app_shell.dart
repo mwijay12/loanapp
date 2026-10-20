@@ -4,11 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
+import 'session_guard.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
 
   int _getCurrentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
@@ -521,13 +528,67 @@ class AppShell extends ConsumerWidget {
     );
   }
 
+  /// Back gesture behaviour for the signed-in shell.
+  ///
+  /// On a phone the back button used to leave the app instantly from any tab,
+  /// which on a shared counter terminal is one stray tap away from a lost sale
+  /// in progress. The shell now unwinds to Home first, and only Home asks before
+  /// closing the session.
+  Future<void> _handleBack() async {
+    final location = GoRouterState.of(context).uri.path;
+    if (!location.startsWith('/home')) {
+      context.go('/home');
+      return;
+    }
+
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.rLg),
+        ),
+        title: const Text('Toka LIMS?'),
+        content: const Text(
+          'Utatolewa kwenye session hii na utahitaji kuingia tena kwa email na '
+          'password yako.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Baki hapa'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Toka'),
+          ),
+        ],
+      ),
+    );
+
+    if (leave != true || !mounted) return;
+    ref.read(userRoleProvider.notifier).clearSession();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentIndex = _getCurrentIndex(context);
 
+    return SessionGuard(
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) => _handleBack(),
+        child: _buildScaffold(context, currentIndex),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, int currentIndex) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
-      body: child,
+      body: widget.child,
 
       // Floating Premium Bottom Navigation Dock (Icon-only, no text clutter)
       bottomNavigationBar: SafeArea(

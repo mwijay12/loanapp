@@ -1,30 +1,42 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:loan_inventory_app/main.dart';
+import 'package:loan_inventory_app/core/constants/app_constants.dart';
+import 'package:loan_inventory_app/core/data/inventory_provider.dart';
+import 'package:loan_inventory_app/core/theme/app_theme.dart';
+import 'package:loan_inventory_app/features/onboarding/presentation/onboarding_screen.dart';
+
+// The generated counter test that used to live here pumped the real app and
+// asserted a `+` button, so it failed as soon as the app stopped being the
+// template. These check something the product actually promises.
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const LoanInventoryApp());
+  testWidgets('onboarding renders its first slide and the primary action',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const OnboardingScreen()),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Every device, accounted for'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+    expect(find.text('Skip'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('every role resolves to a portrait asset', (tester) async {
+    for (final role in [
+      UserRoles.superAdmin,
+      UserRoles.branchManager,
+      UserRoles.loanOfficer,
+      UserRoles.storekeeper,
+      UserRoles.counterCashier,
+      UserRoles.auditor,
+    ]) {
+      expect(UserRoles.avatarAsset(role), startsWith('assets/images/avatar_'));
+    }
+    // A role we do not recognise still gets a tile rather than an empty circle.
+    expect(UserRoles.avatarAsset('unknown role'), isNotEmpty);
   });
 }

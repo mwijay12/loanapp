@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/product_art.dart';
 import '../../../core/widgets/ui_kit.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
@@ -448,33 +449,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   /// Product artwork for a stock row.
   ///
   /// Rows used to fall back to a generic glyph chosen by a coarse category, so
-  /// a power bank rendered as headphones and a watch rendered as a laptop. The
-  /// mapping now looks at the product name first, then the category, and the
-  /// last resort is a real device render rather than an icon.
-  String _fallbackAsset(ProductItem p) {
-    final cat = p.cat.toLowerCase();
-    final name = p.name.toLowerCase();
-
-    if (cat.contains('laptop') || name.contains('laptop')) {
-      return 'assets/images/laptop.png';
-    }
-    if (name.contains('power bank') || name.contains('powerbank')) {
-      return 'assets/images/powerbank.png';
-    }
-    if (name.contains('watch')) {
-      return 'assets/images/smartwatch.png';
-    }
-    if (name.contains('earbud') ||
-        name.contains('pods') ||
-        name.contains('headphone') ||
-        name.contains('headset')) {
-      return 'assets/images/earbuds.png';
-    }
-    if (cat.contains('acc')) {
-      return 'assets/images/earbuds.png';
-    }
-    return 'assets/images/hero_phones.png';
-  }
+  /// a power bank rendered as headphones and a watch rendered as a laptop. They
+  /// then fell back to one hero phone shot, which put an iPhone body on an itel
+  /// Vision. `ProductArt` resolves the brand first, and the last resort is an
+  /// unbranded handset rather than another brand's flagship.
+  String _fallbackAsset(ProductItem p) => ProductArt.resolve(
+        brand: p.brand,
+        name: p.name,
+        category: p.cat,
+      );
 
   Widget _buildFallbackIcon(ProductItem p, double size) {
     return Container(
@@ -530,6 +513,24 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'title': 'TECNO Camon 30',
         'sub': 'Halisi · offline (Assets)',
         'asset': 'assets/images/tecno_camon_30.png',
+        'url': null,
+      },
+      {
+        'title': 'Infinix Midnight',
+        'sub': 'Halisi · offline (Assets)',
+        'asset': ProductArt.infinix,
+        'url': null,
+      },
+      {
+        'title': 'itel Entry Teal',
+        'sub': 'Halisi · offline (Assets)',
+        'asset': ProductArt.itel,
+        'url': null,
+      },
+      {
+        'title': 'Generic Android',
+        'sub': 'Brand haijulikani (Assets)',
+        'asset': ProductArt.genericPhone,
         'url': null,
       },
       {
@@ -1222,8 +1223,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'cost': '510000',
         'cash': '620000',
         'loan': '780000',
-        'asset': null,
-        'url': 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
+        'asset': ProductArt.tecno,
+        'url': null,
       },
       {
         'chip': 'Redmi Note 13',
@@ -1235,8 +1236,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'cost': '450000',
         'cash': '540000',
         'loan': '680000',
-        'asset': null,
-        'url': 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
+        'asset': ProductArt.xiaomi,
+        'url': null,
       },
       {
         'chip': 'Infinix Note 40',
@@ -1248,8 +1249,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'cost': '410000',
         'cash': '490000',
         'loan': '620000',
-        'asset': null,
-        'url': 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&auto=format&fit=crop&q=80',
+        'asset': ProductArt.infinix,
+        'url': null,
       },
     ];
 
@@ -1596,7 +1597,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   border: OutlineInputBorder(),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 ),
-                                items: ['Samsung', 'Apple', 'Xiaomi', 'Tecno', 'Infinix', 'Oppo']
+                                items: ['Samsung', 'Apple', 'Xiaomi', 'Tecno', 'Infinix', 'itel', 'Oppo']
                                     .map((b) => DropdownMenuItem(value: b, child: Text(b, style: const TextStyle(fontSize: 13))))
                                     .toList(),
                                 onChanged: (v) {
@@ -1897,9 +1898,21 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         final cost = int.tryParse(buyingCtrl.text.replaceAll(',', '')) ?? 300000;
                         final loanP = int.tryParse(loanPriceCtrl.text.replaceAll(',', '')) ?? (price * 1.25).round();
 
-                        final isIphone = brand.toLowerCase().contains('apple') || nameCtrl.text.toLowerCase().contains('iphone');
-                        final resolvedAsset = selectedAsset ?? (isIphone ? 'assets/images/blue_iphones_duo.png' : null);
-                        final resolvedUrl = selectedAsset != null ? null : (selectedImageUrl ?? (isIphone ? null : 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80'));
+                        // Unknown brands get brand-matched artwork instead of
+                        // a random stock photo of some other manufacturer's phone.
+                        // A photo the staff member picked wins; otherwise the
+                        // brand decides, so an unlabelled handset never borrows
+                        // another manufacturer's body.
+                        final brandAsset = ProductArt.resolve(
+                          brand: brand,
+                          name: nameCtrl.text,
+                          category: 'phones',
+                        );
+                        final pickedUrl = selectedImageUrl ?? '';
+                        final hasPickedUrl = pickedUrl.isNotEmpty;
+                        final resolvedAsset =
+                            selectedAsset ?? (hasPickedUrl ? null : brandAsset);
+                        final resolvedUrl = resolvedAsset == null ? pickedUrl : null;
 
                         final newItem = ProductItem(
                           id: DateTime.now().millisecondsSinceEpoch % 10000,

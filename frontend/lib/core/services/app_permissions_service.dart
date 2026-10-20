@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -21,6 +22,15 @@ class AppPermissionsService {
 
   static bool _earlyRequestDone = false;
 
+  // `dart:io` Platform throws on web, and this service is reached from the
+  // login flow, so the web build logged "Unsupported operation:
+  // Platform._operatingSystem" on every boot. Platform checks now go through
+  // foundation, which is safe on every target.
+  static bool get _isAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static bool get _isIOS =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
   /// Permissions za msingi zinazoombwa pamoja mwanzoni.
   static List<Permission> get _earlyPermissions {
     final list = <Permission>[
@@ -29,8 +39,8 @@ class AppPermissionsService {
       Permission.notification,
       Permission.phone,
       Permission.sms,
-      if (Platform.isAndroid) Permission.storage,
-      if (Platform.isIOS) Permission.photos,
+      if (_isAndroid) Permission.storage,
+      if (_isIOS) Permission.photos,
     ];
     return list;
   }
@@ -44,7 +54,7 @@ class AppPermissionsService {
     BuildContext context, {
     bool showRationale = true,
   }) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return true;
+    if (!_isAndroid && !_isIOS) return true;
     if (_earlyRequestDone) return true;
 
     if (showRationale) {
@@ -131,7 +141,7 @@ class AppPermissionsService {
 
   /// Just-in-time: storage/photos kabla ya PDF / receipts / gallery.
   static Future<bool> ensureStorage() async {
-    if (Platform.isIOS) {
+    if (_isIOS) {
       if (await Permission.photos.isGranted) return true;
       return (await Permission.photos.request()).isGranted;
     }
