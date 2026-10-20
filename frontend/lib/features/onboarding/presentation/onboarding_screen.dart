@@ -74,19 +74,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.brandGradient,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: AppTheme.shadowBrand,
-                        ),
-                        child: const Icon(
-                          Icons.smartphone_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                      // The mascot replaces the generic phone glyph so the
+                      // brand mark matches the onboarding artwork.
+                      Image.asset(
+                        'assets/images/mascot.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(width: 10),
                       const Text(
