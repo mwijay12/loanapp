@@ -245,35 +245,42 @@ class FeaturedPhoneDealCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Right floating smartphone hardware presentation.
-                    // NOTE: product renders ship on BLACK backgrounds, so they
-                    // sit on a white photo tile to stay visible on the dark card.
+                    // Product art is transparent, so it sits straight on the
+                    // card. It used to be wrapped in a white tile, which read as
+                    // a photo pasted onto the gradient.
                     Expanded(
                       flex: 8,
                       child: Center(
-                        child: Container(
-                          height: 148,
+                        child: SizedBox(
+                          height: 150,
                           width: 132,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.35),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 108,
+                                height: 108,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      deal.glowColor.withValues(alpha: 0.45),
+                                      deal.glowColor.withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
                               ),
+                              deal.imageAsset != null &&
+                                      deal.imageAsset!.isNotEmpty
+                                  ? Image.asset(
+                                      deal.imageAsset!,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) =>
+                                          _buildFramedDevice(deal),
+                                    )
+                                  : _buildFramedDevice(deal),
                             ],
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: deal.imageAsset != null && deal.imageAsset!.isNotEmpty
-                              ? Image.asset(
-                                  deal.imageAsset!,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => _buildFramedDevice(deal),
-                                )
-                              : _buildFramedDevice(deal),
                         ),
                       ),
                     ),

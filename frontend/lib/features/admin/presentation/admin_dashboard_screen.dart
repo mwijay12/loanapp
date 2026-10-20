@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
 import '../../../core/data/analytics.dart';
+import '../../../core/data/branch_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
@@ -60,44 +61,25 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             })
         .toList();
 
-    final branches = [
-      {
-        'name': 'Mbezi Branch',
-        'sales': 'TZS 4.85M',
-        'low': 12,
-        'color': const Color(0xFF12B76A)
-      },
-      {
-        'name': 'Kariakoo Branch',
-        'sales': 'TZS 3.92M',
-        'low': 5,
-        'color': const Color(0xFF12B76A)
-      },
-      {
-        'name': 'Mwanza Branch',
-        'sales': 'TZS 2.71M',
-        'low': 8,
-        'color': const Color(0xFFF79009)
-      },
-      {
-        'name': 'Arusha Branch',
-        'sales': 'TZS 2.34M',
-        'low': 3,
-        'color': const Color(0xFF12B76A)
-      },
-      {
-        'name': 'Dodoma Branch',
-        'sales': 'TZS 1.88M',
-        'low': 0,
-        'color': const Color(0xFF12B76A)
-      },
-      {
-        'name': 'Zanzibar Branch',
-        'sales': 'TZS 1.42M',
-        'low': 6,
-        'color': const Color(0xFFF43F5E)
-      },
-    ];
+    // Branch rows come from the branch store, not from four map literals, so a
+    // branch can be opened, renamed or closed without touching code. A closed
+    // branch stays in the list as a record rather than disappearing, because
+    // sales and loans still point at it.
+    final branchRecords = ref.watch(branchesProvider);
+    final branches = branchRecords
+        .map((b) => <String, dynamic>{
+              'id': b.id,
+              'name': b.name,
+              'sales': formatTzsCompact(b.salesToday),
+              'low': b.lowStock,
+              'active': b.active,
+              'color': !b.active
+                  ? const Color(0xFF94A3B8)
+                  : (b.lowStock >= 8
+                      ? const Color(0xFFF79009)
+                      : const Color(0xFF12B76A)),
+            })
+        .toList();
 
     final alerts = [
       {
@@ -372,8 +354,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             Expanded(
               child: _buildKpiCard(
                 label: 'Revenue today',
-                value: LimsFormatters.currencyCompact(
-                    todaySales > 0 ? todaySales * 4 : 18200000),
+                // Was `todaySales * 4` with a fabricated 18.2M fallback, which
+                // invented revenue whenever the day had not started.
+                value: formatTzsCompact(todaySales),
                 trend: '+9% vs yesterday',
                 icon: Icons.trending_up_rounded,
                 color: const Color(0xFF12B76A),
@@ -605,6 +588,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               final isLast = idx == branches.length - 1;
 
               return InkWell(
+                onLongPress: () => _showBranchActions(context, b),
                 onTap: () => _showBranchAuditModal(context, b),
                 child: Container(
                   padding:
@@ -755,6 +739,79 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Close or reopen a branch from the list.
+  ///
+  /// Closing is reversible and keeps history; deleting a branch would orphan the
+  /// sales, loans and audit rows that reference it, so it is not offered.
+  Future<void> _showBranchActions(
+      BuildContext context, Map<String, dynamic> branch) async {
+    final isActive = branch['active'] as bool? ?? true;
+    final id = branch['id'] as String;
+    final name = branch['name'] as String;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.ink900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isActive ? 'Tawi linafanya kazi' : 'Tawi limefungwa',
+              style: const TextStyle(fontSize: 12, color: AppTheme.ink500),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              leading: Icon(
+                isActive ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+                color: AppTheme.brand600,
+              ),
+              title: Text(isActive ? 'Funga tawi' : 'Fungua tawi'),
+              subtitle: Text(
+                isActive
+                    ? 'Halitaonekana kwenye uchaguzi, lakini rekodi zake zinabaki.'
+                    : 'Litarudi kwenye orodha ya matawi yanayofanya kazi.',
+                style: const TextStyle(fontSize: 11.5),
+              ),
+              onTap: () {
+                final notifier = ref.read(branchesProvider.notifier);
+                if (isActive) {
+                  notifier.closeBranch(id);
+                } else {
+                  notifier.reopenBranch(id);
+                }
+                Navigator.pop(ctx);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 

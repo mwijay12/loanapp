@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/product_art.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -652,6 +653,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final activeLoans = ref.watch(loansProvider).length;
     final todaySales = ref.watch(todaySalesTotalProvider);
     final todayTx = ref.watch(todayTransactionsCountProvider);
+    // Portfolio health is derived, not typed in: a rate that never moves is the
+    // fastest way to lose trust in a dashboard.
+    final _loanList = ref.watch(loansProvider);
+    final _overdueCount =
+        _loanList.where((l) => l.status == 'overdue').length;
+    final _onTimeRate = _loanList.isEmpty
+        ? 0
+        : (((_loanList.length - _overdueCount) / _loanList.length) * 100).round();
     final allLowStock = ref
         .watch(inventoryProvider)
         .where((p) => p.status == 'low' || p.stock <= p.min)
@@ -700,7 +709,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 16),
               ] else ...[
                 // Counter Cashier Hero (the only remaining operational role)
-                _buildCashierTillHeroCard(680000, 8),
+                _buildCashierTillHeroCard(todaySales, todayTx),
                 const SizedBox(height: 16),
                 _buildFeaturedDealsSection(context),
                 const SizedBox(height: 16),
@@ -715,7 +724,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       label: isStorekeeper ? 'Warehouse Units' : 'Total Stock',
                       value: '$totalStock',
                       unit: 'phones',
-                      trend: '+14 today',
+                      trend: '$todayTx sold today',
                       trendColor: const Color(0xFF10B981),
                       iconBg: const Color(0xFFEFF5FE),
                       iconColor: const Color(0xFF1E60F2),
@@ -731,11 +740,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           isLoanOfficer ? 'Credit Portfolio' : 'Active Loans',
                       value: '$activeLoans',
                       unit: 'accounts',
-                      trend: '98% on-time',
+                      trend: '$_onTimeRate% on-time',
                       trendColor: const Color(0xFF6366F1),
                       iconBg: const Color(0xFFF3E8FF),
                       iconColor: const Color(0xFF7C3AED),
-                      subText: '1 overdue payment',
+                      subText: '$_overdueCount overdue payment${_overdueCount == 1 ? '' : 's'}',
                       onTap: () => context.go('/loans'),
                     ),
                   ),
@@ -1836,98 +1845,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ------------------------------------------------------------- Featured Deals Carousel Section
   Widget _buildFeaturedDealsSection(BuildContext context) {
-    final deals = [
-      FeaturedPhoneDeal(
-        id: 'deal_1',
-        title: 'iPhone 15 Pro Max',
-        subtitle: 'Deposit TZS 550,000 · TZS 145,000 / month',
-        badge: '🔥 HOT DEMAND',
-        badgeBg: const Color(0x3310B981),
-        badgeTextColor: const Color(0xFF6EE7B7),
-        gradient: const [
-          Color(0xFF0F172A),
-          Color(0xFF1E3A8A),
-          Color(0xFF2563EB),
-        ],
-        glowColor: const Color(0xFF2563EB),
-        imageAsset: 'assets/images/blue_iphones_duo.png',
-        tag1: '256GB Titanium',
-        tag2: 'Hardware Verified',
-        cashPrice: 'TZS 2.85M',
-        monthlyDue: 'TZS 145K/mo',
-        actionLabel: 'Issue Loan',
-        onTap: () => context.push('/sell-loan?type=LOAN'),
-      ),
-      FeaturedPhoneDeal(
-        id: 'deal_2',
-        title: 'Samsung Galaxy S24 Ultra',
-        subtitle: 'Deposit TZS 480,000 · TZS 125,000 / month',
-        badge: '⚡ 0% DOWNPAYMENT',
-        badgeBg: const Color(0x33F59E0B),
-        badgeTextColor: const Color(0xFFFDE68A),
-        gradient: const [
-          Color(0xFF1E1B4B),
-          Color(0xFF4338CA),
-          Color(0xFF6366F1),
-        ],
-        glowColor: const Color(0xFF6366F1),
-        imageAsset: 'assets/images/samsung_galaxy_ultra.png',
-        imageUrl:
-            'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
-        tag1: '512GB · 12GB RAM',
-        tag2: 'Dual IMEI Active',
-        cashPrice: 'TZS 2.45M',
-        monthlyDue: 'TZS 125K/mo',
-        actionLabel: 'Issue Loan',
-        onTap: () => context.push('/sell-loan?type=LOAN'),
-      ),
-      FeaturedPhoneDeal(
-        id: 'deal_3',
-        title: 'Tecno Camon 30 Premier',
-        subtitle: 'Deposit TZS 120,000 · TZS 45,000 / month',
-        badge: '🌟 KARIAKOO TOP SELLER',
-        badgeBg: const Color(0x3306B6D4),
-        badgeTextColor: const Color(0xFFA5F3FC),
-        gradient: const [
-          Color(0xFF042F2E),
-          Color(0xFF0F766E),
-          Color(0xFF14B8A6),
-        ],
-        glowColor: const Color(0xFF14B8A6),
-        imageAsset: 'assets/images/tecno_camon_30.png',
-        imageUrl:
-            'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
-        tag1: '256GB · 100W Fast',
-        tag2: 'Stock: 2 left',
-        cashPrice: 'TZS 620K',
-        monthlyDue: 'TZS 45K/mo',
-        actionLabel: 'Issue Loan',
-        onTap: () => context.push('/sell-loan?type=LOAN'),
-      ),
-      FeaturedPhoneDeal(
-        id: 'deal_4',
-        title: 'Redmi Note 13 Pro',
-        subtitle: 'Deposit TZS 95,000 · TZS 38,000 / month',
-        badge: '💰 HIGH MARGIN (34%)',
-        badgeBg: const Color(0x33EC4899),
-        badgeTextColor: const Color(0xFFFBCFE8),
-        gradient: const [
-          Color(0xFF4C0519),
-          Color(0xFF9F1239),
-          Color(0xFFE11D48),
-        ],
-        glowColor: const Color(0xFFE11D48),
-        imageAsset: 'assets/images/redmi_note_13_pro.png',
-        imageUrl:
-            'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
-        tag1: '200MP Camera',
-        tag2: 'Flexible Financing',
-        cashPrice: 'TZS 540K',
-        monthlyDue: 'TZS 38K/mo',
-        actionLabel: 'Issue Loan',
-        onTap: () => context.push('/sell-loan?type=LOAN'),
-      ),
+    // Deals are read from live inventory instead of a hand-written list. When a
+    // cashier sells a handset its stock drops here immediately, and a model that
+    // runs out disappears from the carousel instead of advertising a device the
+    // shop no longer has.
+    final phones = ref
+        .watch(inventoryProvider)
+        .where((p) => p.cat == 'phones' && p.stock > 0 && p.status != 'out')
+        .toList()
+      ..sort((a, b) => b.stock.compareTo(a.stock));
+
+    const palettes = <List<Color>>[
+      [Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF6366F1)],
+      [Color(0xFF134E4A), Color(0xFF0F766E), Color(0xFF14B8A6)],
+      [Color(0xFF1E3A8A), Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+      [Color(0xFF78350F), Color(0xFFB45309), Color(0xFFF59E0B)],
     ];
+    const glows = <Color>[
+      Color(0xFF6366F1),
+      Color(0xFF14B8A6),
+      Color(0xFF3B82F6),
+      Color(0xFFF59E0B),
+    ];
+
+    final deals = <FeaturedPhoneDeal>[];
+    for (var i = 0; i < phones.length && i < 4; i++) {
+      final p = phones[i];
+      final deposit = (p.price * 0.25).round();
+      final monthly = (p.price * 0.75 / 8).round();
+      deals.add(
+        FeaturedPhoneDeal(
+          id: 'deal_${p.id}',
+          title: p.name,
+          subtitle:
+              'Deposit ${LimsFormatters.currencyCompact(deposit)} · ${LimsFormatters.currencyCompact(monthly)} / month',
+          badge: p.status == 'low' ? '⚠️ STOCK NDOGO' : '⚡ 0% DOWNPAYMENT',
+          badgeBg: p.status == 'low'
+              ? const Color(0x33F59E0B)
+              : const Color(0x33FBBF24),
+          badgeTextColor: const Color(0xFFFDE68A),
+          gradient: palettes[i % palettes.length],
+          glowColor: glows[i % glows.length],
+          imageAsset: p.imageAsset ??
+              ProductArt.resolve(brand: p.brand, name: p.name, category: p.cat),
+          tag1: '${p.stock} in stock',
+          tag2: p.imei1 != null ? 'IMEI registered' : p.variant,
+          cashPrice: LimsFormatters.currencyCompact(p.price),
+          monthlyDue: '${LimsFormatters.currencyCompact(monthly)}/mo',
+          actionLabel: 'Issue Loan',
+          onTap: () => context.push('/sell-loan?type=LOAN'),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
