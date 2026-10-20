@@ -51,7 +51,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openBranchSelector() {
     final currentRole = ref.read(userRoleProvider);
-    final isSuperAdmin = UserRoles.normalize(currentRole) == UserRoles.superAdmin;
+    final isSuperAdmin =
+        UserRoles.normalize(currentRole) == UserRoles.superAdmin;
     final activeBranch = ref.read(activeBranchProvider);
 
     if (!isSuperAdmin) {
@@ -65,7 +66,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             right: 18,
           ),
           backgroundColor: const Color(0xFF0F172A),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: Row(
             children: [
               Container(
@@ -74,7 +76,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: const Color(0xFFF59E0B),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.lock_rounded, color: Colors.white, size: 18),
+                child: const Icon(Icons.lock_rounded,
+                    color: Colors.white, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -84,11 +87,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     const Text(
                       'Branch Switching Restricted',
-                      style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 13),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          fontSize: 13),
                     ),
                     Text(
                       '$currentRole permissions are scoped to $activeBranch terminal.',
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                      style: const TextStyle(
+                          color: Color(0xFF94A3B8), fontSize: 11),
                     ),
                   ],
                 ),
@@ -104,7 +111,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (ctx) => LimsBottomSheet(
         title: 'Select Active Branch',
-        subtitle: 'Switch terminal location & live stock inventory (Super Admin Scope)',
+        subtitle:
+            'Switch terminal location & live stock inventory (Super Admin Scope)',
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,12 +120,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ..._branches.map((b) {
               final isSelected = activeBranch == b;
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 leading: Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.brand100 : const Color(0xFFF1F5F9),
+                    color: isSelected
+                        ? AppTheme.brand100
+                        : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -135,12 +146,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: AppTheme.brand600)
+                    ? const Icon(Icons.check_circle_rounded,
+                        color: AppTheme.brand600)
                     : null,
                 onTap: () {
                   ref.read(activeBranchProvider.notifier).setBranch(b);
                   Navigator.pop(ctx);
-                  LimsToast.show(context, 'Switched terminal to $b', isSuccess: true);
+                  LimsToast.show(context, 'Switched terminal to $b',
+                      isSuccess: true);
                 },
               );
             }),
@@ -198,7 +211,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   color: const Color(0xFFEFF6FF),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF1E60F2), size: 18),
+                                child: const Icon(
+                                    Icons.notifications_active_rounded,
+                                    color: Color(0xFF1E60F2),
+                                    size: 18),
                               ),
                               const SizedBox(width: 10),
                               const Expanded(
@@ -206,14 +222,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   'In-App Notifications',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0F172A)),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
+                          icon: const Icon(Icons.close_rounded,
+                              size: 20, color: Color(0xFF64748B)),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
@@ -225,7 +245,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     iconBg: const Color(0xFFFEF2F2),
                     iconColor: const Color(0xFFDC2626),
                     title: 'Critical Stock: Galaxy A55',
-                    subtitle: '4 units remaining in safe buffer. Reorder needed.',
+                    subtitle:
+                        '4 units remaining in safe buffer. Reorder needed.',
                     time: '10m ago',
                     onTap: () {
                       Navigator.pop(ctx);
@@ -251,7 +272,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     iconBg: const Color(0xFFEFF6FF),
                     iconColor: AppTheme.brand600,
                     title: 'Hardware Serial Ledger Verification',
-                    subtitle: 'All branch serialized IMEIs matched against physical inventory.',
+                    subtitle:
+                        'All branch serialized IMEIs matched against physical inventory.',
                     time: '1h ago',
                     onTap: () {
                       Navigator.pop(ctx);
@@ -264,7 +286,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     iconBg: const Color(0xFFECFDF5),
                     iconColor: const Color(0xFF059669),
                     title: 'Shift Attendance Logged',
-                    subtitle: 'Zawadi Nnaji clocked in at 07:58 AM (Geofence verified).',
+                    subtitle:
+                        'Zawadi Nnaji clocked in at 07:58 AM (Geofence verified).',
                     time: '07:58 AM',
                     onTap: () {
                       Navigator.pop(ctx);
@@ -280,12 +303,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('All notifications marked as read.'),
+                              content:
+                                  Text('All notifications marked as read.'),
                               backgroundColor: Color(0xFF10B981),
                             ),
                           );
                         },
-                        child: const Text('Mark all as read', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                        child: const Text('Mark all as read',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 12.5)),
                       ),
                     ),
                   ),
@@ -325,7 +351,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                  color: iconBg, borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, color: iconColor, size: 18),
             ),
             const SizedBox(width: 12),
@@ -340,7 +367,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                          style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -349,7 +379,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           time,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                          style: const TextStyle(
+                              fontSize: 10.5, color: Color(0xFF94A3B8)),
                         ),
                       ),
                     ],
@@ -359,7 +390,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                    style: const TextStyle(
+                        fontSize: 11.5, color: Color(0xFF64748B)),
                   ),
                 ],
               ),
@@ -370,9 +402,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-
   void _showAllLowStock() {
-    final lowStockItems = ref.read(inventoryProvider).where((p) => p.status == 'low' || p.stock <= p.min).toList();
+    final lowStockItems = ref
+        .read(inventoryProvider)
+        .where((p) => p.status == 'low' || p.stock <= p.min)
+        .toList();
     LimsBottomSheet.show(
       context: context,
       builder: (ctx) => LimsBottomSheet(
@@ -386,7 +420,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           child: Text(
             '${lowStockItems.length} critical',
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFF43F5E)),
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFF43F5E)),
           ),
         ),
         child: Column(
@@ -397,7 +434,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(
-                  child: Text('All models are currently well stocked!', style: TextStyle(color: AppTheme.ink500, fontWeight: FontWeight.w600)),
+                  child: Text('All models are currently well stocked!',
+                      style: TextStyle(
+                          color: AppTheme.ink500, fontWeight: FontWeight.w600)),
                 ),
               )
             else
@@ -407,7 +446,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _buildLowStockItem(
                       name: p.name,
                       leftCount: p.stock,
-                      colorType: p.name.toLowerCase().contains('samsung') ? 'navy' : 'silver',
+                      colorType: p.name.toLowerCase().contains('samsung')
+                          ? 'navy'
+                          : 'silver',
                       onTap: () {
                         Navigator.pop(ctx);
                         _showPhoneQuickAction(p.name, p.stock);
@@ -426,12 +467,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   context.push('/receive');
                 },
                 icon: const Icon(Icons.archive_rounded, size: 18),
-                label: const Text('Request Hub Restock (PO)', style: TextStyle(fontWeight: FontWeight.w700)),
+                label: const Text('Request Hub Restock (PO)',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.brand600,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                 ),
               ),
             ),
@@ -468,7 +511,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           color: const Color(0xFFFEF3F2),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.pin_outlined, color: Color(0xFFD92D20), size: 20),
+                        child: const Icon(Icons.pin_outlined,
+                            color: Color(0xFFD92D20), size: 20),
                       ),
                       const SizedBox(width: 10),
                       const Expanded(
@@ -476,7 +520,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           'Supervisor Override PIN',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A)),
                         ),
                       ),
                     ],
@@ -500,12 +547,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Text(
                     'Active Branch Override Master PIN',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B)),
                   ),
                   SizedBox(height: 6),
                   Text(
                     '8 8 2 1',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 8, color: Color(0xFF1E60F2)),
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 8,
+                        color: Color(0xFF1E60F2)),
                   ),
                   SizedBox(height: 4),
                   Text(
@@ -519,7 +573,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 16),
             const Text(
               'Pending Counter Requests (1)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 8),
             Container(
@@ -531,14 +588,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.discount_rounded, color: Color(0xFF1E60F2), size: 22),
+                  const Icon(Icons.discount_rounded,
+                      color: Color(0xFF1E60F2), size: 22),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Galaxy A15 · TZS 30,000 Discount', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
-                        Text('Requested by Zawadi (Till #2) · Cash Buyer', style: TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                        Text('Galaxy A15 · TZS 30,000 Discount',
+                            style: TextStyle(
+                                fontSize: 12.5, fontWeight: FontWeight.w700)),
+                        Text('Requested by Zawadi (Till #2) · Cash Buyer',
+                            style: TextStyle(
+                                fontSize: 11, color: Color(0xFF475569))),
                       ],
                     ),
                   ),
@@ -547,17 +609,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Discount authorized! OTP PIN dispatched to Till #2.'),
+                          content: Text(
+                              'Discount authorized! OTP PIN dispatched to Till #2.'),
                           backgroundColor: Color(0xFF10B981),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1E60F2),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       minimumSize: Size.zero,
                     ),
-                    child: const Text('Approve', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),
+                    child: const Text('Approve',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -584,7 +652,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final activeLoans = ref.watch(loansProvider).length;
     final todaySales = ref.watch(todaySalesTotalProvider);
     final todayTx = ref.watch(todayTransactionsCountProvider);
-    final allLowStock = ref.watch(inventoryProvider).where((p) => p.status == 'low' || p.stock <= p.min).toList();
+    final allLowStock = ref
+        .watch(inventoryProvider)
+        .where((p) => p.status == 'low' || p.stock <= p.min)
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
@@ -656,7 +727,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Expanded(
                     child: _buildMetricCard(
                       icon: Icons.people_outline_rounded,
-                      label: isLoanOfficer ? 'Credit Portfolio' : 'Active Loans',
+                      label:
+                          isLoanOfficer ? 'Credit Portfolio' : 'Active Loans',
                       value: '$activeLoans',
                       unit: 'accounts',
                       trend: '98% on-time',
@@ -703,24 +775,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE9F2FE),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    // Show the real session role. The old nested ternary had no
-                    // Auditor branch, so an Auditor was displayed as
-                    // 'Counter Cashier'.
-                    child: Text(
-                      UserRoles.normalize(currentRole) ?? '—',
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E60F2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE9F2FE),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      // Show the real session role. The old nested ternary had no
+                      // Auditor branch, so an Auditor was displayed as
+                      // 'Counter Cashier'.
+                      child: Text(
+                        UserRoles.normalize(currentRole) ?? '—',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E60F2),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -805,7 +878,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     iconColor: const Color(0xFFD92D20),
                                     title: 'Supervisor PIN',
                                     subtitle: 'Discount Overrides',
-                                    onTap: () => _showSupervisorPinDialog(context),
+                                    onTap: () =>
+                                        _showSupervisorPinDialog(context),
                                   ),
                                 ),
                               ],
@@ -848,13 +922,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         iconColor: const Color(0xFF7C3AED),
                                         title: 'Issue Loan',
                                         subtitle: 'KYC & Collateral',
-                                        onTap: () => context.push('/sell-loan?type=LOAN'),
+                                        onTap: () => context
+                                            .push('/sell-loan?type=LOAN'),
                                       ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: _buildBentoActionCard(
-                                        icon: Icons.assignment_turned_in_rounded,
+                                        icon:
+                                            Icons.assignment_turned_in_rounded,
                                         iconBg: const Color(0xFFDCFCE7),
                                         iconColor: const Color(0xFF16A34A),
                                         title: 'Credit Review',
@@ -880,7 +956,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: _buildBentoActionCard(
-                                        icon: Icons.notifications_active_rounded,
+                                        icon:
+                                            Icons.notifications_active_rounded,
                                         iconBg: const Color(0xFFFEF08A),
                                         iconColor: const Color(0xFFCA8A04),
                                         title: 'Collections',
@@ -902,7 +979,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconColor: const Color(0xFF1E60F2),
                                             title: 'Receive PO',
                                             subtitle: 'Supplier IMEI Intake',
-                                            onTap: () => context.push('/receive'),
+                                            onTap: () =>
+                                                context.push('/receive'),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -913,7 +991,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconColor: const Color(0xFF7C3AED),
                                             title: 'IMEI Scanner',
                                             subtitle: 'Barcode Inspection',
-                                            onTap: () => context.push('/scanner'),
+                                            onTap: () =>
+                                                context.push('/scanner'),
                                           ),
                                         ),
                                       ],
@@ -928,7 +1007,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconColor: const Color(0xFF0284C7),
                                             title: 'Transfers',
                                             subtitle: 'Dispatch & Waybills',
-                                            onTap: () => context.push('/transfer'),
+                                            onTap: () =>
+                                                context.push('/transfer'),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -956,7 +1036,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconColor: const Color(0xFF1E60F2),
                                             title: 'New POS Sale',
                                             subtitle: 'Cash or Loan Checkout',
-                                            onTap: () => context.push('/sell-loan'),
+                                            onTap: () =>
+                                                context.push('/sell-loan'),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -982,18 +1063,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconColor: const Color(0xFF0284C7),
                                             title: 'Scan Cabinet',
                                             subtitle: 'Check Stock Ready',
-                                            onTap: () => context.push('/scanner'),
+                                            onTap: () =>
+                                                context.push('/scanner'),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: _buildBentoActionCard(
-                                            icon: Icons.access_time_filled_rounded,
+                                            icon: Icons
+                                                .access_time_filled_rounded,
                                             iconBg: const Color(0xFFDCFCE7),
                                             iconColor: const Color(0xFF16A34A),
                                             title: 'Clock Shift',
                                             subtitle: 'Till Log & Drawer',
-                                            onTap: () => context.push('/attendance'),
+                                            onTap: () =>
+                                                context.push('/attendance'),
                                           ),
                                         ),
                                       ],
@@ -1003,7 +1087,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 20),
 
               // Branch Operational Pulse (Crisp, High-Yield Status Hub)
-              _buildOperationalPulseSection(context, allLowStock, ref.watch(loansProvider)),
+              _buildOperationalPulseSection(
+                  context, allLowStock, ref.watch(loansProvider)),
             ],
           ),
         ),
@@ -1011,7 +1096,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBorrowerQuickWatchList(BuildContext context, List<LoanItem> loans) {
+  Widget _buildBorrowerQuickWatchList(
+      BuildContext context, List<LoanItem> loans) {
     final watchLoans = loans.take(3).toList();
 
     return Column(
@@ -1022,10 +1108,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: l.isKnoxLocked ? const Color(0xFFFECDD3) : const Color(0xFFE2E8F0),
+              color: l.isKnoxLocked
+                  ? const Color(0xFFFECDD3)
+                  : const Color(0xFFE2E8F0),
             ),
             boxShadow: const [
-              BoxShadow(color: Color(0x080F3478), blurRadius: 14, offset: Offset(0, 3)),
+              BoxShadow(
+                  color: Color(0x080F3478),
+                  blurRadius: 14,
+                  offset: Offset(0, 3)),
             ],
           ),
           child: Material(
@@ -1036,7 +1127,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (ctx) => BorrowerLoanDetailsScreen(loanId: l.id, initialLoan: l),
+                    builder: (ctx) =>
+                        BorrowerLoanDetailsScreen(loanId: l.id, initialLoan: l),
                   ),
                 );
               },
@@ -1048,13 +1140,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: l.grad, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                        gradient: LinearGradient(
+                            colors: l.grad,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
                         child: Text(
                           l.initials,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13),
                         ),
                       ),
                     ),
@@ -1068,19 +1166,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Flexible(
                                 child: Text(
                                   l.name,
-                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                                  style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.ink900),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (l.isKnoxLocked) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFEDF1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text('ON HOLD', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: AppTheme.errorColor)),
+                                  child: const Text('ON HOLD',
+                                      style: TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppTheme.errorColor)),
                                 ),
                               ],
                             ],
@@ -1088,7 +1194,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const SizedBox(height: 2),
                           Text(
                             '${l.item} · ${l.due}',
-                            style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
+                            style: const TextStyle(
+                                fontSize: 11, color: AppTheme.ink500),
                           ),
                         ],
                       ),
@@ -1102,18 +1209,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,
-                            color: l.status == 'overdue' ? AppTheme.errorColor : AppTheme.brand600,
+                            color: l.status == 'overdue'
+                                ? AppTheme.errorColor
+                                : AppTheme.brand600,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${l.paid}% repaid',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF9AA8BF)),
+                          style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF9AA8BF)),
                         ),
                       ],
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1), size: 18),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Color(0xFFCBD5E1), size: 18),
                   ],
                 ),
               ),
@@ -1146,14 +1259,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFF43F5E), size: 20),
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Color(0xFFF43F5E), size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       isCashier
                           ? 'Stock is below buffer threshold. Notify storekeeper for cabinet replenishment.'
                           : 'Stock is below minimum reorder point for $activeBranch. Initiate transfer or issue PO.',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFF43F5E)),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFF43F5E)),
                     ),
                   ),
                 ],
@@ -1172,9 +1289,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Sell at Counter', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: const Text('Sell at Counter',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1183,7 +1302,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onPressed: () {
                       Navigator.pop(ctx);
                       if (isCashier) {
-                        LimsToast.show(context, 'Replenishment request for $name sent to Storekeeper.', isSuccess: true);
+                        LimsToast.show(context,
+                            'Replenishment request for $name sent to Storekeeper.',
+                            isSuccess: true);
                       } else {
                         context.push('/receive');
                       }
@@ -1192,9 +1313,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       foregroundColor: AppTheme.brand600,
                       side: const BorderSide(color: Color(0xFFCEE1FE)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text(isCashier ? 'Request Stock' : 'Restock PO', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    child: Text(isCashier ? 'Request Stock' : 'Restock PO',
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
@@ -1206,7 +1329,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Branch Operational Pulse
-  Widget _buildOperationalPulseSection(BuildContext context, List<ProductItem> lowStock, List<LoanItem> loans) {
+  Widget _buildOperationalPulseSection(
+      BuildContext context, List<ProductItem> lowStock, List<LoanItem> loans) {
     final activeBranch = ref.watch(activeBranchProvider);
     final overdueLoans = loans.where((l) => l.status == 'overdue').length;
 
@@ -1233,7 +1357,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Expanded(
                 child: Row(
                   children: [
-                    Icon(Icons.insights_rounded, size: 18, color: AppTheme.brand600),
+                    Icon(Icons.insights_rounded,
+                        size: 18, color: AppTheme.brand600),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1253,21 +1378,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(width: 8),
               Flexible(
                 child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF5FE),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  activeBranch,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.brand600,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF5FE),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
+                  child: Text(
+                    activeBranch,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.brand600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -1300,7 +1426,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: const Color(0xFFEA580C),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                    child: const Icon(Icons.warning_amber_rounded,
+                        color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1318,12 +1445,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 2),
                         const Text(
                           'Tap to view inventory buffer & restock PO',
-                          style: TextStyle(fontSize: 11, color: Color(0xFFC2410C), fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFFC2410C),
+                              fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Color(0xFFEA580C), size: 20),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Color(0xFFEA580C), size: 20),
                 ],
               ),
             ),
@@ -1350,7 +1481,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: const Color(0xFF2563EB),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.security_rounded, color: Colors.white, size: 19),
+                    child: const Icon(Icons.security_rounded,
+                        color: Colors.white, size: 19),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1368,12 +1500,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 2),
                         const Text(
                           'Tap to review borrower dossier and contact guarantor',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF1D4ED8),
+                              fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF2563EB), size: 20),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Color(0xFF2563EB), size: 20),
                 ],
               ),
             ),
@@ -1423,7 +1559,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Header
-  Widget _buildHeader(BuildContext context, String currentRole, String activeBranch, StaffMember activeStaff) {
+  Widget _buildHeader(BuildContext context, String currentRole,
+      String activeBranch, StaffMember activeStaff) {
     final isSuperAdmin = currentRole == UserRoles.superAdmin;
     final isBranchManager = currentRole == UserRoles.branchManager;
     final isLoanOfficer = currentRole == UserRoles.loanOfficer;
@@ -1449,7 +1586,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ? Icons.inventory_2_rounded
                     : Icons.point_of_sale_rounded)));
 
-    final allLowStock = ref.watch(inventoryProvider).where((p) => p.status == 'low' || p.stock <= p.min).toList();
+    final allLowStock = ref
+        .watch(inventoryProvider)
+        .where((p) => p.status == 'low' || p.stock <= p.min)
+        .toList();
     final firstName = activeStaff.name.split(' ')[0];
 
     return Row(
@@ -1534,7 +1674,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Flexible(
                           // P0: read-only role badge. No tap — role is server-assigned.
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2.5),
                             decoration: BoxDecoration(
                               color: roleColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(99),
@@ -1575,7 +1716,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.location_on_rounded, size: 13, color: Color(0xFF1E293B)),
+                          const Icon(Icons.location_on_rounded,
+                              size: 13, color: Color(0xFF1E293B)),
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
@@ -1589,7 +1731,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 2),
-                          Icon(isSuperAdmin ? Icons.keyboard_arrow_down_rounded : Icons.lock_outline_rounded, size: 13, color: const Color(0xFF1E293B)),
+                          Icon(
+                              isSuperAdmin
+                                  ? Icons.keyboard_arrow_down_rounded
+                                  : Icons.lock_outline_rounded,
+                              size: 13,
+                              color: const Color(0xFF1E293B)),
                         ],
                       ),
                     ),
@@ -1625,7 +1772,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       top: 2,
                       right: 2,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1.5),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEF4444),
                           borderRadius: BorderRadius.circular(10),
@@ -1662,9 +1810,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ? const SizedBox(
                             width: 10,
                             height: 10,
-                            child: CircularProgressIndicator(strokeWidth: 1.6, color: Color(0xFF059669)),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.6, color: Color(0xFF059669)),
                           )
-                        : const Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF059669)),
+                        : const Icon(Icons.check_circle_rounded,
+                            size: 12, color: Color(0xFF059669)),
                     const SizedBox(width: 3),
                     Text(
                       _isSyncing ? 'Syncing…' : 'Live Sync',
@@ -1722,7 +1872,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
         glowColor: const Color(0xFF6366F1),
         imageAsset: 'assets/images/samsung_galaxy_ultra.png',
-        imageUrl: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
+        imageUrl:
+            'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
         tag1: '512GB · 12GB RAM',
         tag2: 'Dual IMEI Active',
         cashPrice: 'TZS 2.45M',
@@ -1744,7 +1895,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
         glowColor: const Color(0xFF14B8A6),
         imageAsset: 'assets/images/tecno_camon_30.png',
-        imageUrl: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
+        imageUrl:
+            'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
         tag1: '256GB · 100W Fast',
         tag2: 'Stock: 2 left',
         cashPrice: 'TZS 620K',
@@ -1766,7 +1918,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
         glowColor: const Color(0xFFE11D48),
         imageAsset: 'assets/images/redmi_note_13_pro.png',
-        imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
+        imageUrl:
+            'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
         tag1: '200MP Camera',
         tag2: 'Flexible Financing',
         cashPrice: 'TZS 540K',
@@ -1785,7 +1938,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Expanded(
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department_rounded, size: 18, color: Color(0xFFEF4444)),
+                  Icon(Icons.local_fire_department_rounded,
+                      size: 18, color: Color(0xFFEF4444)),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -1817,7 +1971,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   SizedBox(width: 4),
                   Text(
                     'Swipe',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFDC2626)),
                   ),
                 ],
               ),
@@ -1834,27 +1991,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Product renders ship on BLACK backgrounds, so hero art always sits on
   // a white photo tile to stay visible on the dark hero gradients.
   Widget _buildHeroPhonePhoto(String asset) {
-    return Container(
-      width: 148,
+    // The product shot used to sit inside a white rounded tile, which read as a
+    // pasted image on the gradient. The artwork is transparent now, so it floats
+    // on the card with a soft glow instead of a white box.
+    return SizedBox(
+      width: 146,
       height: 168,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.22),
+                  Colors.white.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(6),
+            child: Image.asset(
+              asset,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) =>
+                  _buildDualPhoneArtwork(),
+            ),
           ),
         ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Image.asset(
-        asset,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (context, error, stackTrace) => _buildDualPhoneArtwork(),
       ),
     );
   }
@@ -1904,7 +2073,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.trending_up_rounded, color: Colors.white, size: 18),
+                      const Icon(Icons.trending_up_rounded,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         "Today's Sales",
@@ -1928,11 +2098,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1944,7 +2116,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: Color(0xFF34D399),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.arrow_upward_rounded, size: 10, color: Color(0xFF064E3B)),
+                          child: const Icon(Icons.arrow_upward_rounded,
+                              size: 10, color: Color(0xFF064E3B)),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -1974,7 +2147,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBranchManagerHeroCard(int branchSales, int branchTx, String activeBranch) {
+  Widget _buildBranchManagerHeroCard(
+      int branchSales, int branchTx, String activeBranch) {
     return Container(
       constraints: const BoxConstraints(minHeight: 164),
       decoration: BoxDecoration(
@@ -2016,7 +2190,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.storefront_rounded, color: Colors.white, size: 18),
+                      const Icon(Icons.storefront_rounded,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         "Branch Sales Today · $activeBranch",
@@ -2040,11 +2215,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2056,7 +2233,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: Color(0xFF34D399),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.arrow_upward_rounded, size: 10, color: Color(0xFF064E3B)),
+                          child: const Icon(Icons.arrow_upward_rounded,
+                              size: 10, color: Color(0xFF064E3B)),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -2076,7 +2254,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: _buildHeroPhonePhoto('assets/images/samsung_galaxy_ultra.png'),
+              child: _buildHeroPhonePhoto(
+                  'assets/images/samsung_galaxy_ultra.png'),
             ),
           ],
         ),
@@ -2126,7 +2305,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.verified_user_rounded, color: Colors.white, size: 18),
+                      const Icon(Icons.verified_user_rounded,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         "Active Credit Portfolio",
@@ -2150,16 +2330,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shield_outlined, size: 14, color: Colors.white),
+                        const Icon(Icons.shield_outlined,
+                            size: 14, color: Colors.white),
                         const SizedBox(width: 6),
                         Text(
                           '$activeLoans loans · 98% on-time · $overdueCount overdue',
@@ -2178,7 +2361,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               right: 4,
               bottom: -8,
-              child: _buildHeroPhonePhoto('assets/images/redmi_note_13_pro.png'),
+              child:
+                  _buildHeroPhonePhoto('assets/images/redmi_note_13_pro.png'),
             ),
           ],
         ),
@@ -2220,7 +2404,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: const Color(0x1AFFFFFF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.visibility_rounded, color: Colors.white, size: 18),
+                child: const Icon(Icons.visibility_rounded,
+                    color: Colors.white, size: 18),
               ),
               const SizedBox(width: 10),
               const Expanded(
@@ -2238,7 +2423,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SizedBox(height: 10),
           const Text(
             'You can inspect registers, loan history and reports. Creating, editing, approving or disbursing is not available to this role.',
-            style: TextStyle(fontSize: 12.5, height: 1.5, color: Color(0xFFCBD5E1)),
+            style: TextStyle(
+                fontSize: 12.5, height: 1.5, color: Color(0xFFCBD5E1)),
           ),
         ],
       ),
@@ -2280,21 +2466,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
+              padding: const EdgeInsets.fromLTRB(20, 18, 148, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.inventory_2_rounded, color: Colors.white, size: 18),
+                      const Icon(Icons.inventory_2_rounded,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 6),
-                      Text(
-                        "Warehouse Inventory Reserve",
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
+                      Expanded(
+                        child: Text(
+                          "Warehouse Inventory Reserve",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
                         ),
                       ),
                     ],
@@ -2311,23 +2502,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.qr_code_scanner_rounded, size: 14, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          '+14 IMEI intake today · 2 inbound POs',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        const Icon(Icons.qr_code_scanner_rounded,
+                            size: 14, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            '+14 IMEI today · 2 POs',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
@@ -2389,7 +2587,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 18),
+                      const Icon(Icons.point_of_sale_rounded,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         "My POS Till (Shift #104)",
@@ -2413,16 +2612,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF34D399)),
+                        const Icon(Icons.check_circle_rounded,
+                            size: 14, color: Color(0xFF34D399)),
                         const SizedBox(width: 6),
                         Text(
                           '$salesCount sales closed today · Drawer balanced',
@@ -2449,7 +2651,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBranchManagerConsoleSection(BuildContext context, String activeBranch) {
+  Widget _buildBranchManagerConsoleSection(
+      BuildContext context, String activeBranch) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -2480,7 +2683,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         color: const Color(0xFFEFF5FE),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.manage_accounts_rounded, color: AppTheme.brand600, size: 20),
+                      child: const Icon(Icons.manage_accounts_rounded,
+                          color: AppTheme.brand600, size: 20),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -2517,7 +2721,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: () => context.push('/reports'),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                   decoration: BoxDecoration(
                     color: AppTheme.brand600,
                     borderRadius: BorderRadius.circular(10),
@@ -2526,10 +2731,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Text(
                         'Audit Till',
-                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white),
                       ),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
+                      Icon(Icons.arrow_forward_rounded,
+                          size: 12, color: Colors.white),
                     ],
                   ),
                 ),
@@ -2595,7 +2804,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF8DA9C4), width: 1.5),
+                  border:
+                      Border.all(color: const Color(0xFF8DA9C4), width: 1.5),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x40000000),
@@ -2791,7 +3001,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(width: 4),
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2.5),
                     decoration: BoxDecoration(
                       color: trendColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -2799,7 +3010,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.trending_up_rounded, size: 11, color: trendColor),
+                        Icon(Icons.trending_up_rounded,
+                            size: 11, color: trendColor),
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(
@@ -2877,7 +3089,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFFCBD5E1)),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 10, color: Color(0xFFCBD5E1)),
               ],
             ),
           ],
@@ -2953,7 +3166,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFFCBD5E1)),
+            const Icon(Icons.chevron_right_rounded,
+                size: 16, color: Color(0xFFCBD5E1)),
           ],
         ),
       ),
@@ -2961,13 +3175,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Low Stock Alert Banner
-  Widget _buildLowStockNotificationBanner(BuildContext context, List<ProductItem> lowItems) {
+  Widget _buildLowStockNotificationBanner(
+      BuildContext context, List<ProductItem> lowItems) {
     if (lowItems.isEmpty) return const SizedBox.shrink();
 
     final currentRole = ref.watch(userRoleProvider);
     final isCashier = currentRole == UserRoles.counterCashier;
-    final itemNames = lowItems.take(2).map((p) => '${p.name} (${p.stock} left)').join(', ');
-    final moreCount = lowItems.length > 2 ? ' +${lowItems.length - 2} more' : '';
+    final itemNames =
+        lowItems.take(2).map((p) => '${p.name} (${p.stock} left)').join(', ');
+    final moreCount =
+        lowItems.length > 2 ? ' +${lowItems.length - 2} more' : '';
 
     return Container(
       decoration: BoxDecoration(
@@ -3006,7 +3223,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 18),
+                child: const Icon(Icons.notifications_active_rounded,
+                    color: Colors.white, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -3028,7 +3246,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 1.5),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFE4E6),
                             borderRadius: BorderRadius.circular(6),
@@ -3067,12 +3286,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _showAllLowStock,
                   icon: const Icon(Icons.visibility_rounded, size: 14),
-                  label: const Text('View All', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  label: const Text('View All',
+                      style: TextStyle(
+                          fontSize: 11.5, fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF9F1239),
                     side: const BorderSide(color: Color(0xFFFECDD3)),
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -3089,19 +3311,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         }
                       : () => context.push('/receive'),
                   icon: Icon(
-                    isCashier ? Icons.campaign_rounded : Icons.add_shopping_cart_rounded,
+                    isCashier
+                        ? Icons.campaign_rounded
+                        : Icons.add_shopping_cart_rounded,
                     size: 14,
                   ),
                   label: Text(
                     isCashier ? 'Notify Storekeeper' : 'Purchase Order (PO)',
-                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                        fontSize: 11.5, fontWeight: FontWeight.w800),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE11D48),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -3178,14 +3404,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1.5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                          color:
+                              const Color(0xFF7C3AED).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           'Gemini Pro',
-                          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF7C3AED)),
+                          style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF7C3AED)),
                         ),
                       ),
                     ],
@@ -3257,7 +3488,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEE2E2),
                           borderRadius: BorderRadius.circular(6),
@@ -3301,7 +3533,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 18),
+            const Icon(Icons.chevron_right_rounded,
+                color: Color(0xFF94A3B8), size: 18),
           ],
         ),
       ),
@@ -3343,7 +3576,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               decoration: BoxDecoration(
                 color: chassisColor,
                 borderRadius: BorderRadius.circular(5),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.5),
+                border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.1), width: 0.5),
               ),
               child: Stack(
                 children: [
@@ -3428,7 +3662,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         color: const Color(0xFFF0EBFF),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF7C5CFC), size: 20),
+                      child: const Icon(Icons.admin_panel_settings_rounded,
+                          color: Color(0xFF7C5CFC), size: 20),
                     ),
                     const SizedBox(width: 10),
                     const Expanded(
@@ -3465,7 +3700,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: () => context.push('/admin'),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7C5CFC),
                     borderRadius: BorderRadius.circular(10),
@@ -3474,10 +3710,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Text(
                         'Full Console',
-                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white),
                       ),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
+                      Icon(Icons.arrow_forward_rounded,
+                          size: 12, color: Colors.white),
                     ],
                   ),
                 ),
@@ -3538,17 +3778,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+            style: const TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 2),
           Text(
             val,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color),
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w800, color: color),
           ),
           const SizedBox(height: 1),
           Text(
             sub,
-            style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8)),
+            style: const TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF94A3B8)),
           ),
         ],
       ),

@@ -310,6 +310,330 @@ class PdfReportService {
     );
   }
 
+  // ---------------------------------------------------------------- Receipt
+  /// Sales receipt for one financed handset.
+  ///
+  /// Printed at the counter and handed to the customer, so it carries the IMEI
+  /// of the actual device — the thing a buyer checks if the handset is ever
+  /// disputed — plus the deposit, the financed balance and the weekly amount.
+  static Future<void> generateAndDownloadReceipt({
+    required LoanItem loan,
+    required String branchName,
+    required String servedBy,
+  }) async {
+    final pdf = pw.Document();
+    final now = DateTime.now();
+    final receiptNo =
+        'RCP-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${loan.id.split('-').last}';
+    final deposit = loan.totalDeposit;
+    final financed = loan.amount - deposit;
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Center(
+              child: pw.Column(
+                children: [
+                  pw.Text('LIMS',
+                      style: pw.TextStyle(
+                          fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 2),
+                  pw.Text('Smartphone Retail & Hire Purchase',
+                      style: const pw.TextStyle(fontSize: 8)),
+                  pw.Text(branchName, style: const pw.TextStyle(fontSize: 8)),
+                  pw.SizedBox(height: 6),
+                  pw.Text('RISITI YA MAUZO',
+                      style: pw.TextStyle(
+                          fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(),
+            _row('Risiti Na.', receiptNo),
+            _row('Tarehe', DateFormat('dd/MM/yyyy HH:mm').format(now)),
+            _row('Aliyehudumia', servedBy),
+            pw.Divider(),
+            _row('Mteja', loan.name),
+            _row('Simu', loan.phone),
+            _row('NIDA', loan.nida),
+            _row('Mahali', loan.location),
+            pw.Divider(),
+            _row('Bidhaa', loan.item),
+            _row('IMEI', loan.imei),
+            pw.Divider(),
+            _row('Bei ya rejareja', _tzs(loan.amount)),
+            _row('Malipo ya kwanza', _tzs(deposit)),
+            _row('Deni lililobaki', _tzs(financed)),
+            _row('Mkopo wa wiki', _tzs(loan.weeklyInstallment)),
+            _row('Muda', '${loan.installmentWeeks} wiki'),
+            _row('Malipo ya kwanza tarehe', loan.due),
+            pw.Divider(),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              'Kifaa hiki kimeandikishwa kwa IMEI hapo juu. Risiti hii ni '
+              'uthibitisho wa umiliki na wa mkataba wa malipo kwa awamu.',
+              style: const pw.TextStyle(fontSize: 7),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(children: [
+                  pw.Container(width: 70, height: 1, color: PdfColors.grey500),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Mteja', style: const pw.TextStyle(fontSize: 7)),
+                ]),
+                pw.Column(children: [
+                  pw.Container(width: 70, height: 1, color: PdfColors.grey500),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Muuzaji', style: const pw.TextStyle(fontSize: 7)),
+                ]),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Center(
+              child: pw.Text('Asante kwa kuchagua LIMS',
+                  style: const pw.TextStyle(fontSize: 8)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'LIMS_Risiti_$receiptNo.pdf',
+    );
+  }
+
+  // ------------------------------------------------------- Customer statement
+  /// Statement of account for one borrower, on A4, showing what is paid and what
+  /// remains, with a week-by-week schedule so the balance can be checked at a
+  /// glance.
+  static Future<void> generateAndDownloadLoanStatement({
+    required LoanItem loan,
+    required String branchName,
+  }) async {
+    final pdf = pw.Document();
+    final now = DateTime.now();
+    final deposit = loan.totalDeposit;
+    final financed = loan.amount - deposit;
+    final paidAmount = (financed * loan.paid / 100).round();
+    final balance = financed - paidAmount;
+    final paidWeeks =
+        (loan.installmentWeeks * loan.paid / 100).floor().clamp(0, loan.installmentWeeks);
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (context) => [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('LIMS · TAARIFA YA MKOPO',
+                      style: pw.TextStyle(
+                          fontSize: 16,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800)),
+                  pw.SizedBox(height: 4),
+                  pw.Text('Customer statement of account',
+                      style:
+                          const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  pw.Text('Tawi: $branchName  |  ${
+                      DateFormat('dd MMMM yyyy').format(now)}',
+                      style:
+                          const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                ],
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.blue50,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                  border: pw.Border.all(color: PdfColors.blue200),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(loan.id,
+                        style: pw.TextStyle(
+                            fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(loan.status.toUpperCase(),
+                        style: const pw.TextStyle(
+                            fontSize: 8, color: PdfColors.grey700)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 14),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+            ),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Mteja',
+                          style: pw.TextStyle(
+                              fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 3),
+                      pw.Text(loan.name, style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(loan.phone, style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text(loan.nida, style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text(loan.location, style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ),
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Kifaa',
+                          style: pw.TextStyle(
+                              fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 3),
+                      pw.Text(loan.item, style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('IMEI: ${loan.imei}',
+                          style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text('Dhamana: ${loan.guarantorName}',
+                          style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text(loan.guarantorPhone,
+                          style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 14),
+          pw.Row(
+            children: [
+              _buildPdfKpiBox('Bei ya rejareja', _tzs(loan.amount), PdfColors.blue800),
+              pw.SizedBox(width: 8),
+              _buildPdfKpiBox('Malipo ya kwanza', _tzs(deposit), PdfColors.blue800),
+              pw.SizedBox(width: 8),
+              _buildPdfKpiBox('Deni', _tzs(financed), PdfColors.blue800),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            children: [
+              _buildPdfKpiBox('Iliyolipwa', _tzs(paidAmount), PdfColors.green700),
+              pw.SizedBox(width: 8),
+              _buildPdfKpiBox('Salio', _tzs(balance), PdfColors.red700),
+              pw.SizedBox(width: 8),
+              _buildPdfKpiBox('Mkopo wa wiki', _tzs(loan.weeklyInstallment),
+                  PdfColors.blue800),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+          pw.Text('Ratiba ya malipo',
+              style:
+                  pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.TableHelper.fromTextArray(
+            headers: const ['Wiki', 'Tarehe', 'Kiasi', 'Hali'],
+            headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            cellAlignment: pw.Alignment.centerLeft,
+            data: List<List<String>>.generate(loan.installmentWeeks, (i) {
+              final weekNo = i + 1;
+              final dueDate = DateTime(now.year, now.month, now.day)
+                  .add(Duration(days: 7 * weekNo));
+              final state = weekNo <= paidWeeks
+                  ? 'Imelipwa'
+                  : (weekNo == paidWeeks + 1 ? 'Inayofuata' : 'Bado');
+              return [
+                '$weekNo',
+                DateFormat('dd/MM/yyyy').format(dueDate),
+                _tzs(loan.weeklyInstallment),
+                state,
+              ];
+            }),
+          ),
+          pw.SizedBox(height: 18),
+          pw.Text(
+            'Taarifa hii inaonyesha rekodi zilizopo kwenye mfumo wa LIMS. '
+            'Kama kuna malipo ambayo hayajaonekana, wasiliana na tawi lako na '
+            'leta risiti ya malipo.',
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+          ),
+          pw.SizedBox(height: 20),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Container(width: 150, height: 1, color: PdfColors.grey400),
+                pw.SizedBox(height: 4),
+                pw.Text('Sahihi ya mteja',
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+              ]),
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Container(width: 150, height: 1, color: PdfColors.grey400),
+                pw.SizedBox(height: 4),
+                pw.Text('Mhuri wa tawi',
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+              ]),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'LIMS_Taarifa_${loan.id}.pdf',
+    );
+  }
+
+  static pw.Widget _row(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 88,
+            child: pw.Text(label, style: const pw.TextStyle(fontSize: 8)),
+          ),
+          pw.Expanded(
+            child: pw.Text(value,
+                style: pw.TextStyle(
+                    fontSize: 8, fontWeight: pw.FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _tzs(int amount) {
+    final s = amount.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return 'TZS ${buf.toString()}';
+  }
+
   static pw.Widget _buildPdfKpiBox(String title, String value, PdfColor color) {
     return pw.Container(
       width: 120,

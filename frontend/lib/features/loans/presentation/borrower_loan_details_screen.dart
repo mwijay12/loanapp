@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/telecom_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -368,6 +369,34 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           ],
         ),
         actions: [
+          // Printed documents live behind one menu so the app bar stays readable
+          // on a phone: the counter receipt, and the statement the customer keeps.
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.picture_as_pdf_outlined,
+                color: AppTheme.ink900, size: 22),
+            tooltip: 'Chapisha',
+            onSelected: (value) async {
+              final branch = ref.read(activeBranchProvider);
+              final staff = ref.read(activeStaffMemberProvider);
+              if (value == 'receipt') {
+                await PdfReportService.generateAndDownloadReceipt(
+                  loan: loan,
+                  branchName: branch,
+                  servedBy: staff.name,
+                );
+              } else {
+                await PdfReportService.generateAndDownloadLoanStatement(
+                  loan: loan,
+                  branchName: branch,
+                );
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'receipt', child: Text('Risiti (PDF)')),
+              PopupMenuItem(
+                  value: 'statement', child: Text('Taarifa ya mkopo (PDF)')),
+            ],
+          ),
           Container(
             margin: const EdgeInsets.only(right: 14),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
