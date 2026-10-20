@@ -12,6 +12,14 @@ class SupabaseConfig {
   // Never hardcode JWTs in source - use CI secrets / local --dart-define.
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  /// True when a build was given both halves of the client configuration.
+  ///
+  /// Supabase's newer dashboard calls the client key a "publishable" key; it
+  /// travels in the same `apikey` header as the older anon key, so one define
+  /// covers both.
+  static bool get isConfigured =>
+      supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 }
 
 /// Central API Service connecting Flutter UI with Supabase Cloud Database

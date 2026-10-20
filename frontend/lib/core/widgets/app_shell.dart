@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
+import '../services/live_data.dart';
 import 'session_guard.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -16,7 +17,6 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-
   int _getCurrentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/home')) return 0;
@@ -240,168 +240,188 @@ class _AppShellState extends ConsumerState<AppShell> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-              // Active Role Scope Badge
-              // Role scope badge. Every role maps to its own colour/scope so a
-              // read-only Auditor can never be labelled "Full Admin".
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isAuditor
-                      ? const Color(0xFFEEF2F6)
-                      : (isCashier
-                          ? const Color(0xFFFEF3E4)
-                          : (isStorekeeper ? const Color(0xFFF0EBFF) : const Color(0xFFEFF6FF))),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isAuditor
-                        ? const Color(0xFFCBD5E1)
-                        : (isCashier
-                            ? const Color(0xFFFDE68A)
-                            : (isStorekeeper ? const Color(0xFFD8B4FE) : const Color(0xFFBFDBFE))),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isAuditor
-                          ? Icons.visibility_rounded
-                          : (isCashier
-                              ? Icons.point_of_sale_rounded
-                              : (isStorekeeper ? Icons.inventory_2_rounded : Icons.shield_rounded)),
-                      size: 16,
-                      color: isAuditor
-                          ? const Color(0xFF475569)
-                          : (isCashier
-                              ? const Color(0xFFD97706)
-                              : (isStorekeeper ? const Color(0xFF7C3AED) : AppTheme.brand600)),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Role: $currentRole',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: isAuditor
-                              ? const Color(0xFF334155)
-                              : (isCashier
-                                  ? const Color(0xFF92400E)
-                                  : (isStorekeeper ? const Color(0xFF5B21B6) : const Color(0xFF1E40AF))),
+                        // Active Role Scope Badge
+                        // Role scope badge. Every role maps to its own colour/scope so a
+                        // read-only Auditor can never be labelled "Full Admin".
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isAuditor
+                                ? const Color(0xFFEEF2F6)
+                                : (isCashier
+                                    ? const Color(0xFFFEF3E4)
+                                    : (isStorekeeper
+                                        ? const Color(0xFFF0EBFF)
+                                        : const Color(0xFFEFF6FF))),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isAuditor
+                                  ? const Color(0xFFCBD5E1)
+                                  : (isCashier
+                                      ? const Color(0xFFFDE68A)
+                                      : (isStorekeeper
+                                          ? const Color(0xFFD8B4FE)
+                                          : const Color(0xFFBFDBFE))),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isAuditor
+                                    ? Icons.visibility_rounded
+                                    : (isCashier
+                                        ? Icons.point_of_sale_rounded
+                                        : (isStorekeeper
+                                            ? Icons.inventory_2_rounded
+                                            : Icons.shield_rounded)),
+                                size: 16,
+                                color: isAuditor
+                                    ? const Color(0xFF475569)
+                                    : (isCashier
+                                        ? const Color(0xFFD97706)
+                                        : (isStorekeeper
+                                            ? const Color(0xFF7C3AED)
+                                            : AppTheme.brand600)),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Role: $currentRole',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: isAuditor
+                                        ? const Color(0xFF334155)
+                                        : (isCashier
+                                            ? const Color(0xFF92400E)
+                                            : (isStorekeeper
+                                                ? const Color(0xFF5B21B6)
+                                                : const Color(0xFF1E40AF))),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  isAuditor
+                                      ? 'Read-only'
+                                      : (isCashier
+                                          ? 'Till Scope'
+                                          : (isStorekeeper
+                                              ? 'Warehouse'
+                                              : 'Branch Admin')),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.ink500),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        isAuditor
-                            ? 'Read-only'
-                            : (isCashier ? 'Till Scope' : (isStorekeeper ? 'Warehouse' : 'Branch Admin')),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-              const Text(
-                'Operations',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.ink900,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                isAuditor
-                    ? 'Read-only inspection of registers and reports'
-                    : (isCashier
-                        ? 'Cashier till, sales & shift actions'
-                        : (isStorekeeper ? 'Warehouse & stock movements' : 'Core branch workflows & management')),
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.ink500,
-                ),
-              ),
-              const SizedBox(height: 16),
+                        const Text(
+                          'Operations',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.ink900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isAuditor
+                              ? 'Read-only inspection of registers and reports'
+                              : (isCashier
+                                  ? 'Cashier till, sales & shift actions'
+                                  : (isStorekeeper
+                                      ? 'Warehouse & stock movements'
+                                      : 'Core branch workflows & management')),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.ink500,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
 
-              // Operations 2-column Grid
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 2.2,
-                children: opButtons,
-              ),
-              const SizedBox(height: 20),
+                        // Operations 2-column Grid
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 2.2,
+                          children: opButtons,
+                        ),
+                        const SizedBox(height: 20),
 
-              const Text(
-                'Workspace',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.ink900,
-                ),
-              ),
-              const SizedBox(height: 8),
+                        const Text(
+                          'Workspace',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.ink900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-              // Workspace list rows
-              if (isSuperAdmin || isBranchManager) ...[
-                _buildWorkspaceRow(
-                  icon: Icons.admin_panel_settings_outlined,
-                  iconColor: AppTheme.brand600,
-                  title: 'Admin Console & Network',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.push('/admin');
-                  },
-                ),
-                _buildWorkspaceRow(
-                  icon: Icons.badge_outlined,
-                  iconColor: const Color(0xFF7C5CFC),
-                  title: 'Staff Roles & Credentials (RBAC)',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.push('/admin?tab=staff');
-                  },
-                ),
-              ],
-              _buildWorkspaceRow(
-                icon: Icons.verified_outlined,
-                iconColor: const Color(0xFF0EA5E9),
-                title: 'Device & IMEI Inspector',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/imei-inspector');
-                },
-              ),
-              _buildWorkspaceRow(
-                icon: Icons.settings_outlined,
-                iconColor: const Color(0xFF1E60F2),
-                title: 'Settings & Profile',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/settings');
-                },
-              ),
-              _buildWorkspaceRow(
-                icon: Icons.logout_rounded,
-                iconColor: const Color(0xFFF43F5E),
-                title: 'Sign Out',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.go('/login');
-                },
-              ),
+                        // Workspace list rows
+                        if (isSuperAdmin || isBranchManager) ...[
+                          _buildWorkspaceRow(
+                            icon: Icons.admin_panel_settings_outlined,
+                            iconColor: AppTheme.brand600,
+                            title: 'Admin Console & Network',
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              context.push('/admin');
+                            },
+                          ),
+                          _buildWorkspaceRow(
+                            icon: Icons.badge_outlined,
+                            iconColor: const Color(0xFF7C5CFC),
+                            title: 'Staff Roles & Credentials (RBAC)',
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              context.push('/admin?tab=staff');
+                            },
+                          ),
+                        ],
+                        _buildWorkspaceRow(
+                          icon: Icons.verified_outlined,
+                          iconColor: const Color(0xFF0EA5E9),
+                          title: 'Device & IMEI Inspector',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.push('/imei-inspector');
+                          },
+                        ),
+                        _buildWorkspaceRow(
+                          icon: Icons.settings_outlined,
+                          iconColor: const Color(0xFF1E60F2),
+                          title: 'Settings & Profile',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.push('/settings');
+                          },
+                        ),
+                        _buildWorkspaceRow(
+                          icon: Icons.logout_rounded,
+                          iconColor: const Color(0xFFF43F5E),
+                          title: 'Sign Out',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.go('/login');
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -521,7 +541,8 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: AppTheme.ink500),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: AppTheme.ink500),
           ],
         ),
       ),
@@ -576,11 +597,13 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final currentIndex = _getCurrentIndex(context);
 
-    return SessionGuard(
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) => _handleBack(),
-        child: _buildScaffold(context, currentIndex),
+    return LiveDataLoader(
+      child: SessionGuard(
+        child: PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) => _handleBack(),
+          child: _buildScaffold(context, currentIndex),
+        ),
       ),
     );
   }
@@ -702,7 +725,9 @@ class _AppShellState extends ConsumerState<AppShell> {
               Icon(
                 icon,
                 size: 23,
-                color: isSelected ? const Color(0xFF1B6EF3) : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFF1B6EF3)
+                    : const Color(0xFF64748B),
               ),
               const SizedBox(height: 3),
               AnimatedScale(

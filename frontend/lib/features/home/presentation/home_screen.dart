@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/product_art.dart';
+import '../../../core/services/live_data.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -1826,7 +1827,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             size: 12, color: Color(0xFF059669)),
                     const SizedBox(width: 3),
                     Text(
-                      _isSyncing ? 'Syncing…' : 'Live Sync',
+                      dataSourceLabel(ref.watch(dataSourceProvider)),
                       style: const TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,

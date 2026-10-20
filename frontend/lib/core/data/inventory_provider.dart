@@ -148,6 +148,11 @@ final activeBranchProvider = StateNotifierProvider<ActiveBranchNotifier, String>
 class InventoryNotifier extends StateNotifier<List<ProductItem>> {
   InventoryNotifier() : super(List.from(MockLimsData.products));
 
+  /// Swap the whole catalogue for rows loaded from the backend.
+  void replaceAll(List<ProductItem> items) {
+    state = List.from(items);
+  }
+
   void addProduct(ProductItem item) {
     state = [item, ...state];
   }
@@ -217,6 +222,10 @@ final inventoryProvider = StateNotifierProvider<InventoryNotifier, List<ProductI
 class LoansNotifier extends StateNotifier<List<LoanItem>> {
   LoansNotifier() : super(List.from(MockLimsData.loans));
 
+  void replaceAll(List<LoanItem> items) {
+    state = List.from(items);
+  }
+
   void addLoan(LoanItem loan) {
     state = [loan, ...state];
   }
@@ -270,6 +279,10 @@ final loansProvider = StateNotifierProvider<LoansNotifier, List<LoanItem>>((ref)
 /// Reactive Activity Feed
 class ActivitiesNotifier extends StateNotifier<List<ActivityItem>> {
   ActivitiesNotifier() : super(List.from(MockLimsData.activities));
+
+  void replaceAll(List<ActivityItem> items) {
+    state = List.from(items);
+  }
 
   void addActivity(ActivityItem activity) {
     state = [activity, ...state];

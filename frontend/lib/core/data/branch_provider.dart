@@ -74,6 +74,10 @@ class BranchesNotifier extends StateNotifier<List<BranchRecord>> {
           ),
         ]);
 
+  void replaceAll(List<BranchRecord> items) {
+    state = List.from(items);
+  }
+
   void add({required String name, required String city}) {
     final nextId = 'BR-${(state.length + 1).toString().padLeft(2, '0')}';
     state = [
