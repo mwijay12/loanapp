@@ -241,7 +241,17 @@ class UserRoles {
   static bool canViewPii(String? raw) => piiViewers.contains(normalize(raw));
 
   /// Roles that administer people: invite staff, change roles, suspend accounts.
-  static const Set<String> staffAdmins = <String>{superAdmin, branchManager};
+  /// Roles that may change a staff account, including its role.
+  ///
+  /// A Branch Manager belongs in [staffViewers], not here: they run a branch and
+  /// need to see its people, but granting roles is how a manager could promote
+  /// themselves, so that stays with the Super Admin.
+  static const Set<String> staffAdmins = <String>{superAdmin};
+
+  static const Set<String> staffViewers = <String>{superAdmin, branchManager};
+
+  static bool canViewStaff(String? raw) =>
+      staffViewers.contains(normalize(raw));
 
   static bool canAdministerStaff(String? raw) =>
       staffAdmins.contains(normalize(raw));

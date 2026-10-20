@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_constants.dart';
@@ -50,11 +51,13 @@ class ApiService {
 
       // Automated heartbeat write to prevent 7-day inactivity pause
       await sendHeartbeatPing(source: 'flutter-app-launch');
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       try {
         _client = Supabase.instance.client;
         _isInitialized = true;
-      } catch (_) {}
+      } catch (e) {
+      _report('backend call', e);}
     }
   }
 
@@ -85,7 +88,8 @@ class ApiService {
         });
         return;
       }
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       // Fall through to the anonymous probe below.
     }
 
@@ -94,7 +98,8 @@ class ApiService {
     // Any successful request still counts as project activity.
     try {
       await client.rpc('heartbeat_probe');
-    } catch (_) {}
+    } catch (e) {
+      _report('backend call', e);}
   }
 
   // ------------------------------------------------------------- Authentication & Staff Profiles
@@ -192,7 +197,8 @@ class ApiService {
           .select()
           .eq('auth_user_id', user.id)
           .maybeSingle();
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       // Column absent on this schema — fall through.
     }
 
@@ -203,7 +209,8 @@ class ApiService {
             .select()
             .eq('id', user.id)
             .maybeSingle();
-      } catch (_) {
+      } catch (e) {
+      _report('backend call', e);
         // id is not an auth id on every schema — fall through.
       }
     }
@@ -215,7 +222,8 @@ class ApiService {
             .select()
             .eq('email', user.email ?? email)
             .maybeSingle();
-      } catch (_) {
+      } catch (e) {
+      _report('backend call', e);
         // Leave res null; the fail-closed branch below reports it.
       }
     }
@@ -245,12 +253,25 @@ class ApiService {
     };
   }
 
+  /// A failed read used to be swallowed silently, so a missing table, an RLS
+  /// denial and a dropped network all looked like "no data yet". Keeping the
+  /// empty result is fine for the UI, but the failure now leaves a trace.
+  void _report(String what, Object error) {
+    debugPrint('LIMS: $what failed -> $error');
+    lastBackendError = error.toString();
+  }
+
+  /// Last transport or schema error, for a diagnostics banner. Null when the
+  /// most recent call succeeded.
+  static String? lastBackendError;
+
   // ------------------------------------------------------------- Products & Inventory
   Future<List<Map<String, dynamic>>> getProducts() async {
     try {
       final response = await client.from('products').select().order('id');
       return List<Map<String, dynamic>>.from(response);
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return [];
     }
   }
@@ -259,7 +280,8 @@ class ApiService {
     try {
       final response = await client.from('products').select().eq('sku', sku).maybeSingle();
       return response != null ? Map<String, dynamic>.from(response) : null;
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return null;
     }
   }
@@ -269,7 +291,8 @@ class ApiService {
     try {
       final response = await client.from('loans').select().order('id');
       return List<Map<String, dynamic>>.from(response);
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return [];
     }
   }
@@ -278,7 +301,8 @@ class ApiService {
     try {
       final response = await client.from('loans').insert(data).select().single();
       return Map<String, dynamic>.from(response);
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return {'id': DateTime.now().millisecondsSinceEpoch, ...data};
     }
   }
@@ -288,7 +312,8 @@ class ApiService {
     try {
       final response = await client.from('branches').select().order('name');
       return List<Map<String, dynamic>>.from(response);
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return [];
     }
   }
@@ -298,7 +323,8 @@ class ApiService {
     try {
       final response = await client.from('activities').select().order('created_at', ascending: false).limit(20);
       return List<Map<String, dynamic>>.from(response);
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return [];
     }
   }
@@ -308,7 +334,8 @@ class ApiService {
     try {
       final response = await client.from('attendance').insert(data).select().single();
       return Map<String, dynamic>.from(response);
-    } catch (_) {
+    } catch (e) {
+      _report('backend call', e);
       return {'id': 'local-${DateTime.now().millisecondsSinceEpoch}', ...data};
     }
   }

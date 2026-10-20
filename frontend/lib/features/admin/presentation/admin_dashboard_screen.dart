@@ -6,6 +6,7 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
+import '../../../core/data/analytics.dart';
 import '../../../core/data/mock_lims_data.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   late int _selectedTab;
+  RevenueRange _range = RevenueRange.week;
 
   @override
   void initState() {
@@ -33,16 +35,30 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final activeLoansTotal = ref.watch(activeLoansTotalProvider);
     final lowStockCount = ref.watch(lowStockCountProvider);
     final currentRole = ref.watch(userRoleProvider);
+    final canAdminister = UserRoles.canAdministerStaff(currentRole);
+    final isBranchManager =
+        UserRoles.normalize(currentRole) == UserRoles.branchManager;
 
-    final bars = [
-      {'day': 'M', 'height': 0.52, 'today': false},
-      {'day': 'T', 'height': 0.68, 'today': false},
-      {'day': 'W', 'height': 0.45, 'today': false},
-      {'day': 'T', 'height': 0.80, 'today': false},
-      {'day': 'F', 'height': 0.62, 'today': false},
-      {'day': 'S', 'height': 0.95, 'today': true},
-      {'day': 'S', 'height': 0.74, 'today': false},
-    ];
+    // A Branch Manager used to land on "Admin Console" with the staff and RBAC
+    // tab available, which read as a privilege they do not have. The console is
+    // now scoped by role: the network view for a manager, the full console for a
+    // Super Admin, and nothing for everyone else.
+    if (!canAdminister && !isBranchManager) {
+      return _buildNoAccess();
+    }
+
+    // Chart data comes from the ledger, so switching Wiki/Mwezi changes the
+    // numbers. It used to be seven fixed heights with a fixed total.
+    final series = ref.watch(revenueSeriesProvider(_range));
+    final peak =
+        series.points.fold<int>(0, (m, p) => p.value > m ? p.value : m);
+    final bars = series.points
+        .map((p) => <String, dynamic>{
+              'day': p.label,
+              'height': peak == 0 ? 0.02 : (p.value / peak).clamp(0.05, 1.0),
+              'today': p.isCurrent,
+            })
+        .toList();
 
     final branches = [
       {
@@ -124,8 +140,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
           onPressed: () => context.go('/home'),
         ),
-        title: const Text(
-          'Admin Console',
+        title: Text(
+          canAdminister ? 'Admin Console' : 'Branch Console',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -135,7 +151,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         actions: [
           // Active Role Badge Pill
           InkWell(
-            onTap: () => setState(() => _selectedTab = 1),
+            onTap:
+                canAdminister ? () => setState(() => _selectedTab = 1) : null,
             borderRadius: BorderRadius.circular(12),
             child: Container(
               margin: const EdgeInsets.only(right: 14),
@@ -170,97 +187,166 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedTab = 0),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: _selectedTab == 0
-                            ? AppTheme.brand600
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Branch Network & Hubs',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: _selectedTab == 0
-                              ? Colors.white
-                              : AppTheme.ink600,
-                        ),
-                      ),
-                    ),
+        bottom: canAdminister
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  decoration: const BoxDecoration(
+                    border:
+                        Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedTab = 1),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: _selectedTab == 1
-                            ? AppTheme.brand600
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.badge_rounded,
-                            size: 15,
-                            color: _selectedTab == 1
-                                ? Colors.white
-                                : AppTheme.ink600,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _selectedTab = 0),
+                          borderRadius: BorderRadius.circular(12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 0
+                                  ? AppTheme.brand600
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: Text(
-                              'Wafanyakazi & RBAC',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              'Branch Network & Hubs',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
-                                color: _selectedTab == 1
+                                color: _selectedTab == 0
                                     ? Colors.white
                                     : AppTheme.ink600,
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          borderRadius: BorderRadius.circular(12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 1
+                                  ? AppTheme.brand600
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.badge_rounded,
+                                  size: 15,
+                                  color: _selectedTab == 1
+                                      ? Colors.white
+                                      : AppTheme.ink600,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'Wafanyakazi & RBAC',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: _selectedTab == 1
+                                          ? Colors.white
+                                          : AppTheme.ink600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
+              )
+            : null,
       ),
       body: SafeArea(
-        child: _selectedTab == 0
+        child: (_selectedTab == 0 || !canAdminister)
             ? _buildNetworkOverviewTab(todaySales, activeLoansTotal,
                 lowStockCount, bars, branches, alerts)
             : _buildStaffRbacTab(),
+      ),
+    );
+  }
+
+  /// Shown to a role with no place in the console, rather than rendering a
+  /// downgraded copy of it.
+  Widget _buildNoAccess() {
+    final currentRole = ref.watch(userRoleProvider);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F8FD),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
+          onPressed: () => context.go('/home'),
+        ),
+        title: const Text(
+          'Console',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.ink900,
+          ),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE9F2FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.shield_outlined,
+                    size: 34, color: AppTheme.brand600),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Huna ruhusa ya console',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Role yako ni ${UserRoles.label(UserRoles.normalize(currentRole) ?? '')}. Console inahitaji '
+                'Super Admin au Branch Manager. Omba ruhusa kwa msimamizi wako.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppTheme.ink600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -273,6 +359,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     List<Map<String, dynamic>> branches,
     List<Map<String, dynamic>> alerts,
   ) {
+    final currentRole = ref.watch(userRoleProvider);
+    final canAdminister = UserRoles.canAdministerStaff(currentRole);
+    final series = ref.watch(revenueSeriesProvider(_range));
+
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
@@ -352,12 +442,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Network revenue · this week',
+                      canAdminister
+                          ? 'Network revenue · ${_range.caption}'
+                          : 'Branch revenue · ${_range.caption}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.ink900,
@@ -373,15 +465,64 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         color: AppTheme.brand100,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'TZS 126.8M',
+                      child: Text(
+                        formatTzsCompact(series.total),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.brand600,
                         ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  for (final r in RevenueRange.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(9),
+                        onTap: () => setState(() => _range = r),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _range == r
+                                ? AppTheme.brand600
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Text(
+                            r.label,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  _range == r ? Colors.white : AppTheme.ink600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const Spacer(),
+                  Flexible(
+                    child: Text(
+                      '${series.changePercent >= 0 ? '+' : ''}${series.changePercent}% vs prev',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: series.changePercent >= 0
+                            ? const Color(0xFF12B76A)
+                            : const Color(0xFFE11D48),
                       ),
                     ),
                   ),
