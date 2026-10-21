@@ -73,7 +73,7 @@ final activeStaffMemberProvider = Provider<StaffMember>((ref) {
 
 /// Staff & RBAC Management State
 class StaffNotifier extends StateNotifier<List<StaffMember>> {
-  StaffNotifier() : super(List.from(MockLimsData.staffMembers));
+  StaffNotifier([List<StaffMember> seed = const []]) : super(List.from(seed));
 
   void addStaff(StaffMember member) {
     state = [member, ...state];
@@ -146,7 +146,7 @@ final activeBranchProvider = StateNotifierProvider<ActiveBranchNotifier, String>
 
 /// Reactive Inventory State
 class InventoryNotifier extends StateNotifier<List<ProductItem>> {
-  InventoryNotifier() : super(List.from(MockLimsData.products));
+  InventoryNotifier([List<ProductItem> seed = const []]) : super(List.from(seed));
 
   /// Swap the whole catalogue for rows loaded from the backend.
   void replaceAll(List<ProductItem> items) {
@@ -220,7 +220,7 @@ final inventoryProvider = StateNotifierProvider<InventoryNotifier, List<ProductI
 
 /// Reactive Loans State
 class LoansNotifier extends StateNotifier<List<LoanItem>> {
-  LoansNotifier() : super(List.from(MockLimsData.loans));
+  LoansNotifier([List<LoanItem> seed = const []]) : super(List.from(seed));
 
   void replaceAll(List<LoanItem> items) {
     state = List.from(items);
@@ -278,7 +278,7 @@ final loansProvider = StateNotifierProvider<LoansNotifier, List<LoanItem>>((ref)
 
 /// Reactive Activity Feed
 class ActivitiesNotifier extends StateNotifier<List<ActivityItem>> {
-  ActivitiesNotifier() : super(List.from(MockLimsData.activities));
+  ActivitiesNotifier([List<ActivityItem> seed = const []]) : super(List.from(seed));
 
   void replaceAll(List<ActivityItem> items) {
     state = List.from(items);
