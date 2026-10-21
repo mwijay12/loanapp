@@ -1,3 +1,19 @@
+-- ============================================================================
+-- SUPERSEDED. Do not run this file.
+--
+-- Running it as one request fails in the Supabase dashboard with
+-- "Failed to fetch (api.supabase.com)": the browser drops the HTTP request before
+-- the script finishes, which says nothing about the SQL itself.
+--
+-- Use the four short steps instead, in this order:
+--   2026_10_21_02a_products.sql
+--   2026_10_21_02b_loans.sql
+--   2026_10_21_02c_sales.sql
+--   2026_10_21_02d_payments_and_password.sql
+--
+-- Kept only as a reference for the full intended shape.
+-- ============================================================================
+
 -- Make the database able to hold a real sale.
 --
 -- Found by querying the live project (fzlykkwgkydswvnlryhk) with the publishable
