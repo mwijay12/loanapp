@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import 'mock_lims_data.dart';
+import 'branch_provider.dart';
 import 'inventory_provider.dart';
+import 'supabase_source.dart';
 
 /// Representation of an installment schedule item for loans
 @immutable
@@ -169,6 +171,39 @@ class MockLimsRepository implements LimsRepository {
         .toList();
   }
 
+  /// Persists a completed sale. Best effort: the counter has already taken money,
+  /// so a network failure is logged and surfaced, not thrown back at the cashier.
+  Future<void> _persistSale(
+    WidgetRef ref,
+    POSSaleResult result,
+    ProductItem phone, {
+    required String kind,
+  }) async {
+    final branchName = ref.read(activeBranchProvider);
+    final branches = ref.read(branchesProvider);
+    String? branchId;
+    for (final b in branches) {
+      if (b.name == branchName) {
+        branchId = b.id;
+        break;
+      }
+    }
+    await SupabaseSource.recordSale(
+      receiptNo: result.receiptId,
+      kind: kind,
+      total: result.totalAmount,
+      paid: result.amountPaid,
+      balance: result.balanceRemaining,
+      paymentChannel: result.paymentChannel,
+      customerName: result.customerName,
+      customerPhone: result.customerPhone,
+      phoneModel: phone.name,
+      imei: result.primaryImei,
+      branchId: branchId,
+      productId: phone.id,
+    );
+  }
+
   @override
   Future<POSSaleResult> executeCashSale({
     required WidgetRef ref,
@@ -196,7 +231,7 @@ class MockLimsRepository implements LimsRepository {
       ),
     );
 
-    return POSSaleResult(
+    final sale = POSSaleResult(
       success: true,
       receiptId: receiptId,
       transactionType: 'CASH',
@@ -211,6 +246,8 @@ class MockLimsRepository implements LimsRepository {
       paymentChannel: paymentChannel,
       timestamp: now,
     );
+    await _persistSale(ref, sale, phone, kind: 'cash');
+    return sale;
   }
 
   @override
@@ -278,7 +315,7 @@ class MockLimsRepository implements LimsRepository {
       ),
     );
 
-    return POSSaleResult(
+    final sale = POSSaleResult(
       success: true,
       receiptId: receiptId,
       transactionType: 'LOAN',
@@ -293,6 +330,8 @@ class MockLimsRepository implements LimsRepository {
       paymentChannel: paymentChannel,
       timestamp: now,
     );
+    await _persistSale(ref, sale, phone, kind: 'loan');
+    return sale;
   }
 }
 

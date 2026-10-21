@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/api_service.dart';
 import 'branch_provider.dart';
@@ -18,6 +21,54 @@ class SupabaseSource {
   const SupabaseSource();
 
   bool get isConfigured => SupabaseConfig.isConfigured;
+
+  /// Writes one completed sale to `public.sales`.
+  ///
+  /// The till used to keep its sales in memory, so a printed receipt had no
+  /// record behind it and the ledger started again on reload. This is the row
+  /// that makes the receipt reproducible.
+  ///
+  /// Best effort on purpose: a sale that has already taken money must not be lost
+  /// because the network blinked, so failures are recorded rather than thrown.
+  static Future<bool> recordSale({
+    required String receiptNo,
+    required String kind,
+    required int total,
+    required int paid,
+    required int balance,
+    required String paymentChannel,
+    required String customerName,
+    required String customerPhone,
+    required String phoneModel,
+    String? imei,
+    String? branchId,
+    int? productId,
+  }) async {
+    if (!SupabaseConfig.isConfigured) return false;
+    try {
+      final client = Supabase.instance.client;
+      await client.from('sales').insert({
+        'receipt_no': receiptNo,
+        'branch_id': branchId,
+        'staff_id': null,
+        'loan_id': null,
+        'product_id': productId,
+        'imei': imei,
+        'customer_name': customerName,
+        'customer_phone': customerPhone,
+        'kind': kind,
+        'total': total,
+        'paid': paid,
+        'balance': balance,
+        'payment_channel': paymentChannel,
+      });
+      return true;
+    } catch (e) {
+      ApiService.lastBackendError = 'recordSale: $e';
+      debugPrint('LIMS: could not record sale $receiptNo -> $e');
+      return false;
+    }
+  }
 
   Future<SupabaseSnapshot> load() async {
     final api = ApiService();
