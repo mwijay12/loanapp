@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/data/branch_provider.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/services/live_data.dart';
@@ -3602,6 +3603,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildAdminConsoleSection(BuildContext context) {
+    // These three tiles were literals: 31.8% margin, 18.4M sales, 2 flagged
+    // audits. None of them came from a row, and cost_price is empty in the
+    // catalogue, so a margin cannot honestly be computed yet. They now report
+    // what the database can actually support.
+    final products = ref.watch(inventoryProvider);
+    final stockValue =
+        products.fold<int>(0, (sum, p) => sum + p.price * p.stock);
+    final branchCount =
+        ref.watch(branchesProvider).where((b) => b.active).length;
+    final overdueCount =
+        ref.watch(loansProvider).where((l) => l.status == 'overdue').length;
+    final salesToday = ref.watch(todaySalesTotalProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -3699,28 +3713,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Expanded(
                 child: _buildAdminMiniKpi(
-                  title: 'Net Margin',
-                  val: '31.8%',
+                  title: 'Stock Value',
+                  val: LimsFormatters.currencyCompact(stockValue),
                   color: const Color(0xFF12B76A),
-                  sub: '+2.4% vs target',
+                  sub: '${products.length} models',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _buildAdminMiniKpi(
-                  title: 'HQ Sales',
-                  val: '18.4M',
+                  title: 'Sales Today',
+                  val: LimsFormatters.currencyCompact(salesToday),
                   color: AppTheme.brand600,
-                  sub: '6 Branches',
+                  sub: '$branchCount branches',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _buildAdminMiniKpi(
-                  title: 'Audits',
-                  val: '2 Flagged',
+                  title: 'Overdue',
+                  val: '$overdueCount',
                   color: const Color(0xFFF79009),
-                  sub: 'Discrepancy',
+                  sub: 'loans past due',
                 ),
               ),
             ],
