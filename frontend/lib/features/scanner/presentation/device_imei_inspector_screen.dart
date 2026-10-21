@@ -7,6 +7,10 @@ import '../../../core/data/mock_lims_data.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/data/product_art.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/data/supabase_source.dart';
+import '../../../core/services/imei_scan.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
@@ -62,7 +66,16 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
     super.dispose();
   }
 
-  void _performSearch(String query) async {
+  /// Looks the serial up. Never invents one.
+  ///
+  /// This screen is used to decide whether a handset in someone's hand belongs to
+  /// the shop, and whether it is paid for. It used to answer with a fabricated
+  /// borrower whenever the serial was not found — "Selemani Rashidi", TZS 380,000,
+  /// "Imechelewa kwa siku 12" — chosen by whether the IMEI started with 86. A
+  /// verification tool that invents its verdict is worse than no tool.
+  ///
+  /// Three real answers now: on a contract, in stock, or not registered here.
+  Future<void> _performSearch(String query) async {
     final cleanQuery = query.replaceAll(RegExp(r'\s+'), '').trim();
     if (cleanQuery.isEmpty) return;
 
@@ -71,110 +84,166 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
       _hasSearched = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    // The GSMA check digit, before anything is looked up: a serial that fails it
+    // cannot belong to a real handset, so there is nothing to search for.
+    final digits = ImeiScan.parseImei(cleanQuery) ?? cleanQuery;
+    final looksValid = ImeiScan.isValid(digits);
 
-    // Match with current loans in Riverpod
-    final loans = ref.read(loansProvider);
+    // Local rows first — they are already in memory and cover the demo branch.
     LoanItem? matchedLoan;
-    for (final l in loans) {
-      if (l.imei.contains(cleanQuery) || cleanQuery.contains(l.imei) || l.id.toLowerCase().contains(cleanQuery.toLowerCase())) {
+    for (final l in ref.read(loansProvider)) {
+      if (l.imei.isNotEmpty &&
+          (l.imei.contains(cleanQuery) ||
+              cleanQuery.contains(l.imei) ||
+              l.id.toLowerCase() == cleanQuery.toLowerCase())) {
         matchedLoan = l;
         break;
       }
     }
 
-    if (matchedLoan != null) {
-      setState(() {
-        _isSearching = false;
-        _model = matchedLoan!.item;
-        _imei = matchedLoan.imei;
-        _variant = '256GB Dual SIM (Nano + eSIM)';
+    ProductItem? matchedProduct;
+    if (matchedLoan == null) {
+      for (final p in ref.read(inventoryProvider)) {
+        if ((p.imei1 != null && p.imei1!.isNotEmpty && p.imei1!.contains(cleanQuery)) ||
+            p.sku.toLowerCase() == cleanQuery.toLowerCase()) {
+          matchedProduct = p;
+          break;
+        }
+      }
+    }
+
+    // Then ask the database, which is what a real counter does.
+    ImeiLookup? remote;
+    if (matchedLoan == null && matchedProduct == null) {
+      remote = await ref.read(apiServiceProvider).findUnitByImei(digits);
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSearching = false;
+      _imei = digits;
+
+      if (matchedLoan != null) {
+        _model = matchedLoan.item;
+        _variant = '';
         _status = matchedLoan.status == 'overdue' ? 'OVERDUE' : 'ON_LOAN';
         _borrowerName = matchedLoan.name;
         _borrowerPhone = matchedLoan.phone;
         _borrowerNida = matchedLoan.nida;
         _totalLoanAmount = matchedLoan.amount;
-        _remainingBalance = (matchedLoan.amount * (1 - (matchedLoan.paid / 100))).round();
+        _remainingBalance =
+            (matchedLoan.amount * (1 - (matchedLoan.paid / 100))).round();
         _nextDueDate = matchedLoan.due;
-        _warrantyDaysLeft = 210;
+        _warrantyDaysLeft = 0;
         _loanId = matchedLoan.id;
-      });
-      return;
-    }
-
-    // Match with inventory
-    final inventory = ref.read(inventoryProvider);
-    ProductItem? matchedProduct;
-    for (final p in inventory) {
-      if ((p.imei1 != null && p.imei1!.contains(cleanQuery)) ||
-          (p.sku.toLowerCase().contains(cleanQuery.toLowerCase())) ||
-          (p.name.toLowerCase().contains(cleanQuery.toLowerCase()))) {
-        matchedProduct = p;
-        break;
+        _matchedArt = ProductArt.resolve(
+          brand: null,
+          name: matchedLoan.item,
+          category: 'phones',
+        );
+        return;
       }
-    }
 
-    setState(() {
-      _isSearching = false;
       if (matchedProduct != null) {
         _model = matchedProduct.name;
+        _variant = matchedProduct.variant;
+        _status = 'IN_STOCK';
+        _borrowerName = '—';
+        _borrowerPhone = '—';
+        _borrowerNida = '—';
+        _totalLoanAmount = matchedProduct.loanPrice ?? matchedProduct.price;
+        _remainingBalance = 0;
+        _nextDueDate = tr(_locale, 'insp.notFinanced');
+        _warrantyDaysLeft = 0;
+        _loanId = null;
         _matchedArt = ProductArt.resolve(
           explicit: matchedProduct.imageAsset,
           brand: matchedProduct.brand,
           name: matchedProduct.name,
           category: matchedProduct.cat,
         );
-        _variant = matchedProduct.variant;
-        _imei = matchedProduct.imei1 ?? cleanQuery;
-        _status = 'IN_STOCK';
-        _borrowerName = '-';
-        _borrowerPhone = '-';
-        _borrowerNida = '-';
-        _totalLoanAmount = matchedProduct.loanPrice ?? (matchedProduct.price * 1.2).round();
-        _remainingBalance = 0;
-        _nextDueDate = tr(_locale, 'insp.notFinanced');
-        _warrantyDaysLeft = 365;
-        _loanId = null;
-      } else {
-        // Fallback default lookup
-        _imei = cleanQuery;
-        if (cleanQuery.startsWith('86')) {
-          _model = 'Redmi Note 13 Pro';
-          _variant = '256GB / 8GB · Midnight Black';
-          _status = 'OVERDUE';
-          _borrowerName = 'Selemani Rashidi';
-          _borrowerPhone = '0784 112 900';
-          _remainingBalance = 380000;
-          _nextDueDate = 'Imechelewa kwa siku 12';
-          _warrantyDaysLeft = 145;
-          _loanId = 'LIMS-LN-3104';
-        } else {
-          _model = 'Samsung Galaxy S24 Ultra';
-          _variant = '256GB · Titanium Gray';
-          _status = 'ON_LOAN';
-          _borrowerName = 'Zawadi Hassan';
-          _borrowerPhone = '0655 490 211';
-          _remainingBalance = 1680000;
-          _nextDueDate = 'Jumatano, 14 Oktoba 2026';
-          _warrantyDaysLeft = 290;
-          _loanId = 'LIMS-LN-5092';
-        }
+        return;
       }
+
+      if (remote != null && remote.isKnown) {
+        final row = remote.row ?? const <String, dynamic>{};
+        _model = remote.model;
+        _variant = (row['variant'] ?? '').toString();
+        _borrowerName = (row['borrower_name'] ?? row['customer_name'] ?? '—').toString();
+        _borrowerPhone = (row['phone'] ?? row['customer_phone'] ?? '—').toString();
+        _borrowerNida = (row['nida'] ?? '—').toString();
+        _totalLoanAmount = SupabaseSource.parseMoney(row['amount'] ?? row['total']);
+        _remainingBalance = SupabaseSource.parseMoney(row['balance']);
+        _nextDueDate = (row['due_info'] ?? '—').toString();
+        _warrantyDaysLeft = 0;
+        _loanId = remote.status == 'on_loan' ? (row['id'] ?? '').toString() : null;
+        _status = remote.status == 'on_loan'
+            ? ((row['status'] ?? '') == 'overdue' ? 'OVERDUE' : 'ON_LOAN')
+            : 'IN_STOCK';
+        _matchedArt = ProductArt.resolve(
+          explicit: row['image_asset']?.toString(),
+          brand: row['brand']?.toString(),
+          name: _model,
+          category: (row['category'] ?? 'phones').toString(),
+        );
+        return;
+      }
+
+      // Nothing owns this serial: not on a contract, not in stock, not in the
+      // database. Say exactly that.
+      _model = tr(_locale, 'insp.unknownModel');
+      _variant = '';
+      _status = looksValid ? 'UNKNOWN' : 'INVALID';
+      _borrowerName = '—';
+      _borrowerPhone = '—';
+      _borrowerNida = '—';
+      _totalLoanAmount = 0;
+      _remainingBalance = 0;
+      _nextDueDate = '—';
+      _warrantyDaysLeft = 0;
+      _loanId = null;
+      _matchedArt = null;
     });
   }
 
-  void _sendPaymentReminderSms() {
+  Future<void> _sendPaymentReminderSms() async {
+    final amount = LimsFormatters.formatNumber(
+        _remainingBalance > 50000 ? 50000 : _remainingBalance);
+    final body = trf(_locale, 'insp.reminderSms', {
+      'name': _borrowerName,
+      'amount': amount,
+    });
+
+    // There is no SMS gateway in this build, and the old toast said one had been
+    // sent. Opening the phone's own messaging app does send it — by the person
+    // holding the phone.
+    final uri = Uri(
+      scheme: 'sms',
+      path: _borrowerPhone.replaceAll(RegExp(r'[^0-9+]'), ''),
+      queryParameters: {'body': body},
+    );
+    final opened = await launchUrl(uri);
+    if (!mounted) return;
     LimsToast.show(
       context,
-      'SMS ya kukumbusha rejesho la TZS ${LimsFormatters.formatNumber(_remainingBalance > 50000 ? 50000 : _remainingBalance)} imetumwa kwa $_borrowerName ($_borrowerPhone)',
-      isSuccess: true,
+      opened
+          ? trf(_locale, 'insp.reminderOpened', {'phone': _borrowerPhone})
+          : tr(_locale, 'insp.reminderFailed'),
+      isSuccess: opened,
     );
   }
 
   void _openBorrowerDossier() {
     if (_loanId != null) {
       final loans = ref.read(loansProvider);
-      final matchedLoan = loans.firstWhere((l) => l.id == _loanId, orElse: () => loans.first);
+      final matches = loans.where((l) => l.id == _loanId);
+      if (matches.isEmpty) {
+        // The contract is no longer in the list the screen was built from.
+        LimsToast.show(context, tr(_locale, 'insp.dossierMissing'));
+        return;
+      }
+      final matchedLoan = matches.first;
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -309,13 +378,13 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
               const SizedBox(height: 16),
 
               // Debt Follow-Up Action Card
-              if (_status != 'IN_STOCK') ...[
+              if (_status == 'ON_LOAN' || _status == 'OVERDUE') ...[
                 _buildDebtFollowUpActionCard(),
                 const SizedBox(height: 16),
               ],
 
               // Ownership & Loan Balance Card (if applicable)
-              if (_status != 'IN_STOCK') ...[
+              if (_status == 'ON_LOAN' || _status == 'OVERDUE') ...[
                 _buildOwnershipAndCreditCard(),
                 const SizedBox(height: 16),
               ],
@@ -473,6 +542,16 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         bg = const Color(0xFFE7F8F0);
         text = const Color(0xFF12B76A);
         label = tr(_locale, 'insp.inStock');
+        break;
+      case 'UNKNOWN':
+        bg = const Color(0xFFF1F5F9);
+        text = AppTheme.ink700;
+        label = tr(_locale, 'insp.unknownStatus');
+        break;
+      case 'INVALID':
+        bg = const Color(0xFFFFF7E6);
+        text = const Color(0xFFB54708);
+        label = tr(_locale, 'insp.invalidStatus');
         break;
       case 'OVERDUE':
         bg = const Color(0xFFFFEDF1);

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
@@ -782,7 +784,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              isActive ? 'Tawi linafanya kazi' : 'Tawi limefungwa',
+              tr(ref.read(localeProvider),
+                  isActive ? 'adm.branchActive' : 'adm.branchClosed'),
               style: const TextStyle(fontSize: 12, color: AppTheme.ink500),
             ),
             const SizedBox(height: 10),
@@ -1457,7 +1460,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           context, 'Taarifa za ${staff.name} zimesasishwa!');
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
-                    label: const Text('Hifadhi Mabadiliko',
+                    label: Text(tr(ref.read(localeProvider), 'adm.saveChanges'),
                         style: TextStyle(
                             fontWeight: FontWeight.w800, fontSize: 13.5)),
                     style: ElevatedButton.styleFrom(
@@ -1519,7 +1522,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         builder: (modalCtx, setModalState) {
           return LimsBottomSheet(
             title: 'Ongeza Mfanyakazi Mpya',
-            subtitle: 'Weka taarifa za mtumiaji na jukumu lake',
+            subtitle: tr(ref.read(localeProvider), 'adm.userSheetSubtitle'),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1614,7 +1617,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     if (v != null) setModalState(() => selectedBranch = v);
                   },
                   decoration: InputDecoration(
-                    labelText: 'Tawi Lililopangiwa',
+                    labelText: tr(ref.read(localeProvider), 'adm.assignedBranch'),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
@@ -1961,7 +1964,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     );
                   },
                   icon: const Icon(Icons.lock_person_rounded, size: 18),
-                  label: const Text('Weka Device Hold',
+                  label: Text(tr(ref.read(localeProvider), 'adm.deviceHold'),
                       style: TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF43F5E),

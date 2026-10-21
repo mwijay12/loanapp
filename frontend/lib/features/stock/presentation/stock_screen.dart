@@ -573,7 +573,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (modalCtx, setModalState) {
           return LimsBottomSheet(
-            title: 'Hariri Picha ya Bidhaa',
+            title: tr(ref.read(localeProvider), 'stock.editPhotoTitle'),
             subtitle: '${p.name} · ${p.sku}',
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -664,10 +664,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0xFFBBF7D0)),
                   ),
-                  child: const Row(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.cloud_done_rounded, color: Color(0xFF16A34A), size: 18),
+                      const Icon(Icons.cloud_done_rounded, color: Color(0xFF16A34A), size: 18),
                       SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -679,7 +679,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              'Picha inabanwa kutoka 4.8MB hadi 74KB kabla ya kutumwa. Hifadhi ya bure ya Supabase (1GB) inatosha simu 13,900+ bila kujaa!',
+                              tr(ref.read(localeProvider), 'stock.compressNote'),
                               style: TextStyle(fontSize: 11, color: Color(0xFF166534), height: 1.35),
                             ),
                           ],
@@ -690,8 +690,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                const Text(
-                  'Chagua Kutoka Picha za Simu Zilizopo (Presets):',
+                Text(
+                  tr(ref.read(localeProvider), 'stock.presets'),
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -774,8 +774,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 const SizedBox(height: 16),
 
                 // Custom URL Input
-                const Text(
-                  'Au Weka Link / URL ya Picha:',
+                Text(
+                  tr(ref.read(localeProvider), 'stock.photoUrl'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -851,7 +851,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       );
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
-                    label: const Text('Hifadhi Picha Mpya', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    label: Text(tr(ref.read(localeProvider), 'stock.savePhoto'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
@@ -1479,8 +1479,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 2),
-                                        const Text(
-                                          'Chagua picha halisi kuonyesha dukani na kwenye mkataba wa mkopo.',
+                                        Text(
+                                          tr(ref.read(localeProvider), 'stock.photoHint'),
                                           style: TextStyle(
                                             fontSize: 10.5,
                                             color: AppTheme.ink500,

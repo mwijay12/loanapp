@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -23,7 +24,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final String _tigoPesaNumber = '884102';
   final String _supportHotline = '0754 892 314';
   String _paymentGracePeriod = 'Siku 3 (Grace Period)';
-  String _escalationPolicy = 'SMS & Piga Simu kwa Mdhamini';
+  String _escalationPolicy = 'sms_guarantor';
 
   final List<String> _branches = [
     'Kariakoo Branch',
@@ -611,14 +612,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             isExpanded: true,
                             underline: const SizedBox(),
                             items: [
-                              'SMS & Piga Simu kwa Mdhamini',
-                              'Notisi Rasmi ya Madai (Legal Notice)',
-                              'Mazungumzo ya Makubaliano na Mteja',
+                              'sms_guarantor',
+                              'legal_notice',
+                              'negotiation',
                             ].map((val) {
+                              final label = switch (val) {
+                                'sms_guarantor' =>
+                                  tr(ref.read(localeProvider), 'set.smsGuarantor'),
+                                'negotiation' =>
+                                  tr(ref.read(localeProvider), 'set.negotiation'),
+                                _ => tr(ref.read(localeProvider), 'set.legalNotice'),
+                              };
                               return DropdownMenuItem(
                                 value: val,
                                 child: Text(
-                                  val,
+                                  label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
@@ -642,14 +650,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onPressed: () {
                           LimsToast.show(
                             context,
-                            'Kiolezo cha SMS ya kukumbusha rejesho kimetumwa (Mfano: "Ndugu Mteja, rejesho lako la TZS ... linatakiwa kulipwa...")',
+                            tr(ref.read(localeProvider), 'set.smsTest'),
                             isSuccess: true,
                           );
                         },
                         icon: const Icon(Icons.sms_outlined, size: 16),
-                        label: const Text(
-                          'Jaribu Kiolezo cha SMS ya Marejesho (Test Payment Reminder)',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                        label: Text(
+                          tr(ref.read(localeProvider), 'set.smsTestButton'),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF0F172A),

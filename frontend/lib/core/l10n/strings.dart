@@ -578,12 +578,28 @@ const Map<String, Map<String, String>> _dictionary = {
   'insp.imeiHint': {'en': 'Enter the 15-digit IMEI', 'sw': 'Weka namba ya IMEI (tarakimu 15)'},
   'insp.branch': {'en': 'Registered branch', 'sw': 'Tawi la Usajili'},
   'insp.loanSection': {'en': 'Customer / loan details', 'sw': 'Mteja / Taarifa za Mkopo'},
+  'insp.unknownModel': {'en': 'Not registered here', 'sw': 'Haijasajiliwa hapa'},
+  'insp.unknownStatus': {'en': 'Not in this shop', 'sw': 'Haipo kwenye duka hili'},
+  'insp.invalidStatus': {'en': 'Not a valid IMEI', 'sw': 'IMEI si sahihi'},
+  'insp.reminderSms': {
+    'en': 'Hello {name}, a reminder that your instalment of TZS {amount} is due. Please pay at the shop.',
+    'sw': 'Habari {name}, tunakukumbusha rejesho lako la TZS {amount}. Tafadhali lipa dukani.',
+  },
+  'insp.reminderOpened': {'en': 'Opening your messaging app for {phone}.', 'sw': 'Tunafungua ujumbe kwa {phone}.'},
+  'insp.reminderFailed': {'en': 'No messaging app available on this device.', 'sw': 'Hakuna app ya ujumbe kwenye kifaa hiki.'},
+  'insp.dossierMissing': {'en': 'That contract is no longer in the list.', 'sw': 'Mkataba huo haupo kwenye orodha tena.'},
 
   // ------------------------------------------------------------------- stock sheet
   'stock.sellCash': {'en': 'Sell for cash', 'sw': 'Uza Cash'},
   'stock.issueLoan': {'en': 'Issue loan', 'sw': 'Toa Mkopo'},
   'stock.inventoryHistory': {'en': 'Inventory history', 'sw': 'Historia ya stoo'},
   'stock.editPhoto': {'en': 'Edit photo', 'sw': 'Hariri Picha'},
+  'stock.editPhotoTitle': {'en': 'Edit product photo', 'sw': 'Hariri Picha ya Bidhaa'},
+  'stock.presets': {'en': 'Choose from existing handset images (presets):', 'sw': 'Chagua Kutoka Picha za Simu Zilizopo (Presets):'},
+  'stock.photoUrl': {'en': 'Or paste an image link / URL:', 'sw': 'Au Weka Link / URL ya Picha:'},
+  'stock.savePhoto': {'en': 'Save new photo', 'sw': 'Hifadhi Picha Mpya'},
+  'stock.photoHint': {'en': 'Pick a real photo so the shop and the loan contract match the device.', 'sw': 'Chagua picha halisi kuonyesha dukani na kwenye mkataba wa mkopo.'},
+  'stock.compressNote': {'en': 'Photos are compressed from 4.8 MB to about 74 KB before upload. The free Supabase tier (1 GB) holds 13,900+ handsets.', 'sw': 'Picha inabanwa kutoka 4.8MB hadi 74KB kabla ya kutumwa. Hifadhi ya bure ya Supabase (1GB) inatosha simu 13,900+ bila kujaa!'},
 
   // -------------------------------------------------------------- notifications
   'notif.title': {'en': 'Notifications', 'sw': 'Taarifa'},
@@ -602,6 +618,29 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'This has been resolved since you opened the list.',
     'sw': 'Hili limeshatatuliwa tangu ufungue orodha.',
   },
+
+  // -------------------------------------------------------- settings & admin
+  'set.save': {'en': 'Save', 'sw': 'Hifadhi'},
+  'set.smsGuarantor': {'en': 'SMS & call the guarantor', 'sw': 'SMS & Piga Simu kwa Mdhamini'},
+  'set.negotiation': {'en': 'Settle directly with the customer', 'sw': 'Mazungumzo ya Makubaliano na Mteja'},
+  'set.smsTest': {
+    'en': 'Reminder SMS template sent (example: "Hello, your instalment of TZS ... is now due...")',
+    'sw': 'Kiolezo cha SMS ya kukumbusha rejesho kimetumwa (Mfano: "Ndugu Mteja, rejesho lako la TZS ... linatakiwa kulipwa...")',
+  },
+  'set.legalNotice': {'en': 'Formal demand notice', 'sw': 'Notisi Rasmi ya Madai'},
+  'set.smsTestButton': {
+    'en': 'Test the payment reminder SMS',
+    'sw': 'Jaribu Kiolezo cha SMS ya Marejesho',
+  },
+  'adm.branchActive': {'en': 'Branch is operating', 'sw': 'Tawi linafanya kazi'},
+  'adm.branchClosed': {'en': 'Branch is closed', 'sw': 'Tawi limefungwa'},
+  'adm.saveChanges': {'en': 'Save changes', 'sw': 'Hifadhi Mabadiliko'},
+  'adm.userSheetSubtitle': {
+    'en': 'Set the user details and their role',
+    'sw': 'Weka taarifa za mtumiaji na jukumu lake',
+  },
+  'adm.assignedBranch': {'en': 'Assigned branch', 'sw': 'Tawi Lililopangiwa'},
+  'adm.deviceHold': {'en': 'Place device hold', 'sw': 'Weka Device Hold'},
 
   // ------------------------------------------------------------------- generic
   'common.save': {'en': 'Save', 'sw': 'Hifadhi'},
