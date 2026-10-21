@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
+import '../../../core/data/branch_provider.dart';
+import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/mock_lims_data.dart';
+import '../../../core/data/product_art.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
-import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/imei_scan.dart';
-import '../../../core/widgets/imei_scanner_view.dart';
+import '../../../core/services/stock_receipts.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/data/mock_lims_data.dart';
-import '../../../core/data/inventory_provider.dart';
+import '../../../core/widgets/imei_scanner_view.dart';
 import '../../../core/widgets/ui_kit.dart';
 
+/// Receiving stock, with a record of where the stock came from.
+///
+/// The screen used to be a fixed mock: "PO #4521", four hand-written lines with
+/// quantities 10/6/8/5, three pre-filled serials, and a confirm button that called
+/// `updateStock(1..4)` on product ids that do not exist in the database. The count
+/// on screen moved; the rows did not. Nothing recorded a supplier, an invoice, or
+/// that some units arrived from another branch rather than from a purchase.
+///
+/// This version asks the three questions a storekeeper actually answers — where is
+/// it from, what arrived, which serials — and writes every line to `products`.
 class ReceiveStockScreen extends ConsumerStatefulWidget {
   const ReceiveStockScreen({super.key});
 
@@ -19,563 +31,231 @@ class ReceiveStockScreen extends ConsumerStatefulWidget {
 }
 
 class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
-  final List<String> _scannedImeis = [
-    '358920112849102',
-    '358920112849110',
-    '864920042819384',
-  ];
+  StockSource _source = StockSource.supplier;
+  final _supplier = TextEditingController();
+  final _invoice = TextEditingController();
+  final _note = TextEditingController();
+  String? _fromBranch;
 
-  final List<Map<String, dynamic>> _items = [
-    {
-      'id': 1,
-      'name': 'iPhone 15 Pro Max',
-      'qty': 10,
-      'sku': 'IP15PM-256-NT',
-      'verified': true,
-      'grad': [AppTheme.brand600, AppTheme.brand700],
-      'asset': 'assets/images/blue_iphones_duo.png',
-      'url': null,
-    },
-    {
-      'id': 2,
-      'name': 'Galaxy S24 Ultra',
-      'qty': 6,
-      'sku': 'SGS24U-256-TG',
-      'verified': true,
-      'grad': [const Color(0xFF6366F1), const Color(0xFF4338CA)],
-      'asset': 'assets/images/samsung_galaxy_ultra.png',
-      'url': 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      'id': 3,
-      'name': 'Redmi Note 13 Pro',
-      'qty': 8,
-      'sku': 'RN13P-256-MB',
-      'verified': true,
-      'grad': [const Color(0xFF0EA5E9), const Color(0xFF0369A1)],
-      'asset': 'assets/images/redmi_note_13_pro.png',
-      'url': 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      'id': 4,
-      'name': 'TECNO Camon 30',
-      'qty': 5,
-      'sku': 'TC30-256-SV',
-      'verified': false,
-      'grad': [const Color(0xFF06B6D4), const Color(0xFF0E7490)],
-      'asset': 'assets/images/tecno_camon_30.png',
-      'url': 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
-    },
-  ];
+  final List<StockReceiptLine> _lines = [];
+  final Set<String> _imeis = {};
 
-  bool _isReceived = false;
+  bool _busy = false;
 
-  /// Intake of one serial number, by camera or by hand.
-  ///
-  /// The dialog used to have a wand button that generated an IMEI from the clock
-  /// and accepted it — so a receiving clerk could "verify" 24 units without
-  /// touching a single box. The wand is gone. What is left is the camera and the
-  /// keypad, and both go through the same check digit: a number that fails it is
-  /// a misread, and accepting a misread is worse than asking for a second scan.
-  void _showScanImeiDialog() {
-    final locale = ref.read(localeProvider);
-    final imeiController = TextEditingController();
-    final cameraKey = GlobalKey<ImeiScannerViewState>();
-    bool cameraOpen = false;
+  @override
+  void dispose() {
+    _supplier.dispose();
+    _invoice.dispose();
+    _note.dispose();
+    super.dispose();
+  }
 
-    void submit(BuildContext ctx, StateSetter setDialogState) {
-      final raw = imeiController.text.trim();
-      final imei = ImeiScan.parseImei(raw) ?? raw.replaceAll(RegExp(r'\D'), '');
-      if (imei.length != 15) {
-        LimsToast.show(
-          context,
-          trf(locale, 'stock.errLength', {'n': imei.length}),
-          isError: true,
-        );
-        return;
-      }
-      if (!ImeiScan.isValid(imei)) {
-        LimsToast.show(context, tr(locale, 'scan.invalid'), isError: true);
-        return;
-      }
-      if (_scannedImeis.contains(imei)) {
-        LimsToast.show(
-          context,
-          trf(locale, 'stock.errDuplicate', {'n': imei}),
-          isError: true,
-        );
-        return;
-      }
-      setState(() {
-        _scannedImeis.add(imei);
-      });
-      Navigator.pop(ctx);
-      LimsToast.show(
-        context,
-        trf(locale, 'stock.okAdded', {'n': imei}),
-        isSuccess: true,
+  Locale get _locale => ref.read(localeProvider);
+  String t(String key) => tr(_locale, key);
+  String tf(String key, Map<String, String> args) => trf(_locale, key, args);
+
+  int get _units => _lines.fold(0, (sum, l) => sum + l.qty);
+  int get _value => _lines.fold(0, (sum, l) => sum + (l.qty * l.unitCost));
+
+  void _addLine(ProductItem p) {
+    if (_lines.any((l) => l.productId == p.id)) return;
+    setState(() {
+      _lines.add(StockReceiptLine(
+        productId: p.id,
+        name: p.name,
+        sku: p.sku,
+        qty: 1,
+        unitCost: p.costPrice ?? p.price,
+        imageAsset: p.imageAsset,
+        imageUrl: p.imageUrl,
+      ));
+    });
+  }
+
+  void _changeQty(StockReceiptLine line, int delta) {
+    final next = line.qty + delta;
+    if (next < 1 || next > 500) return;
+    setState(() {
+      final i = _lines.indexWhere((l) => l.productId == line.productId);
+      if (i == -1) return;
+      _lines[i] = StockReceiptLine(
+        productId: line.productId,
+        name: line.name,
+        sku: line.sku,
+        qty: next,
+        unitCost: line.unitCost,
+        imageAsset: line.imageAsset,
+        imageUrl: line.imageUrl,
       );
+    });
+  }
+
+  Future<void> _pickProduct() async {
+    final products = ref.read(inventoryProvider);
+    if (products.isEmpty) {
+      LimsToast.show(context, t('recv.noProducts'));
+      return;
     }
 
-    showDialog(
+    final chosen = await showModalBottomSheet<ProductItem>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.rXl)),
-          title: Row(
-            children: [
-              const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.brand600),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  tr(locale, 'stock.scanTitle'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
-                ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.72,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(99),
               ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tr(locale, 'stock.scanHint'),
-                  style: const TextStyle(fontSize: 12.5, color: AppTheme.ink500),
-                ),
-                const SizedBox(height: 12),
-                if (cameraOpen) ...[
-                  ImeiScannerView(
-                    key: cameraKey,
-                    locale: locale,
-                    height: 200,
-                    onImei: (imei) {
-                      imeiController.text = imei;
-                      setDialogState(() {});
-                      submit(ctx, setDialogState);
-                    },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t('recv.pickModel'),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
                 ],
-                TextField(
-                  controller: imeiController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 20,
-                  onChanged: (_) => setDialogState(() {}),
-                  decoration: InputDecoration(
-                    labelText: 'IMEI',
-                    hintText: '35xxxxxxxxxxxxx',
-                    prefixIcon: const Icon(Icons.dialpad_rounded, size: 20),
-                    suffixIcon: ImeiScan.isValid(
-                      imeiController.text.replaceAll(RegExp(r'\D'), ''),
-                    )
-                        ? const Icon(Icons.check_circle_rounded,
-                            color: Color(0xFF10B981), size: 20)
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                ScanImeiButton(
-                  locale: locale,
-                  label: tr(locale, 'stock.scanWithCamera'),
-                  onPressed: () {
-                    setDialogState(() => cameraOpen = !cameraOpen);
-                    if (cameraOpen) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        cameraKey.currentState?.start();
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(tr(locale, 'common.cancel')),
-            ),
-            ElevatedButton(
-              onPressed: () => submit(ctx, setDialogState),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.brand600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.rSm)),
               ),
-              child: Text(tr(locale, 'stock.verify')),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                itemCount: products.length,
+                itemBuilder: (_, i) {
+                  final p = products[i];
+                  final already = _lines.any((l) => l.productId == p.id);
+                  return ListTile(
+                    leading: SizedBox(
+                      width: 40,
+                      height: 44,
+                      child: Image.asset(
+                        ProductArt.resolve(
+                          explicit: p.imageAsset,
+                          brand: p.brand,
+                          name: p.name,
+                          category: p.cat,
+                        ),
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.phone_android_rounded,
+                            color: AppTheme.brand600),
+                      ),
+                    ),
+                    title: Text(p.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: Text('${p.sku} · ${p.stock} ${t('recv.inBranch')}'),
+                    trailing: already
+                        ? const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF12B76A))
+                        : const Icon(Icons.add_circle_outline_rounded),
+                    onTap: already ? null : () => Navigator.pop(ctx, p),
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
     );
+
+    if (chosen != null) _addLine(chosen);
   }
 
-  void _showChangeItemPhotoModal(int index) {
-    final item = _items[index];
-    String? currentAsset = item['asset'] as String?;
-    String? currentUrl = item['url'] as String?;
-
-    final presetOptions = [
-      {
-        'title': 'iPhone 15 Pro Duo',
-        'sub': 'Halisi (Assets)',
-        'asset': 'assets/images/blue_iphones_duo.png',
-        'url': null,
-      },
-      {
-        'title': 'Galaxy S24 Ultra',
-        'sub': 'Titanium Gray',
-        'asset': null,
-        'url': 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
-      },
-      {
-        'title': 'Redmi Note 13 Pro',
-        'sub': 'Midnight Black',
-        'asset': null,
-        'url': 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
-      },
-      {
-        'title': 'Tecno Camon 30',
-        'sub': 'Silver / Camon',
-        'asset': null,
-        'url': 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=600&auto=format&fit=crop&q=80',
-      },
-      {
-        'title': 'Galaxy S24 Ultra (Halisi)',
-        'sub': 'Picha ya dukani · offline',
-        'asset': 'assets/images/samsung_galaxy_ultra.png',
-        'url': null,
-      },
-      {
-        'title': 'Redmi Note 13 Pro (Halisi)',
-        'sub': 'Picha ya dukani · offline',
-        'asset': 'assets/images/redmi_note_13_pro.png',
-        'url': null,
-      },
-      {
-        'title': 'TECNO Camon 30 (Halisi)',
-        'sub': 'Picha ya dukani · offline',
-        'asset': 'assets/images/tecno_camon_30.png',
-        'url': null,
-      },
-    ];
-
-    LimsBottomSheet.show(
+  Future<void> _scanImei() async {
+    final value = await showDialog<String>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (modalCtx, setModalState) {
-          return LimsBottomSheet(
-            title: tr(ref.read(localeProvider), 'stock.changePhoto'),
-            subtitle: '${item['name']} · ${item['sku']}',
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.brand600, width: 2),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x140F3478),
-                          blurRadius: 16,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: currentAsset != null && currentAsset!.isNotEmpty
-                        ? Image.asset(currentAsset!, fit: BoxFit.contain)
-                        : (currentUrl != null && currentUrl!.isNotEmpty
-                            ? Image.network(
-                                currentUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Center(
-                                  child: Icon(Icons.smartphone_rounded, size: 40, color: AppTheme.brand600),
-                                ),
-                              )
-                            : const Center(
-                                child: Icon(Icons.smartphone_rounded, size: 40, color: AppTheme.brand600),
-                              )),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final allowed = await AppPermissionsService.ensureCamera(context);
-                          if (!mounted) return;
-                          if (!allowed) {
-                            LimsToast.show(context, tr(ref.read(localeProvider), 'stock.cameraNeeded'), isError: true);
-                            return;
-                          }
-                          setModalState(() {
-                            currentAsset = 'assets/images/blue_iphones_duo.png';
-                            currentUrl = null;
-                          });
-                          LimsToast.show(context, tr(ref.read(localeProvider), 'stock.photoSaved'));
-                        },
-                        icon: const Icon(Icons.camera_alt_rounded, size: 16, color: AppTheme.brand600),
-                        label: Text(tr(ref.read(localeProvider), 'stock.takePhoto'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFCEE1FE)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          await AppPermissionsService.ensureStorage();
-                          if (!mounted) return;
-                          setModalState(() {
-                            currentAsset = null;
-                            currentUrl = 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80';
-                          });
-                          LimsToast.show(context, tr(ref.read(localeProvider), 'stock.photoPicked'));
-                        },
-                        icon: const Icon(Icons.photo_library_rounded, size: 16, color: AppTheme.brand600),
-                        label: Text(tr(ref.read(localeProvider), 'stock.gallery'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFCEE1FE)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.cloud_done_rounded, color: Color(0xFF16A34A), size: 16),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'WebP Compression · Auto-Sync to Supabase Storage (74KB)',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'Presets za Picha Halisi:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 80,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: presetOptions.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, idx) {
-                      final p = presetOptions[idx];
-                      final isChosen = (p['asset'] != null && currentAsset == p['asset']) ||
-                          (p['url'] != null && currentUrl == p['url']);
-                      return InkWell(
-                        onTap: () {
-                          setModalState(() {
-                            currentAsset = p['asset'];
-                            currentUrl = p['url'];
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          width: 80,
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isChosen ? const Color(0xFFEBF3FF) : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isChosen ? AppTheme.brand600 : const Color(0xFFE2E8F0),
-                              width: isChosen ? 2 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: p['asset'] != null
-                                    ? Image.asset(p['asset'] as String, fit: BoxFit.contain)
-                                    : Image.network(p['url'] as String, fit: BoxFit.cover),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                p['title'] as String,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: isChosen ? AppTheme.brand600 : AppTheme.ink700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _items[index]['asset'] = currentAsset;
-                        _items[index]['url'] = currentUrl;
-                      });
-                      Navigator.pop(ctx);
-                      LimsToast.show(context, trf(ref.read(localeProvider), 'stock.photoUpdated', {'n': item['name']}));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.brand600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(tr(ref.read(localeProvider), 'stock.confirmPhoto'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+      builder: (_) => ImeiScanDialog(
+        title: t('recv.scanTitle'),
+        hint: t('recv.scanHint'),
+        expected: _units,
+        already: _imeis.length,
       ),
     );
+    if (value == null || !mounted) return;
+    if (_imeis.contains(value)) {
+      LimsToast.show(context, tf('recv.alreadyScanned', {'n': value}));
+      return;
+    }
+    setState(() => _imeis.add(value));
+    LimsToast.show(context, tf('recv.added', {'n': value}), isSuccess: true);
   }
 
-  /// Applies the delivery to the live catalogue.
-  ///
-  /// The old version wrote to product ids 1–4, which are the ids of the demo rows
-  /// this screen used to carry. Against the real database those rows do not
-  /// exist, so `updateStock` found nothing and reported success anyway: stock
-  /// never moved. Rows are now matched by SKU against what is actually loaded,
-  /// and a shipment line that matches nothing is called out instead of being
-  /// counted.
-  void _confirmReceive() {
-    final locale = ref.read(localeProvider);
-    final inventory = ref.read(inventoryProvider);
-    var units = 0;
-    var matchedLines = 0;
-    final unmatched = <String>[];
+  Future<void> _confirm() async {
+    final receipt = StockReceipt(
+      branch: ref.read(activeBranchProvider),
+      source: _source,
+      lines: List.of(_lines),
+      imeis: _imeis.toList(),
+      supplierName: _supplier.text.trim(),
+      invoiceNo: _invoice.text.trim(),
+      fromBranch: _fromBranch,
+      note: _note.text.trim(),
+    );
 
-    for (final item in _items) {
-      final sku = item['sku'] as String;
-      final qty = item['qty'] as int;
-      final match = inventory.where((p) => p.sku == sku).toList();
-      if (match.isEmpty) {
-        unmatched.add(sku);
-        continue;
-      }
-      matchedLines++;
-      units += qty;
-      ref.read(inventoryProvider.notifier).updateStock(match.first.id, qty);
-      if (item['asset'] != null || item['url'] != null) {
-        ref.read(inventoryProvider.notifier).updateProductImage(
-          match.first.id,
-          imageAsset: item['asset'] as String?,
-          imageUrl: item['url'] as String?,
-        );
-      }
-    }
-
-    setState(() => _isReceived = true);
-
-    if (matchedLines == 0) {
-      LimsToast.show(
-        context,
-        'No shipment line matched a product in the catalogue. Nothing was added.',
-        isError: true,
-      );
-      setState(() => _isReceived = false);
+    final problem = receipt.validate();
+    if (problem != null) {
+      LimsToast.show(context, t('recv.err_$problem'));
       return;
     }
 
-    ref.read(activitiesProvider.notifier).addActivity(
-      ActivityItem(
-        icon: Icons.archive_rounded,
-        iconColor: AppTheme.brand600,
-        bgColor: AppTheme.brand100,
-        title: trf(locale, 'stock.activityTitle', {'n': units}),
-        description: trf(locale, 'stock.receivedAt', {
-          'branch': ref.read(activeBranchProvider),
-          'scanned': _scannedImeis.length,
-        }),
-        time: tr(locale, 'common.justNow'),
-      ),
-    );
+    setState(() => _busy = true);
+    final result = await ref.read(stockReceiptServiceProvider).receive(receipt);
+
+    // The local list feeds every other screen, so it moves with the same truth.
+    if (result.ok) {
+      for (final line in receipt.lines) {
+        ref
+            .read(inventoryProvider.notifier)
+            .updateStock(line.productId, line.qty);
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (result.ok) {
+      LimsToast.show(
+        context,
+        result.persisted
+            ? tf('recv.ok', {'n': '${receipt.units}', 'b': receipt.branch})
+            : tf('recv.okLocal', {'n': '${receipt.units}'}),
+        isSuccess: true,
+      );
+      Navigator.pop(context, true);
+      return;
+    }
 
     LimsToast.show(
       context,
-      trf(locale, 'stock.okReceived', {
-        'n': units,
-        'branch': ref.read(activeBranchProvider),
-      }),
-      isSuccess: true,
+      result.persisted ? t('recv.failed') : t('recv.offline'),
     );
-
-    if (unmatched.isNotEmpty) {
-      // A silent skip is how a delivery becomes a stock discrepancy three weeks
-      // later. Say which line did not land.
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (!mounted) return;
-        LimsToast.show(
-          context,
-          trf(locale, 'stock.unmatched', {'skus': unmatched.join(', ')}),
-          isError: true,
-        );
-      });
-    }
-
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted) context.pop();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final locale = ref.watch(localeProvider);
-    final inventory = ref.watch(inventoryProvider);
-
-    // Shipment totals are derived, not typed. The card used to read
-    // "24 units · TZS 12.4M" no matter what the lines said, and a clerk had no way
-    // to notice the figure was decoration.
-    final totalUnits = _items.fold<int>(0, (n, i) => n + (i['qty'] as int));
-    var totalValue = 0;
-    for (final item in _items) {
-      final sku = item['sku'] as String;
-      final match = inventory.where((p) => p.sku == sku);
-      if (match.isEmpty) continue;
-      totalValue += match.first.price * (item['qty'] as int);
-    }
+    ref.watch(localeProvider);
+    final products = ref.watch(inventoryProvider);
+    final branch = ref.watch(activeBranchProvider);
+    final branches = ref.watch(branchesProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.canvas,
@@ -583,280 +263,579 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        title: Text(
+          t('recv.title'),
+          style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.ink900),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          tr(ref.watch(localeProvider), 'stock.title'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.ink900,
-          ),
+          onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: const Color(0xFFE2E8F0), height: 1),
         ),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(18),
-          children: [
-            // Shipment Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppTheme.brand100,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.archive_rounded, color: AppTheme.brand600, size: 24),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          ref.watch(activeBranchProvider),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.ink900,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          trf(locale, 'stock.lines', {'n': _items.length}),
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.ink500,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppTheme.brand100,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            totalValue > 0
-                                ? trf(locale, 'stock.unitsValue', {
-                                    'n': totalUnits,
-                                    'value':
-                                        LimsFormatters.formatNumber(totalValue),
-                                  })
-                                : trf(locale, 'stock.units', {'n': totalUnits}),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.brand600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
+        children: [
+          _branchCard(branch),
+          const SizedBox(height: 14),
+          _sourceCard(branches),
+          const SizedBox(height: 16),
+          _linesCard(products),
+          const SizedBox(height: 14),
+          _imeiCard(),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _note,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              labelText: t('recv.note'),
+              labelStyle: const TextStyle(fontSize: 12.5),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            const SizedBox(height: 16),
-
-            // Items List
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: _items.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final item = entry.value;
-                  final isLast = idx == _items.length - 1;
-
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
-                    ),
-                    child: Row(
-                      children: [
-                        InkWell(
-                          onTap: () => _showChangeItemPhotoModal(idx),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFCBD5E1)),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: item['asset'] != null
-                                ? Image.asset(item['asset'] as String, fit: BoxFit.contain)
-                                : (item['url'] != null
-                                    ? Image.network(
-                                        item['url'] as String,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: item['grad'] as List<Color>,
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
-                                          ),
-                                          child: const Icon(Icons.smartphone_rounded, color: Colors.white, size: 20),
-                                        ),
-                                      )
-                                    : Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: item['grad'] as List<Color>,
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                        ),
-                                        child: const Icon(Icons.smartphone_rounded, color: Colors.white, size: 20),
-                                      )),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['name'] as String,
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.ink900,
-                                ),
-                              ),
-                              Text(
-                                '${item['sku']} · ×${item['qty']}',
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.ink500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.photo_camera_rounded, size: 18, color: AppTheme.brand600),
-                          onPressed: () => _showChangeItemPhotoModal(idx),
-                          tooltip: 'Badili Picha ya Mzigo',
-                        ),
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE7F8F0),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.check_rounded, size: 16, color: Color(0xFF12B76A)),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+          ),
+        ],
+      ),
+      bottomSheet: Container(
+        color: Colors.white,
+        padding: EdgeInsets.fromLTRB(
+            16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+        child: SizedBox(
+          height: 50,
+          child: FilledButton(
+            onPressed: _busy ? null : _confirm,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.brand600,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            const SizedBox(height: 20),
-
-            // Progress bar
-            const ClipRRect(
-              borderRadius: BorderRadius.all(Radius.circular(99)),
-              child: LinearProgressIndicator(
-                value: 1.0,
-                minHeight: 6,
-                backgroundColor: Color(0xFFE2E8F0),
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.brand600),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.verified_rounded, size: 14, color: AppTheme.successColor),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    trf(locale, 'stock.scannedLine', {
-                      'n': totalUnits,
-                      'scanned': _scannedImeis.length,
-                    }),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+            child: _busy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : Text(
+                    t('recv.confirm'),
                     style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.ink700,
-                    ),
+                        fontSize: 14, fontWeight: FontWeight.w800),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _branchCard(String branch) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE9F2FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.add_box_rounded, color: AppTheme.brand600),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(branch,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(
+                  _lines.isEmpty
+                      ? t('recv.noLines')
+                      : tf('recv.linesSummary', {
+                          'lines': '${_lines.length}',
+                          'units': '$_units',
+                          'value': LimsFormatters.formatNumber(_value),
+                        }),
+                  style:
+                      const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sourceCard(List<BranchRecord> branches) {
+    Widget chip(StockSource s, String label, IconData icon) {
+      final selected = _source == s;
+      return Expanded(
+        child: InkWell(
+          onTap: () => setState(() => _source = s),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color:
+                  selected ? const Color(0xFFE9F2FF) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? AppTheme.brand600 : const Color(0xFFE2E8F0),
+                width: selected ? 1.4 : 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(icon,
+                    size: 18,
+                    color: selected ? AppTheme.brand600 : AppTheme.ink500),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.2,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    color: selected ? AppTheme.brand600 : AppTheme.ink700,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+          ),
+        ),
+      );
+    }
 
-            OutlinedButton.icon(
-              onPressed: _showScanImeiDialog,
-              icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-              label: Text(tr(ref.watch(localeProvider), 'stock.scanTitle'), style: const TextStyle(fontWeight: FontWeight.w700)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.brand700,
-                side: const BorderSide(color: AppTheme.border, width: 1.5),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.rMd)),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t('recv.sourceTitle'),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              chip(StockSource.supplier, t('recv.sourceSupplier'),
+                  Icons.local_shipping_outlined),
+              const SizedBox(width: 8),
+              chip(StockSource.transfer, t('recv.sourceTransfer'),
+                  Icons.swap_horiz_rounded),
+              const SizedBox(width: 8),
+              chip(StockSource.customerReturn, t('recv.sourceReturn'),
+                  Icons.assignment_return_outlined),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_source == StockSource.supplier) ...[
+            TextField(
+              controller: _supplier,
+              textCapitalization: TextCapitalization.words,
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                labelText: t('recv.supplierName'),
+                hintText: t('recv.supplierHint'),
+                labelStyle: const TextStyle(fontSize: 12.5),
+                isDense: true,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            const SizedBox(height: 12),
-
-            ElevatedButton(
-              onPressed: _isReceived ? null : _confirmReceive,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.brand600,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
+            const SizedBox(height: 10),
+            TextField(
+              controller: _invoice,
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                labelText: t('recv.invoice'),
+                hintText: t('recv.invoiceHint'),
+                labelStyle: const TextStyle(fontSize: 12.5),
+                isDense: true,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(
-                _isReceived
-                    ? tr(ref.watch(localeProvider), 'stock.received')
-                    : tr(ref.watch(localeProvider), 'stock.confirm'),
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+            ),
+          ],
+          if (_source == StockSource.transfer) ...[
+            DropdownButtonFormField<String>(
+              initialValue: _fromBranch,
+              isExpanded: true,
+              style: const TextStyle(fontSize: 13, color: AppTheme.ink900),
+              decoration: InputDecoration(
+                labelText: t('recv.fromBranch'),
+                labelStyle: const TextStyle(fontSize: 12.5),
+                isDense: true,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              items: branches
+                  .where((b) => b.name != ref.read(activeBranchProvider))
+                  .map((b) => DropdownMenuItem(
+                        value: b.name,
+                        child: Text(b.name, overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _fromBranch = v),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t('recv.transferNote'),
+              style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
+            ),
+          ],
+          if (_source == StockSource.customerReturn)
+            Text(
+              t('recv.returnNote'),
+              style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _linesCard(List<ProductItem> products) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(t('recv.whatArrived'),
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w800)),
+              ),
+              TextButton.icon(
+                onPressed: _pickProduct,
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text(t('recv.addLine'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          if (_lines.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Center(
+                child: Text(
+                  t('recv.emptyLines'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.ink500),
+                ),
+              ),
+            )
+          else
+            for (final line in _lines) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 38,
+                      height: 42,
+                      child: Image.asset(
+                        ProductArt.resolve(
+                          explicit: line.imageAsset,
+                          name: line.name,
+                          category: 'phones',
+                        ),
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.phone_android_rounded,
+                            size: 20,
+                            color: AppTheme.brand600),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(line.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w700)),
+                          Text(
+                            '${line.sku} · ${LimsFormatters.formatNumber(line.unitCost)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 10.5, color: AppTheme.ink500),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline_rounded,
+                          size: 20, color: AppTheme.ink500),
+                      onPressed: () => _changeQty(line, -1),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Text('${line.qty}',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w800)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline_rounded,
+                          size: 20, color: AppTheme.brand600),
+                      onPressed: () => _changeQty(line, 1),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    InkWell(
+                      onTap: () => setState(() => _lines.remove(line)),
+                      child: const Icon(Icons.close_rounded,
+                          size: 16, color: Color(0xFF94A3B8)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          if (_lines.isNotEmpty) ...[
+            const Divider(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  tf('recv.totals', {
+                    'units': '$_units',
+                    'value': LimsFormatters.formatNumber(_value),
+                  }),
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  '${products.length} ${t('recv.catalogue')}',
+                  style:
+                      const TextStyle(fontSize: 10.5, color: AppTheme.ink500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _imeiCard() {
+    final expected = _units;
+    final scanned = _imeis.length;
+    final complete = expected > 0 && scanned >= expected;
+    final colour = complete
+        ? const Color(0xFF12B76A)
+        : (scanned == 0 ? AppTheme.ink500 : const Color(0xFFEA580C));
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                complete
+                    ? Icons.verified_rounded
+                    : Icons.qr_code_scanner_rounded,
+                size: 18,
+                color: colour,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  expected == 0
+                      ? t('recv.scanFirst')
+                      : tf('recv.scanProgress',
+                          {'expected': '$expected', 'scanned': '$scanned'}),
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w700, color: colour),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: expected == 0 ? 0 : (scanned / expected).clamp(0, 1),
+              minHeight: 6,
+              backgroundColor: const Color(0xFFF1F5F9),
+              valueColor: AlwaysStoppedAnimation(colour),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: expected == 0 ? null : _scanImei,
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+              label: Text(t('recv.scanButton'),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.brand600,
+                side: const BorderSide(color: Color(0xFFCEE1FE)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          if (_imeis.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _imeis
+                  .map((i) => Chip(
+                        label: Text(i,
+                            style: const TextStyle(
+                                fontSize: 9.5,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w600)),
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        side: BorderSide.none,
+                      ))
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Camera or typed serial, with the GSMA check applied before it is accepted.
+class ImeiScanDialog extends StatefulWidget {
+  const ImeiScanDialog({
+    super.key,
+    required this.title,
+    required this.hint,
+    required this.expected,
+    required this.already,
+  });
+
+  final String title;
+  final String hint;
+  final int expected;
+  final int already;
+
+  @override
+  State<ImeiScanDialog> createState() => _ImeiScanDialogState();
+}
+
+class _ImeiScanDialogState extends State<ImeiScanDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _accept(String raw) {
+    final parsed = ImeiScan.parseImei(raw);
+    if (parsed == null) {
+      setState(() => _error = tr(Localizations.localeOf(context), 'recv.badImei'));
+      return;
+    }
+    Navigator.pop(context, parsed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(widget.title,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w800)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            Text(
+              trf(locale, 'recv.scanProgress', {
+                'expected': '${widget.expected}',
+                'scanned': '${widget.already}',
+              }),
+              style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(height: 190, child: ImeiScannerView(onImei: _accept)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                errorText: _error,
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onSubmitted: _accept,
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 44,
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => _accept(_controller.text),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.brand600,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(tr(locale, 'recv.useImei'),
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
               ),
             ),
           ],

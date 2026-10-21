@@ -369,6 +369,39 @@ class ApiService {
   /// build and the header fell back to a role illustration — a male storekeeper
   /// could be shown the female placeholder for his role. The person's own
   /// `avatar_asset` is the only thing that can get this right.
+  /// Adds received units to a product, and says whether the row really moved.
+  ///
+  /// Receiving used to call `updateStock(1..4)` on the local provider with product
+  /// ids that do not exist in the database, then report success. The count on screen
+  /// went up and the row in `products` did not change. This reads the current stock,
+  /// writes the sum, and returns false when the database did not answer.
+  Future<bool> addStock({required int productId, required int quantity}) async {
+    if (quantity <= 0) return false;
+    try {
+      final row = await client
+          .from('products')
+          .select('stock, min_stock')
+          .eq('id', productId)
+          .maybeSingle();
+      if (row == null) return false;
+
+      final current = (row['stock'] as num?)?.toInt() ?? 0;
+      final min = (row['min_stock'] as num?)?.toInt() ?? 0;
+      final next = current + quantity;
+
+      await client.from('products').update({
+        'stock': next,
+        'status': next <= min ? 'low' : 'in',
+      }).eq('id', productId);
+      return true;
+    } catch (e) {
+      _report('backend call', e);
+      return false;
+    }
+  }
+
+  bool get isConfigured => SupabaseConfig.isConfigured;
+
   Future<List<Map<String, dynamic>>> getStaff() async {
     try {
       final response = await client.from('staff').select().order('name');

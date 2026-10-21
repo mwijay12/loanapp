@@ -193,7 +193,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
     LimsBottomSheet.show(
       context: context,
       title: 'Mkataba wa Mauzo ya Mkopo',
-      subtitle: 'Akaunti ya Mkopo: ${loan.id}',
+      subtitle: trf(_locale, 'borrower.accountSubtitle', {'id': loan.id}),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -366,7 +366,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.ink900),
             ),
             Text(
-              'Akaunti: ${loan.id} · ${loan.item}',
+              trf(_locale, 'borrower.accountLine', {'id': loan.id, 'item': loan.item}),
               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.ink500),
             ),
           ],
@@ -431,10 +431,10 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 const SizedBox(width: 4),
                 Text(
                   isCleared
-                      ? 'Imelipwa Yote'
+                      ? tr(_locale, 'borrower.fullyPaid')
                       : isOverdue
-                          ? 'Imechelewa (Overdue)'
-                          : 'Inalipika (Current)',
+                          ? tr(_locale, 'borrower.overdueBadge')
+                          : tr(_locale, 'borrower.currentBadge'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -476,7 +476,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               child: OutlinedButton.icon(
                 onPressed: () => _showContractModal(loan),
                 icon: const Icon(Icons.description_outlined, size: 18),
-                label: const Text('Mkataba', style: TextStyle(fontWeight: FontWeight.w700)),
+                label: Text(tr(_locale, 'borrower.contract'), style: const TextStyle(fontWeight: FontWeight.w700)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.brand600,
                   side: const BorderSide(color: AppTheme.brand600),
@@ -492,7 +492,9 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 onPressed: isCleared ? null : () => _openRecordPaymentModal(loan),
                 icon: const Icon(Icons.add_card_rounded, size: 18),
                 label: Text(
-                  isCleared ? 'Mkopo Umekamilika' : 'Pokea Rejesho',
+                  isCleared
+                      ? tr(_locale, 'borrower.loanCleared')
+                      : tr(_locale, 'borrower.receivePayment'),
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -1285,7 +1287,9 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           _infoRow('Model ya Simu', loan.item),
           _infoRowWithCopy('IMEI 1 (Hardware ID)', loan.imei),
           _infoRow(tr(_locale, 'borrower.collateral'), tr(_locale, 'borrower.collateralValue')),
-          _infoRow('Hali ya Akaunti', loan.status == 'overdue' ? 'Inadaiwa (Overdue)' : 'Inalipika Vizuri (Current)', valueColor: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.successColor),
+          _infoRow(tr(_locale, 'borrower.accountState'), loan.status == 'overdue'
+                ? tr(_locale, 'borrower.overdueBadge')
+                : tr(_locale, 'borrower.currentBadge'), valueColor: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.successColor),
         ],
       ),
     );
@@ -1368,7 +1372,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Marejesho Yaliyorekodiwa: ${loan.payments.length}',
+                  trf(_locale, 'borrower.recordedPayments', {'n': '${loan.payments.length}'}),
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
                 Text(
@@ -1386,7 +1390,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('+ Lipa', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+            child: Text(tr(_locale, 'borrower.payNow'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -1402,14 +1406,14 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
             children: [
               Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.ink500.withValues(alpha: 0.5)),
               const SizedBox(height: 12),
-              const Text(
-                'Hakuna marejesho yaliyorekodiwa bado',
+              Text(
+                tr(_locale, 'borrower.noPayments'),
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.ink700),
               ),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => _openRecordPaymentModal(loan),
-                child: const Text('Rekodi Rejesho la Kwanza'),
+                child: Text(tr(_locale, 'borrower.firstPayment')),
               ),
             ],
           ),
