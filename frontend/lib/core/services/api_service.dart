@@ -148,7 +148,10 @@ class ApiService {
     // DEMO BUILD ONLY. Compiled out when --dart-define=DEMO_MODE is not true,
     // so a production APK cannot reach this branch. It exists because the
     // showcase runs on mock data with no Supabase project behind it.
-    if (AppConstants.demoMode) {
+    // Only when the build has no database behind it. With Supabase configured
+    // the demo accounts are real auth users, so the shortcut would return a
+    // profile with no session and every RLS policy would then deny the reads.
+    if (AppConstants.demoMode && !SupabaseConfig.isConfigured) {
       final account = AppConstants.demoAccounts[email];
       if (account == null || secret != AppConstants.demoPassword) {
         throw StateError(

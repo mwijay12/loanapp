@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../data/branch_provider.dart';
 import '../data/inventory_provider.dart';
 import '../data/supabase_source.dart';
+import 'api_service.dart';
 
 /// Where the rows on screen came from.
 ///
@@ -60,7 +61,7 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader> {
     if (_started) return;
     _started = true;
 
-    if (AppConstants.demoMode) {
+    if (AppConstants.demoMode && !SupabaseConfig.isConfigured) {
       ref.read(dataSourceProvider.notifier).state = const DataSourceState(
         kind: DataSourceKind.demo,
         counts: {},
