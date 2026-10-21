@@ -63,6 +63,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         throw StateError('Server returned no usable role. Access denied.');
       }
       ref.read(userRoleProvider.notifier).hydrateFromSession(role);
+      // Identity, not just permission: the header greets this person.
+      ref.read(signedInNameProvider.notifier).state = name;
       // Routing is on the canonical role, not on a substring of the label.
       // The old `role.toLowerCase().contains('admin')` test sent a Branch
       // Manager to /home and would have sent an 'Auditor' anywhere it liked.

@@ -1639,7 +1639,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   child: ClipOval(
                     child: Image.asset(
-                      UserRoles.avatarAsset(activeStaff.role),
+                      activeStaff.avatarAsset ?? UserRoles.avatarAsset(activeStaff.role),
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,

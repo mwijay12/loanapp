@@ -1038,7 +1038,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
                   child: Image.asset(
-                    UserRoles.avatarAsset(s.role),
+                    s.avatarAsset ?? UserRoles.avatarAsset(s.role),
                     width: 44,
                     height: 44,
                     fit: BoxFit.cover,

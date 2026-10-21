@@ -136,7 +136,8 @@ class _SessionGuardState extends ConsumerState<SessionGuard> {
     if (!mounted) return;
     final nav = Navigator.of(context);
     if (nav.canPop()) nav.pop();
-    ref.read(userRoleProvider.notifier).clearSession();
+    ref.read(signedInNameProvider.notifier).state = null;
+        ref.read(userRoleProvider.notifier).clearSession();
     context.go('/login');
   }
 

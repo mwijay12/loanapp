@@ -332,6 +332,9 @@ class StaffMember {
   final bool canViewMargins;
   final bool canEditStock;
   final bool canApproveOverrides;
+  /// Portrait chosen for this person, from `staff.avatar_asset`. Null falls back
+  /// to the role portrait, then to initials.
+  final String? avatarAsset;
   final String lastActive;
   final List<Color> grad;
 
@@ -350,6 +353,7 @@ class StaffMember {
     this.canViewMargins = true,
     this.canEditStock = true,
     this.canApproveOverrides = false,
+    this.avatarAsset,
     this.lastActive = 'Active now',
     required this.grad,
   });

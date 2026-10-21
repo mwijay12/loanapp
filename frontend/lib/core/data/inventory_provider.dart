@@ -40,11 +40,25 @@ final userRoleProvider = StateNotifierProvider<UserRoleNotifier, String>((ref) {
 /// role was established. There is no fallback now: an unmatched session gets a
 /// locked-out placeholder with every capability denied, and its role is the
 /// real session role (or `Pending`, never an elevated one).
+/// Name of the person who signed in, set at login.
+///
+/// Without it the header picked the first staff row with the matching role, so a
+/// male storekeeper was shown the female store manager's name and portrait. A role
+/// is a permission level, not an identity.
+final signedInNameProvider = StateProvider<String?>((ref) => null);
+
 final activeStaffMemberProvider = Provider<StaffMember>((ref) {
   final currentRole = ref.watch(userRoleProvider);
   final allStaff = ref.watch(staffProvider);
-
+  final signedInName = ref.watch(signedInNameProvider);
   final normalizedRole = UserRoles.normalize(currentRole);
+
+  if (signedInName != null && signedInName.trim().isNotEmpty) {
+    final wanted = signedInName.trim().toLowerCase();
+    for (final member in allStaff) {
+      if (member.name.trim().toLowerCase() == wanted) return member;
+    }
+  }
 
   if (normalizedRole != null) {
     for (final member in allStaff) {
