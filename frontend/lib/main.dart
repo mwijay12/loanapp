@@ -7,7 +7,7 @@ import 'core/routing/app_router.dart';
 import 'core/services/onboarding_prefs.dart';
 import 'core/services/app_permissions_service.dart';
 import 'core/widgets/responsive.dart';
-import 'features/account/presentation/account_screen.dart';
+import 'core/l10n/locale_provider.dart';
 
 import 'core/services/api_service.dart';
 
@@ -48,9 +48,13 @@ void main() async {
   // Read once, before the router exists: a first run opens the introduction, a
   // later run opens sign-in.
   final seenOnboarding = await OnboardingPrefs.hasSeen();
+  final savedLocale = await LocaleStore.load();
   runApp(
     ProviderScope(
-      overrides: [seenOnboardingProvider.overrideWithValue(seenOnboarding)],
+      overrides: [
+        seenOnboardingProvider.overrideWithValue(seenOnboarding),
+        localeProvider.overrideWith((ref) => savedLocale),
+      ],
       child: const LoanInventoryApp(),
     ),
   );

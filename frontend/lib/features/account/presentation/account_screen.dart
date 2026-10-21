@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_localizations.dart';
-
-final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -192,6 +191,7 @@ class AccountScreen extends ConsumerWidget {
                   onChanged: (Locale? newLocale) {
                     if (newLocale != null) {
                       ref.read(localeProvider.notifier).state = newLocale;
+                      LocaleStore.save(newLocale);
                     }
                   },
                 ),

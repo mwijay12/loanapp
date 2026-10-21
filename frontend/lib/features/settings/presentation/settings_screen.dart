@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
-import '../../account/presentation/account_screen.dart';
+import '../../../core/l10n/locale_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -247,6 +247,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: InkWell(
                       onTap: () {
                         ref.read(localeProvider.notifier).state = const Locale('en');
+                        LocaleStore.save(const Locale('en'));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             behavior: SnackBarBehavior.floating,
@@ -281,6 +282,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: InkWell(
                       onTap: () {
                         ref.read(localeProvider.notifier).state = const Locale('sw');
+                        LocaleStore.save(const Locale('sw'));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             behavior: SnackBarBehavior.floating,

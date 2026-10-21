@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/branch_provider.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/widgets/live_greeting.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/product_art.dart';
@@ -724,9 +726,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Expanded(
                     child: _buildMetricCard(
                       icon: Icons.phone_android_rounded,
-                      label: isStorekeeper ? 'Warehouse Units' : 'Total Stock',
+                      label: isStorekeeper ? 'Warehouse Units' : tr(ref.watch(localeProvider), 'home.totalStock'),
                       value: '$totalStock',
-                      unit: 'phones',
+                      unit: tr(ref.watch(localeProvider), 'home.phones'),
                       trend: '$todayTx sold today',
                       trendColor: const Color(0xFF10B981),
                       iconBg: const Color(0xFFEFF5FE),
@@ -740,9 +742,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: _buildMetricCard(
                       icon: Icons.people_outline_rounded,
                       label:
-                          isLoanOfficer ? 'Credit Portfolio' : 'Active Loans',
+                          isLoanOfficer ? 'Credit Portfolio' : tr(ref.watch(localeProvider), 'home.activeLoans'),
                       value: '$activeLoans',
-                      unit: 'accounts',
+                      unit: tr(ref.watch(localeProvider), 'home.accounts'),
                       trend: '$_onTimeRate% on-time',
                       trendColor: const Color(0xFF6366F1),
                       iconBg: const Color(0xFFF3E8FF),
@@ -932,7 +934,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         icon: Icons.badge_outlined,
                                         iconBg: const Color(0xFFF3E8FF),
                                         iconColor: const Color(0xFF7C3AED),
-                                        title: 'Issue Loan',
+                                        title: tr(ref.watch(localeProvider), 'home.issueLoan'),
                                         subtitle: 'KYC & Collateral',
                                         onTap: () => context
                                             .push('/sell-loan?type=LOAN'),
@@ -1848,7 +1850,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // shop no longer has.
     final phones = ref
         .watch(inventoryProvider)
-        .where((p) => p.cat == 'phones' && p.stock > 0 && p.status != 'out')
+        .where((p) => p.cat == tr(ref.watch(localeProvider), 'home.phones') && p.stock > 0 && p.status != 'out')
         .toList()
       ..sort((a, b) => b.stock.compareTo(a.stock));
 
@@ -1889,7 +1891,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           tag2: p.imei1 != null ? 'IMEI registered' : p.variant,
           cashPrice: LimsFormatters.currencyCompact(p.price),
           monthlyDue: '${LimsFormatters.currencyCompact(monthly)}/mo',
-          actionLabel: 'Issue Loan',
+          actionLabel: tr(ref.watch(localeProvider), 'home.issueLoan'),
           onTap: () => context.push('/sell-loan?type=LOAN'),
         ),
       );
@@ -1901,7 +1903,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Expanded(
+            Expanded(
               child: Row(
                 children: [
                   Icon(Icons.local_fire_department_rounded,
@@ -1909,7 +1911,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Featured Phone Deals & Loan Offers',
+                      tr(ref.watch(localeProvider), 'home.featured'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -3645,12 +3647,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           color: Color(0xFF7C5CFC), size: 20),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Admin Executive Hub',
+                            tr(ref.watch(localeProvider), 'home.adminHub'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3660,7 +3662,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                           Text(
-                            'HQ Multi-Branch Oversight & Audits',
+                            tr(ref.watch(localeProvider), 'home.hqSubtitle'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3685,10 +3687,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: const Color(0xFF7C5CFC),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Text(
-                        'Full Console',
+                        tr(ref.watch(localeProvider), 'home.fullConsole'),
                         style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
@@ -3708,7 +3710,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Expanded(
                 child: _buildAdminMiniKpi(
-                  title: 'Stock Value',
+                  title: tr(ref.watch(localeProvider), 'home.stockValue'),
                   val: LimsFormatters.currencyCompact(stockValue),
                   color: const Color(0xFF12B76A),
                   sub: '${products.length} models',
@@ -3717,7 +3719,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildAdminMiniKpi(
-                  title: 'Sales Today',
+                  title: tr(ref.watch(localeProvider), 'home.salesToday'),
                   val: LimsFormatters.currencyCompact(salesToday),
                   color: AppTheme.brand600,
                   sub: '$branchCount branches',

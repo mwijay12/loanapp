@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/api_service.dart';
@@ -129,8 +131,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                const Text(
-                  'Welcome back',
+                Text(
+                  tr(ref.watch(localeProvider), 'login.welcome'),
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -139,8 +141,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Sign in to continue to your branch workspace.',
+                Text(
+                  tr(ref.watch(localeProvider), 'login.subtitle'),
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
@@ -167,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Tap a demo account to fill the form · password ${AppConstants.demoPassword}',
+                          '${tr(ref.watch(localeProvider), 'login.demoHint')} · ${AppConstants.demoPassword}',
                           maxLines: 2,
                           style: const TextStyle(
                             fontSize: 11.5,
@@ -231,7 +233,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _buildInputField(
                   controller: _phoneCtrl,
                   icon: Icons.alternate_email_rounded,
-                  hint: 'Work email',
+                  hint: tr(ref.watch(localeProvider), 'login.email'),
                 ),
                 const SizedBox(height: 12),
 
@@ -239,7 +241,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _buildInputField(
                   controller: _passCtrl,
                   icon: Icons.lock_outline_rounded,
-                  hint: 'Password',
+                  hint: tr(ref.watch(localeProvider), 'login.password'),
                   obscure: true,
                 ),
                 const SizedBox(height: 14),
@@ -256,8 +258,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           activeColor: AppTheme.brand600,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         ),
-                        const Text(
-                          'Remember me',
+                        Text(
+                          tr(ref.watch(localeProvider), 'login.remember'),
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
@@ -271,8 +273,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         context,
                         'Contact your administrator to reset your password.',
                       ),
-                      child: const Text(
-                        'Forgot password?',
+                      child: Text(
+                        tr(ref.watch(localeProvider), 'login.forgot'),
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,

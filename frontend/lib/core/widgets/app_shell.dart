@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
+import '../l10n/locale_provider.dart';
+import '../l10n/strings.dart';
 import '../services/live_data.dart';
 import 'session_guard.dart';
 
@@ -637,13 +639,13 @@ class _AppShellState extends ConsumerState<AppShell> {
             children: [
               _buildNavItem(
                 icon: Icons.grid_view_rounded,
-                tooltip: 'Nyumbani (Home)',
+                tooltip: tr(ref.watch(localeProvider), 'nav.home'),
                 isSelected: currentIndex == 0,
                 onTap: () => context.go('/home'),
               ),
               _buildNavItem(
                 icon: Icons.inventory_2_rounded,
-                tooltip: 'Stoo ya Simu (Inventory)',
+                tooltip: tr(ref.watch(localeProvider), 'nav.inventory'),
                 isSelected: currentIndex == 1,
                 onTap: () => context.go('/stock'),
               ),
@@ -682,13 +684,13 @@ class _AppShellState extends ConsumerState<AppShell> {
 
               _buildNavItem(
                 icon: Icons.account_balance_wallet_rounded,
-                tooltip: 'Mikopo & Marejesho (Loans)',
+                tooltip: tr(ref.watch(localeProvider), 'nav.loans'),
                 isSelected: currentIndex == 3,
                 onTap: () => context.go('/loans'),
               ),
               _buildNavItem(
                 icon: Icons.tune_rounded,
-                tooltip: 'Uendeshaji & Mipangilio (Operations)',
+                tooltip: tr(ref.watch(localeProvider), 'nav.operations'),
                 isSelected: false,
                 onTap: () => _openMoreSheet(context, ref),
               ),
