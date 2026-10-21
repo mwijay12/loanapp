@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/mercury_ai_service.dart';
+import '../../../core/services/store_facts.dart';
+import '../../../core/l10n/locale_provider.dart';
 
 class AIScreen extends ConsumerStatefulWidget {
   const AIScreen({super.key});
@@ -16,20 +18,29 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
 
-  final List<String> _suggestedChips = [
-    'Which phones are low on stock?',
-    "Today's sales summary",
-    'Overdue loans',
-    'Total stock',
-  ];
+  /// Chips are answered by the same code as typed questions, so every one of them
+  /// returns real rows.
+  List<String> _chips(bool swahili) => swahili
+      ? const ['Mauzo ya leo', 'Modeli zinazoisha', 'Mikopo iliyochelewa', 'Stoo yote']
+      : const ["Today's sales summary", 'Which phones are low?', 'Overdue loans', 'Total stock'];
 
   @override
   void initState() {
     super.initState();
-    _messages.add(_Message(
-      text: "Hello Neema! I'm your ops assistant powered by Mercury 2.5. I can check stock, summarize sales, flag overdue loans and more.",
-      isUser: false,
-    ));
+    // The greeting used to name a model and promise live answers even with no key
+    // configured. It now states what it reads: this shop's own rows.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final swahili = ref.read(localeProvider).languageCode == 'sw';
+      setState(() {
+        _messages.add(_Message(
+          text: swahili
+              ? 'Habari. Naweza kukujibu kutoka data ya duka lako: mauzo ya leo, stoo, modeli zinazoisha, mikopo na mikopo iliyochelewa.'
+              : "Hello. I answer from your shop's own data: today's sales, stock, models running low, loans and overdue loans.",
+          isUser: false,
+        ));
+      });
+    });
   }
 
   void _sendMessage(String text) async {
@@ -55,9 +66,27 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
     try {
       final aiService = ref.read(mercuryAiServiceProvider);
+      final facts = StoreFacts.fromProviders(ref);
+      final swahili = ref.read(localeProvider).languageCode == 'sw';
       final response = await aiService.queryAi(
         userPrompt: query,
         chatHistory: history,
+        facts: facts,
+        swahili: swahili,
+        branchContext: {
+          'branch': facts.branch,
+          'salesCount': facts.salesCount,
+          'salesTotal': facts.salesTotal,
+          'cashTotal': facts.cashTotal,
+          'creditTotal': facts.creditTotal,
+          'stockUnits': facts.stockUnits,
+          'modelCount': facts.modelCount,
+          'loansActive': facts.loansActive,
+          'loansOverdue': facts.loansOverdue,
+          'overdueOutstanding': facts.overdueOutstanding,
+          'collectedToday': facts.collectedToday,
+          'scope': facts.scope,
+        },
       );
 
       if (mounted) {
@@ -71,8 +100,10 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          final facts = StoreFacts.fromProviders(ref);
+          final swahili = ref.read(localeProvider).languageCode == 'sw';
           _messages.add(_Message(
-            text: 'Mbezi Branch has 248 phones in stock (12 models). Today sales are TZS 4.85M with 86 active loans.',
+            text: answerFromFacts(query, facts, swahili: swahili).text,
             isUser: false,
           ));
         });
@@ -102,6 +133,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final swahili = ref.watch(localeProvider).languageCode == 'sw';
     return Scaffold(
       backgroundColor: AppTheme.canvas,
       appBar: AppBar(
@@ -140,7 +172,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                   ),
                 ),
                 Text(
-                  'Online · replies instantly',
+                  'Reads your shop data',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -201,10 +233,10 @@ class _AIScreenState extends ConsumerState<AIScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _suggestedChips.length,
+                itemCount: _chips(swahili).length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final text = _suggestedChips[index];
+                  final text = _chips(swahili)[index];
                   return InkWell(
                     onTap: () => _sendMessage(text),
                     borderRadius: BorderRadius.circular(99),

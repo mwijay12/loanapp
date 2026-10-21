@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import 'store_facts.dart';
+
 /// Mercury 2.5 AI Assistant service using Inception Labs API.
 /// Ultra-fast response with high quality retail loan and inventory reasoning.
 class MercuryAiService {
@@ -30,28 +32,66 @@ class MercuryAiService {
     required String userPrompt,
     required List<Map<String, String>> chatHistory,
     Map<String, dynamic>? branchContext,
+    StoreFacts? facts,
+    bool swahili = false,
   }) async {
     if (_apiKeys.isEmpty) {
-      // No API key configured at build time - use offline fallback.
-      return _localFallbackResponse(userPrompt);
+      return _localFallbackResponse(userPrompt, facts, swahili: swahili);
     }
-    final systemPrompt = '''
-Wewe ni LIMS AI Copilot (Loan & Inventory Management System) kwa ajili ya maduka ya simu Tanzania.
-Mazingira ya tawi la leo:
-- Meneja: David
-- Tawi: ${branchContext?['branch'] ?? 'Kariakoo Branch, Dar es Salaam'}
-- Simu Zilizopo Stoo (Stock): ${branchContext?['stock'] ?? '248 phones (Samsung Galaxy A15, Redmi Note 13, iPhone 15 Pro Max, Galaxy S24 Ultra)'}
-- Mauzo ya Leo: ${branchContext?['sales'] ?? 'TZS 4,850,000 (miamala 12 ya mauzo)'}
-- Mikopo Inayoendelea (Active Loans): ${branchContext?['loans'] ?? '86 akaunti za mikopo (3 zimechelewa)'}
-- Mahudhurio (Attendance): ${branchContext?['attendance'] ?? 'Wafanyakazi wote wapo kazini'}
+    // Context comes from the facts object, never from a literal. The old prompt
+    // filled missing values with "TZS 4,850,000" and "86 accounts", so even a
+    // correctly configured model was told fiction and repeated it confidently.
+    final storeFacts = branchContext == null
+        ? null
+        : StoreFacts(
+            branch: (branchContext['branch'] ?? '—').toString(),
+            salesCount: (branchContext['salesCount'] as num?)?.toInt() ?? 0,
+            salesTotal: (branchContext['salesTotal'] as num?)?.toInt() ?? 0,
+            cashTotal: (branchContext['cashTotal'] as num?)?.toInt() ?? 0,
+            creditTotal: (branchContext['creditTotal'] as num?)?.toInt() ?? 0,
+            stockUnits: (branchContext['stockUnits'] as num?)?.toInt() ?? 0,
+            modelCount: (branchContext['modelCount'] as num?)?.toInt() ?? 0,
+            lowStock: const [],
+            loansActive: (branchContext['loansActive'] as num?)?.toInt() ?? 0,
+            loansOverdue: (branchContext['loansOverdue'] as num?)?.toInt() ?? 0,
+            overdueOutstanding:
+                (branchContext['overdueOutstanding'] as num?)?.toInt() ?? 0,
+            collectedToday: (branchContext['collectedToday'] as num?)?.toInt() ?? 0,
+            scope: (branchContext['scope'] ?? 'demo').toString(),
+          );
 
-Maelekezo Muhimu:
-1. Jibu kwa heshima, ufasaha na uwe specific (Swahili au English kulingana na lugha ya mtumiaji).
-2. Toa majibu mafupi, yanayosomeka kirahisi (tumia vitone vya kawaida • au namba).
-3. KANUNI KUU YA MAANDISHI: USITUMIE kabisa alama za raw markdown kama vile **** au #### au ** kwenye maneno. Andika maneno moja kwa moja na kwa aya zilizojipanga safi ili yasomeke bila alama hizo kwenye simu.
-4. Kama anauliza kuhusu mkopo, hesabu amana (deposit 20-30%) na marejesho ya wiki/mwezi.
-5. Kama anauliza IMEI au stoo, toa mwongozo wa ukaguzi au mchakato wa transfer.
-''';
+    final prompt = storeFacts == null
+        ? 'No shop data is loaded.'
+        : [
+            'Branch: ${storeFacts.branch}',
+            'Today: ${storeFacts.salesCount} transactions, '
+                '${storeFacts.money(storeFacts.salesTotal)} total, '
+                '${storeFacts.money(storeFacts.cashTotal)} cash, '
+                '${storeFacts.money(storeFacts.creditTotal)} credit, '
+                '${storeFacts.money(storeFacts.collectedToday)} collected',
+            'Stock: ${storeFacts.stockUnits} units across '
+                '${storeFacts.modelCount} models',
+            'Loans: ${storeFacts.loansActive} active, '
+                '${storeFacts.loansOverdue} overdue, '
+                '${storeFacts.money(storeFacts.overdueOutstanding)} outstanding',
+            'Data source: ${storeFacts.scope}',
+          ].join('\n');
+
+    final systemPrompt = """
+You answer questions about one phone shop in Tanzania, from the figures below and
+nothing else.
+
+$prompt
+
+Rules:
+- Use only the figures above. If a number is not listed, say it is not available.
+  Never estimate, forecast, or fill a gap with an example.
+- No sales targets, growth rates, or staff attendance: this system does not record
+  them.
+- If the data source is demo, say once that these are demo figures.
+- Answer in the language of the question (English or Kiswahili).
+- Plain text with short bullets, no markdown symbols.
+""";
 
     final messages = <Map<String, dynamic>>[
       {'role': 'system', 'content': systemPrompt},
@@ -97,21 +137,25 @@ Maelekezo Muhimu:
     }
 
     // Fallback if offline or all keys timed out
-    return _localFallbackResponse(userPrompt);
+    return _localFallbackResponse(userPrompt, storeFacts, swahili: swahili);
   }
 
-  String _localFallbackResponse(String query) {
-    final q = query.toLowerCase();
-    if (q.contains('sales') || q.contains('mauzo') || q.contains('leo')) {
-      return '📊 Mauzo ya Leo (Kariakoo Branch):\n• Simu zilizouzwa: 18\n• Thamani: TZS 7,420,000\n• Njia: Pesa taslimu (60%), Mkopo (40%)\n• Lengo la siku: 85% limefikiwa.';
-    } else if (q.contains('stock') || q.contains('stoo') || q.contains('simu')) {
-      return '📦 Muhtasari wa Stoo (Kariakoo):\n• Zilizopo: 245\n• Samsung Galaxy A15: 84\n• Tecno Spark 20: 72\n• Infinix Hot 40: 89\n• Zilizotengwa kwa Transfer: 5';
-    } else if (q.contains('loan') || q.contains('mkopo')) {
-      return '💳 Hali ya Mikopo:\n• Mikopo hai: 47\n• Marejesho ya leo: TZS 1,850,000\n• Mikopo iliyochelewa: 3\n• Rate ya kurejesha: 94.2%';
-    } else if (q.contains('attendance') || q.contains('mahudhurio')) {
-      return '🕒 Mahudhurio:\n• Wafanyakazi: 8/9 wamesaini kwa Biometric\n• Muda wa wastani: 07:54 AM';
+  /// Offline answers, computed from the facts the caller passed in.
+  ///
+  /// This replaced a block of canned paragraphs that answered every build without
+  /// an API key — which was every build — with 18 phones, TZS 7,420,000 and an 85%
+  /// target that exist nowhere in the database.
+  String _localFallbackResponse(
+    String query,
+    StoreFacts? facts, {
+    bool swahili = false,
+  }) {
+    if (facts == null) {
+      return swahili
+          ? 'Data ya duka haijapakiwa bado. Fungua upya ukurasa wa mwanzo kisha uulize tena.'
+          : 'Shop data has not loaded yet. Reopen the home screen, then ask again.';
     }
-    return 'LIMS AI Copilot ipo tayari. Unaweza kuuliza kuhusu:\n1. Mauzo na makusanyo ya leo\n2. Hesabu ya stoo na IMEI\n3. Utoaji na marejesho ya mikopo\n4. Hali ya uhamisho wa simu baina ya matawi.';
+    return answerFromFacts(query, facts, swahili: swahili).text;
   }
 }
 
