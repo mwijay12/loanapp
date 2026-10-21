@@ -9,16 +9,43 @@ import 'core/services/app_permissions_service.dart';
 import 'core/widgets/responsive.dart';
 import 'features/account/presentation/account_screen.dart';
 
-import 'core/constants/app_constants.dart';
 import 'core/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Demo builds run entirely on bundled mock data: no Supabase, no secrets,
-  // and therefore nothing to leak if the link is shared publicly.
-  if (AppConstants.demoMode) {
-    // Read once, before the router exists: a first run opens the introduction, a
+  // A build with a project behind it always initialises Supabase — the demo flag
+  // included. The demo accounts are real auth users and every row lives in the
+  // database, so skipping this block left auth.uid() null and every policy denied
+  // the reads: a full shop that rendered empty.
+  //
+  // With no project configured the app stays offline: sign-in falls back to the
+  // bundled demo accounts and the screens show what they can.
+  if (SupabaseConfig.isConfigured) {
+    try {
+      await ApiService().init();
+    } catch (e) {
+      runApp(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Configuration problem:\n$e',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+  }
+
+  // Read once, before the router exists: a first run opens the introduction, a
   // later run opens sign-in.
   final seenOnboarding = await OnboardingPrefs.hasSeen();
   runApp(
@@ -27,34 +54,6 @@ void main() async {
       child: const LoanInventoryApp(),
     ),
   );
-    return;
-  }
-
-  // P0: init() throws when --dart-define config is missing. Fail loud with a
-  // readable screen instead of running misconfigured or red-screening.
-  try {
-    await ApiService().init();
-  } catch (e) {
-    runApp(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'Configuration missing:\n$e',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    return;
-  }
-
-  runApp(const ProviderScope(child: LoanInventoryApp()));
 }
 
 class LoanInventoryApp extends ConsumerStatefulWidget {
