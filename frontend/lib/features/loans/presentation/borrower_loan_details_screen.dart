@@ -7,6 +7,8 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/telecom_service.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
@@ -26,6 +28,7 @@ class BorrowerLoanDetailsScreen extends ConsumerStatefulWidget {
 
 class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsScreen>
     with SingleTickerProviderStateMixin {
+  Locale get _locale => ref.read(localeProvider);
   late TabController _tabController;
   bool _unmaskNida = false;
 
@@ -71,8 +74,8 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Chagua Njia ya Malipo',
+              Text(
+                tr(_locale, 'borrower.chooseChannel'),
                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink700),
               ),
               const SizedBox(height: 8),
@@ -125,7 +128,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               TextFormField(
                 controller: refCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Kumbukumbu ya Malipo / Ref No.',
+                  labelText: tr(_locale, 'borrower.refNo'),
                   border: const OutlineInputBorder(),
                   helperText: selectedChannel.contains('Cash') ? 'Namba ya risiti ya droo' : 'Kodi ya muamala wa simu',
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -171,7 +174,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                     LimsToast.show(context, 'Rejesho la TZS ${LimsFormatters.formatNumber(rawAmount)} limefanikiwa kurekodiwa!', isSuccess: true);
                   },
                   icon: const Icon(Icons.check_circle_rounded, size: 20),
-                  label: const Text('Thibitisha na Weka Risiti', style: TextStyle(fontWeight: FontWeight.w800)),
+                  label: Text(tr(_locale, 'borrower.confirmReceipt'), style: TextStyle(fontWeight: FontWeight.w800)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.successColor,
                     foregroundColor: Colors.white,
@@ -254,8 +257,8 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               child: const Icon(Icons.receipt_long_rounded, color: AppTheme.successColor, size: 28),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Stakabadhi ya Malipo',
+            Text(
+              tr(_locale, 'borrower.paymentVoucher'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
             ),
             Text(
@@ -272,10 +275,10 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               ),
               child: Column(
                 children: [
-                  _receiptRow('Mteja', loan.name),
+                  _receiptRow(tr(_locale, 'borrower.customer'), loan.name),
                   _receiptRow('Kifaa', loan.item),
                   _receiptRow('Kiasi Kilicholipwa', record.formattedAmount, isBold: true),
-                  _receiptRow('Njia ya Malipo', record.channel),
+                  _receiptRow(tr(_locale, 'borrower.channel'), record.channel),
                   _receiptRow('Ref Code', record.refNumber),
                   _receiptRow('Tarehe', record.date),
                 ],
@@ -391,10 +394,11 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 );
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'receipt', child: Text('Risiti (PDF)')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'receipt', child: Text(tr(_locale, 'borrower.receiptPdf'))),
               PopupMenuItem(
-                  value: 'statement', child: Text('Taarifa ya mkopo (PDF)')),
+                  value: 'statement',
+                  child: Text(tr(_locale, 'borrower.statementPdf'))),
             ],
           ),
           Container(
@@ -452,10 +456,10 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           indicatorColor: AppTheme.brand600,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-          tabs: const [
-            Tab(text: 'Muhtasari & Ulinzi'),
-            Tab(text: 'KYC & Mdhamini'),
-            Tab(text: 'Historia ya Malipo'),
+          tabs: [
+            Tab(text: tr(_locale, 'borrower.tabSummary')),
+            Tab(text: tr(_locale, 'borrower.tabKyc')),
+            Tab(text: tr(_locale, 'borrower.tabHistory')),
           ],
         ),
       ),
@@ -1280,7 +1284,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           const SizedBox(height: 14),
           _infoRow('Model ya Simu', loan.item),
           _infoRowWithCopy('IMEI 1 (Hardware ID)', loan.imei),
-          _infoRow('Ulinzi wa Dhamana', 'Mkataba wa Hire-Purchase & Mdhamini'),
+          _infoRow(tr(_locale, 'borrower.collateral'), tr(_locale, 'borrower.collateralValue')),
           _infoRow('Hali ya Akaunti', loan.status == 'overdue' ? 'Inadaiwa (Overdue)' : 'Inalipika Vizuri (Current)', valueColor: loan.status == 'overdue' ? AppTheme.errorColor : AppTheme.successColor),
         ],
       ),
@@ -1368,7 +1372,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
                 Text(
-                  'Jumla: ${loan.formattedTotalPaidAmount} kati ya ${loan.formattedAmount}',
+                  trf(_locale, 'borrower.totalPaid', {'paid': loan.formattedTotalPaidAmount, 'total': loan.formattedAmount}),
                   style: const TextStyle(fontSize: 12, color: AppTheme.ink500),
                 ),
               ],
@@ -1466,7 +1470,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Risiti', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text(tr(_locale, 'borrower.receipt'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ],
           ),

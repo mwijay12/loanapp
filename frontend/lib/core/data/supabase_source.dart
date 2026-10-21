@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+
+import '../constants/app_constants.dart';
 import 'package:flutter/material.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -103,6 +105,7 @@ class SupabaseSource {
       api.getLoans(),
       api.getBranches(),
       api.getActivities(),
+      api.getStaff(),
     ]);
 
     return SupabaseSnapshot(
@@ -110,6 +113,7 @@ class SupabaseSource {
       loans: _loans(results[1]),
       branches: _branches(results[2]),
       activities: _activities(results[3]),
+      staff: _staff(results[4]),
       error: ApiService.lastBackendError,
     );
   }
@@ -227,6 +231,32 @@ class SupabaseSource {
     }).toList();
   }
 
+  /// Rows from `staff`, with the person's own portrait when the column is set.
+  List<StaffMember> _staff(List<Map<String, dynamic>> rows) {
+    return rows.map((r) {
+      final role = UserRoles.normalize(r['role']?.toString());
+      return StaffMember(
+        id: (r['id'] ?? '').toString(),
+        name: (r['name'] ?? '').toString(),
+        role: role ?? UserRoles.pending,
+        email: (r['email'] ?? '').toString(),
+        phone: (r['phone'] ?? '').toString(),
+        branch: (r['branch'] ?? r['branch_name'] ?? '').toString(),
+        staffCode: (r['staff_code'] ?? r['code'] ?? '—').toString(),
+        supervisorPin: (r['supervisor_pin'] ?? '').toString(),
+        status: (r['status'] ?? 'Active').toString(),
+        canDisburseLoans: r['can_disburse_loans'] == true,
+        canKnoxLock: r['can_knox_lock'] == true,
+        canViewMargins: r['can_view_margins'] == true,
+        canEditStock: r['can_edit_stock'] == true,
+        canApproveOverrides: r['can_approve_overrides'] == true,
+        avatarAsset: r['avatar_asset']?.toString(),
+        lastActive: (r['last_active'] ?? '—').toString(),
+        grad: _gradient(r['gradient_start'], r['gradient_end']),
+      );
+    }).toList();
+  }
+
   List<BranchRecord> _branches(List<Map<String, dynamic>> rows) {
     return rows.map((r) {
       final sales = parseMoney(r['sales']);
@@ -293,6 +323,7 @@ class SupabaseSnapshot {
     required this.loans,
     required this.branches,
     required this.activities,
+    this.staff = const [],
     this.error,
   });
 
@@ -300,6 +331,7 @@ class SupabaseSnapshot {
   final List<LoanItem> loans;
   final List<BranchRecord> branches;
   final List<ActivityItem> activities;
+  final List<StaffMember> staff;
   final String? error;
 
   bool get isEmpty =>

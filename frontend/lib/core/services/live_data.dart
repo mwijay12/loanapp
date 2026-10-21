@@ -95,6 +95,7 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader> {
       ref.read(loansProvider.notifier).replaceAll(snapshot.loans);
       ref.read(branchesProvider.notifier).replaceAll(snapshot.branches);
       ref.read(activitiesProvider.notifier).replaceAll(snapshot.activities);
+      ref.read(staffProvider.notifier).replaceAll(snapshot.staff);
     ref.read(salesProvider.notifier).replaceAll(await SupabaseSource.fetchSales());
 
       ref.read(dataSourceProvider.notifier).state = DataSourceState(
@@ -105,6 +106,7 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader> {
           'loans': snapshot.loans.length,
           'branches': snapshot.branches.length,
           'activities': snapshot.activities.length,
+          'staff': snapshot.staff.length,
         },
       );
     } catch (e) {

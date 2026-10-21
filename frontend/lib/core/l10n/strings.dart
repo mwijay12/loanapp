@@ -534,6 +534,57 @@ const Map<String, Map<String, String>> _dictionary = {
   'scan.scanAgain': {'en': 'Scan another', 'sw': 'Skani nyingine'},
   'scan.copied': {'en': 'IMEI copied', 'sw': 'IMEI imenakiliwa'},
 
+  // ------------------------------------------------------------- borrower screen
+  'borrower.chooseChannel': {'en': 'Choose payment channel', 'sw': 'Chagua Njia ya Malipo'},
+  'borrower.refNo': {'en': 'Payment reference / Ref No.', 'sw': 'Kumbukumbu ya Malipo / Ref No.'},
+  'borrower.confirmReceipt': {'en': 'Confirm and issue receipt', 'sw': 'Thibitisha na Weka Risiti'},
+  'borrower.paymentVoucher': {'en': 'Payment voucher', 'sw': 'Stakabadhi ya Malipo'},
+  'borrower.customer': {'en': 'Customer', 'sw': 'Mteja'},
+  'borrower.channel': {'en': 'Payment channel', 'sw': 'Njia ya Malipo'},
+  'borrower.receiptPdf': {'en': 'Receipt (PDF)', 'sw': 'Risiti (PDF)'},
+  'borrower.tabKyc': {'en': 'KYC & guarantor', 'sw': 'KYC & Mdhamini'},
+  'borrower.tabHistory': {'en': 'Payment history', 'sw': 'Historia ya Malipo'},
+  'borrower.collateral': {'en': 'Security held', 'sw': 'Ulinzi wa Dhamana'},
+  'borrower.collateralValue': {
+    'en': 'Hire-purchase contract and guarantor',
+    'sw': 'Mkataba wa Hire-Purchase & Mdhamini',
+  },
+  'borrower.totalPaid': {'en': 'Total: {paid} of {total}', 'sw': 'Jumla: {paid} kati ya {total}'},
+  'borrower.receipt': {'en': 'Receipt', 'sw': 'Risiti'},
+  'borrower.statementPdf': {'en': 'Loan statement (PDF)', 'sw': 'Taarifa ya mkopo (PDF)'},
+  'borrower.tabSummary': {'en': 'Summary & security', 'sw': 'Muhtasari & Ulinzi'},
+
+  // ------------------------------------------------------------------ inspector
+  'insp.inStock': {'en': 'In stock (clean)', 'sw': 'Ipo Stoo (Clean)'},
+  'insp.overdue': {'en': 'Installment overdue', 'sw': 'Rejesho Limechelewa'},
+  'insp.onLoan': {'en': 'Loan running', 'sw': 'Mkopo Unaendelea'},
+  'insp.overdueLine': {
+    'en': 'Instalment overdue · Follow up borrower and guarantor',
+    'sw': 'Rejesho Limechelewa · Fuatilia Mkopaji na Mdhamini',
+  },
+  'insp.currentLine': {
+    'en': 'Loan running well · Legal record',
+    'sw': 'Mkopo Unaendelea Vizuri · Rekodi ya Kisheria',
+  },
+  'insp.overdueBody': {
+    'en': 'Payment is late. Call the borrower ({n}) or the guarantor who signed the contract.',
+    'sw': 'Deni limechelewa. Wasiliana na mkopaji ({n}) au piga simu kwa mdhamini aliyesaini mkataba.',
+  },
+  'insp.currentBody': {
+    'en': 'Handed over under a valid hire-purchase contract. Next instalment: {d}.',
+    'sw': 'Kifaa kimekabidhiwa kwa mkataba halali wa hire-purchase. Rejesho lijalo: {d}.',
+  },
+  'insp.notFinanced': {'en': 'Not financed (in stock)', 'sw': 'Haijakopeshwa (Ipo Stoo)'},
+  'insp.imeiHint': {'en': 'Enter the 15-digit IMEI', 'sw': 'Weka namba ya IMEI (tarakimu 15)'},
+  'insp.branch': {'en': 'Registered branch', 'sw': 'Tawi la Usajili'},
+  'insp.loanSection': {'en': 'Customer / loan details', 'sw': 'Mteja / Taarifa za Mkopo'},
+
+  // ------------------------------------------------------------------- stock sheet
+  'stock.sellCash': {'en': 'Sell for cash', 'sw': 'Uza Cash'},
+  'stock.issueLoan': {'en': 'Issue loan', 'sw': 'Toa Mkopo'},
+  'stock.inventoryHistory': {'en': 'Inventory history', 'sw': 'Historia ya stoo'},
+  'stock.editPhoto': {'en': 'Edit photo', 'sw': 'Hariri Picha'},
+
   // -------------------------------------------------------------- notifications
   'notif.title': {'en': 'Notifications', 'sw': 'Taarifa'},
   'notif.unread': {'en': '{n} unread', 'sw': '{n} hazijasomwa'},

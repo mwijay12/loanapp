@@ -363,6 +363,22 @@ class ApiService {
   }
 
   // ------------------------------------------------------------- Branches
+  /// The staff directory, including each person's own portrait.
+  ///
+  /// Nothing read this table before, so `staffProvider` stayed empty in a live
+  /// build and the header fell back to a role illustration — a male storekeeper
+  /// could be shown the female placeholder for his role. The person's own
+  /// `avatar_asset` is the only thing that can get this right.
+  Future<List<Map<String, dynamic>>> getStaff() async {
+    try {
+      final response = await client.from('staff').select().order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      _report('backend call', e);
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getBranches() async {
     try {
       final response = await client.from('branches').select().order('name');

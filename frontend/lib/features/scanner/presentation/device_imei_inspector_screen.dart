@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
+import '../../../core/data/product_art.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
@@ -18,12 +21,14 @@ class DeviceImeiInspectorScreen extends ConsumerStatefulWidget {
 }
 
 class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorScreen> {
+  Locale get _locale => ref.read(localeProvider);
   final TextEditingController _imeiController = TextEditingController();
   bool _isSearching = false;
   bool _hasSearched = false;
 
   // Inspected device data
   String _model = 'iPhone 15 Pro Max';
+  String? _matchedArt;
   String _variant = '256GB · Natural Titanium';
   String _imei = '354928104829104';
   final String _serialNumber = 'F2LW9012MD67';
@@ -113,6 +118,12 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
       _isSearching = false;
       if (matchedProduct != null) {
         _model = matchedProduct.name;
+        _matchedArt = ProductArt.resolve(
+          explicit: matchedProduct.imageAsset,
+          brand: matchedProduct.brand,
+          name: matchedProduct.name,
+          category: matchedProduct.cat,
+        );
         _variant = matchedProduct.variant;
         _imei = matchedProduct.imei1 ?? cleanQuery;
         _status = 'IN_STOCK';
@@ -121,7 +132,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         _borrowerNida = '-';
         _totalLoanAmount = matchedProduct.loanPrice ?? (matchedProduct.price * 1.2).round();
         _remainingBalance = 0;
-        _nextDueDate = 'Haijakopeshwa (Ipo Stoo)';
+        _nextDueDate = tr(_locale, 'insp.notFinanced');
         _warrantyDaysLeft = 365;
         _loanId = null;
       } else {
@@ -177,6 +188,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(localeProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
@@ -232,8 +244,8 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                       controller: _imeiController,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                      decoration: const InputDecoration(
-                        hintText: 'Weka namba ya IMEI (tarakimu 15)...',
+                      decoration: InputDecoration(
+                        hintText: tr(_locale, 'insp.imeiHint'),
                         hintStyle: TextStyle(fontSize: 13, color: AppTheme.ink400, fontWeight: FontWeight.normal),
                         border: InputBorder.none,
                         isDense: true,
@@ -367,12 +379,19 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: Center(
-                  child: Icon(
-                    _model.toLowerCase().contains('iphone') ? Icons.apple_rounded : Icons.phone_android_rounded,
-                    color: AppTheme.brand600,
-                    size: 32,
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _matchedArt == null
+                      ? const Icon(Icons.phone_android_rounded,
+                          color: AppTheme.brand600, size: 32)
+                      : Image.asset(
+                          _matchedArt!,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.phone_android_rounded,
+                              color: AppTheme.brand600,
+                              size: 32),
+                        ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -435,7 +454,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildParamItem('Serial No.', _serialNumber),
-              _buildParamItem('Tawi la Usajili', _branch),
+              _buildParamItem(tr(_locale, 'insp.branch'), _branch),
               _buildParamItem('Thamani ya Mkopo', 'TZS ${LimsFormatters.formatNumber(_totalLoanAmount)}'),
             ],
           ),
@@ -453,17 +472,17 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
       case 'IN_STOCK':
         bg = const Color(0xFFE7F8F0);
         text = const Color(0xFF12B76A);
-        label = 'Ipo Stoo (Clean)';
+        label = tr(_locale, 'insp.inStock');
         break;
       case 'OVERDUE':
         bg = const Color(0xFFFFEDF1);
         text = AppTheme.errorColor;
-        label = 'Rejesho Limechelewa (Overdue)';
+        label = tr(_locale, 'insp.overdue');
         break;
       default:
         bg = const Color(0xFFE9F2FE);
         text = AppTheme.brand600;
-        label = 'Mkopo Unaendelea';
+        label = tr(_locale, 'insp.onLoan');
     }
 
     return Container(
@@ -547,7 +566,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                             style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                           ),
                           Text(
-                            isOverdue ? 'Rejesho Limechelewa · Fuatilia Mkopaji & Mdhamini' : 'Mkopo Unaendelea Vizuri · Rekodi ya Kisheria',
+                            isOverdue ? tr(_locale, 'insp.overdueLine') : tr(_locale, 'insp.currentLine'),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 11.5, color: isOverdue ? AppTheme.errorColor : AppTheme.ink500, fontWeight: FontWeight.w600),
@@ -595,8 +614,8 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 Expanded(
                   child: Text(
                     isOverdue
-                        ? 'Deni limechelewa. Wasiliana na mkopaji ($_borrowerName) au piga simu kwa mdhamini aliyesaini mkataba.'
-                        : 'Kifaa kimekabidhiwa kwa mkataba wa mkopo halali wa hire-purchase. Rejesho lijalo: $_nextDueDate.',
+                        ? trf(_locale, 'insp.overdueBody', {'n': _borrowerName})
+                        : trf(_locale, 'insp.currentBody', {'d': _nextDueDate}),
                     style: TextStyle(fontSize: 11.5, color: isOverdue ? AppTheme.errorColor : AppTheme.ink700, height: 1.4),
                   ),
                 ),
@@ -658,9 +677,9 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Mteja / Taarifa za Mkopo',
+                  tr(_locale, 'insp.loanSection'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),

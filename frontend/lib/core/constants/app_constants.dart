@@ -301,6 +301,25 @@ class UserRoles {
     }
   }
 
+  /// A named demo person's own portrait.
+  ///
+  /// Role portraits are a fallback, not an identity: two storekeepers are not the
+  /// same person, and a male borrower must not be shown a woman's face. The
+  /// database column `avatar_asset` is authoritative; this table keeps the demo
+  /// correct before that migration has been run.
+  static String? personAvatar(String? name) {
+    switch ((name ?? '').trim().toLowerCase()) {
+      case 'baraka mushi':
+        return 'assets/images/avatar_person_m30.png';
+      case 'neema lyimo':
+        return 'assets/images/avatar_person_f40.png';
+      case 'zawadi nnaji':
+        return 'assets/images/avatar_person_f20.png';
+      default:
+        return null;
+    }
+  }
+
   /// The role to show in a header: the canonical label, or a safe placeholder.
   static String displayName(String? raw) => normalize(raw) ?? '—';
 }

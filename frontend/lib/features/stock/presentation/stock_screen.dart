@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
@@ -50,6 +52,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   void _showProductDetail(ProductItem p) {
+    final locale = ref.read(localeProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -160,13 +163,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   color: const Color(0xFFE9F2FF),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.photo_camera_rounded, size: 12, color: AppTheme.brand600),
-                                    SizedBox(width: 4),
+                                    const Icon(Icons.photo_camera_rounded, size: 12, color: AppTheme.brand600),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      'Hariri Picha',
+                                      tr(locale, 'stock.editPhoto'),
                                       style: TextStyle(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
@@ -207,8 +210,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               ),
               const SizedBox(height: 20),
 
-              const Text(
-                'Inventory History',
+              Text(
+                tr(locale, 'stock.inventoryHistory'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -251,7 +254,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         context.push('/sell-loan?type=SELL&model=${p.name}');
                       },
                       icon: const Icon(Icons.point_of_sale_rounded, size: 16),
-                      label: const Text('Uza Cash', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      label: Text(tr(locale, 'stock.sellCash'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.brand600,
                         foregroundColor: Colors.white,
@@ -269,7 +272,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         context.push('/sell-loan?type=LOAN&model=${p.name}');
                       },
                       icon: const Icon(Icons.assignment_ind_rounded, size: 16),
-                      label: const Text('Toa Mkopo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      label: Text(tr(locale, 'stock.issueLoan'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7C5CFC),
                         foregroundColor: Colors.white,

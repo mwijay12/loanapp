@@ -90,6 +90,11 @@ final activeStaffMemberProvider = Provider<StaffMember>((ref) {
 class StaffNotifier extends StateNotifier<List<StaffMember>> {
   StaffNotifier([List<StaffMember> seed = const []]) : super(List.from(seed));
 
+  /// Swap the whole directory for what the database returned.
+  void replaceAll(List<StaffMember> members) {
+    state = List.from(members);
+  }
+
   void addStaff(StaffMember member) {
     state = [member, ...state];
   }
