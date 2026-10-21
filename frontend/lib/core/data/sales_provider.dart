@@ -73,8 +73,25 @@ final salesProvider =
   return SalesNotifier();
 });
 
-bool _sameDay(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
+/// The shop's day, not the device's.
+///
+/// A browser in Shanghai and a till in Dar es Salaam are on different dates for
+/// five hours every night. Counting "today" with the device clock made the card
+/// read zero while the shop had taken money, so day boundaries are computed in
+/// East Africa Time here too.
+DateTime eatClock(DateTime t) => t.toUtc().add(const Duration(hours: 3));
+
+/// Date-only in the shop's timezone. Comparing date-only values avoids the trap
+/// that bit this file: shifting an already-shifted instant moved it to the next
+/// day and every sale fell outside "today".
+DateTime eatDateOf(DateTime t) {
+  final e = eatClock(t);
+  return DateTime(e.year, e.month, e.day);
+}
+
+DateTime get eatTodayDate => eatDateOf(DateTime.now());
+
+bool isEatToday(DateTime t) => eatDateOf(t) == eatTodayDate;
 
 /// Today's takings, read from the sales ledger.
 ///
@@ -82,27 +99,24 @@ bool _sameDay(DateTime a, DateTime b) =>
 /// someone edits the row by hand. That is why "Today's Sales" read 66,006,000 for
 /// days: it was never a total of anything that happened.
 final salesTodayTotalProvider = Provider<int>((ref) {
-  final now = DateTime.now();
   return ref
       .watch(salesProvider)
-      .where((s) => _sameDay(s.soldAt, now))
+      .where((s) => isEatToday(s.soldAt))
       .fold<int>(0, (sum, s) => sum + s.paid);
 });
 
 final salesTodayCountProvider = Provider<int>((ref) {
-  final now = DateTime.now();
-  return ref.watch(salesProvider).where((s) => _sameDay(s.soldAt, now)).length;
+  return ref.watch(salesProvider).where((s) => isEatToday(s.soldAt)).length;
 });
 
 /// Last seven days, oldest first, for the home sparkline.
 final salesLastSevenDaysProvider = Provider<List<int>>((ref) {
   final sales = ref.watch(salesProvider);
-  final today = DateTime.now();
+  final today = eatTodayDate;
   return List<int>.generate(7, (i) {
-    final day = DateTime(today.year, today.month, today.day)
-        .subtract(Duration(days: 6 - i));
+    final day = today.subtract(Duration(days: 6 - i));
     return sales
-        .where((s) => _sameDay(s.soldAt, day))
+        .where((s) => eatDateOf(s.soldAt) == day)
         .fold<int>(0, (sum, s) => sum + s.paid);
   });
 });
