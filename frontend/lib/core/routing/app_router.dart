@@ -22,6 +22,7 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/scanner/presentation/device_imei_inspector_screen.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
+import '../services/onboarding_prefs.dart';
 import '../data/mock_lims_data.dart';
 import '../widgets/app_shell.dart';
 
@@ -31,10 +32,15 @@ import '../widgets/app_shell.dart';
 /// signed-out shell: the header rendered "Signed out" with a `noSession` role
 /// pill, because no session had been established yet. A showcase must open on
 /// the login screen.
-final initialRouteProvider = Provider<String>((ref) => '/login');
+final initialRouteProvider = Provider<String>((ref) {
+  return ref.watch(seenOnboardingProvider) ? '/login' : '/onboarding';
+});
 
 /// Routes reachable without a session.
 const Set<String> _publicRoutes = <String>{'/login', '/onboarding'};
+
+/// Exposed for tests: a guard that omits /onboarding bounces first-run visitors.
+const Set<String> kPublicRoutes = _publicRoutes;
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(

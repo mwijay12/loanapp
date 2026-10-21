@@ -1781,6 +1781,28 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     }
   }
 
+  /// Opens the receipt for printing, then closes the dialog and the till.
+  ///
+  /// The button used to promise an SMS and print nothing. It now generates the
+  /// roll-80 receipt for the sale that just completed, and the message describes
+  /// only what actually happened.
+  Future<void> _printReceipt(POSSaleResult result, BuildContext dialogContext) async {
+    final dialogNavigator = Navigator.of(dialogContext, rootNavigator: true);
+    await PdfReportService.generateAndDownloadSaleReceipt(
+      sale: result,
+      branchName: ref.read(activeBranchProvider),
+      servedBy: ref.read(activeStaffMemberProvider).name,
+    );
+    if (!mounted) return;
+    dialogNavigator.pop();
+    LimsToast.show(
+      context,
+      'Risiti ${result.receiptId} imefunguliwa — tayari kwa print.',
+      isSuccess: true,
+    );
+    context.pop();
+  }
+
   // ------------------------------------------------------------- Success Dialog
   void _showSuccessDialog(POSSaleResult result) {
     showDialog(
@@ -1884,24 +1906,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      // This button used to promise an SMS and print nothing. It
-                      // now opens the actual receipt for printing, and only says
-                      // what happened.
-                      await PdfReportService.generateAndDownloadSaleReceipt(
-                        sale: result,
-                        branchName: ref.read(activeBranchProvider),
-                        servedBy: ref.read(activeStaffMemberProvider).name,
-                      );
-                      if (!mounted) return;
-                      Navigator.pop(ctx);
-                      LimsToast.show(
-                        context,
-                        'Risiti ${result.receiptId} imefunguliwa — tayari kwa print.',
-                        isSuccess: true,
-                      );
-                      context.pop();
-                    },
+                    onPressed: () => _printReceipt(result, ctx),
                     icon: const Icon(Icons.receipt_long_rounded, size: 16),
                     label: const Text('Print Receipt'),
                     style: ElevatedButton.styleFrom(

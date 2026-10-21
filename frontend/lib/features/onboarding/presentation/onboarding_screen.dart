@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../core/services/onboarding_prefs.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -55,6 +57,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         showRationale: true,
       );
       if (!mounted) return;
+      await OnboardingPrefs.markSeen();
+      if (!mounted) return;
       context.go('/login');
     }
   }
@@ -95,7 +99,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                   TextButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () async {
+                      await OnboardingPrefs.markSeen();
+                      if (context.mounted) context.go('/login');
+                    },
                     child: const Text(
                       'Skip',
                       style: TextStyle(

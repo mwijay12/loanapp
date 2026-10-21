@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_localizations.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/onboarding_prefs.dart';
 import 'core/services/app_permissions_service.dart';
 import 'core/widgets/responsive.dart';
 import 'features/account/presentation/account_screen.dart';
@@ -17,7 +18,15 @@ void main() async {
   // Demo builds run entirely on bundled mock data: no Supabase, no secrets,
   // and therefore nothing to leak if the link is shared publicly.
   if (AppConstants.demoMode) {
-    runApp(const ProviderScope(child: LoanInventoryApp()));
+    // Read once, before the router exists: a first run opens the introduction, a
+  // later run opens sign-in.
+  final seenOnboarding = await OnboardingPrefs.hasSeen();
+  runApp(
+    ProviderScope(
+      overrides: [seenOnboardingProvider.overrideWithValue(seenOnboarding)],
+      child: const LoanInventoryApp(),
+    ),
+  );
     return;
   }
 
