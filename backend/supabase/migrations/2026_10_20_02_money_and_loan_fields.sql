@@ -46,9 +46,9 @@ create unique index if not exists products_imei1_key
   on public.products (imei1) where imei1 is not null;
 
 -- ---------------------------------------------------------------- branches
-update public.branches
-set sales = regexp_replace(sales::text, '[^0-9.\-]', '', 'g')
-where sales::text ~ '[^0-9.\-]';
+-- Do NOT strip `sales`. 'TZS 4.85M' would become 4.85, which is a different
+-- number, and the loss is silent. The column stays as display text; the numeric
+-- value lives in `sales_today` below.
 
 -- 'TZS 4.85M' becomes 4.85 after the strip, which is not the same number.
 -- Keep the original text until someone confirms the intended value, and add a
@@ -86,7 +86,7 @@ create table if not exists public.sales (
   receipt_no text unique not null,
   branch_id uuid references public.branches(id),
   staff_id uuid references public.profiles(id),
-  loan_id uuid references public.loans(id),
+  loan_id int references public.loans(id),   -- loans.id is int in the live project
   product_id int references public.products(id),
   imei text,
   customer_name text,
@@ -117,7 +117,7 @@ create policy sales_create on public.sales
 -- ---------------------------------------------------------- loan_payments
 create table if not exists public.loan_payments (
   id uuid primary key default gen_random_uuid(),
-  loan_id uuid not null references public.loans(id) on delete cascade,
+  loan_id int not null references public.loans(id) on delete cascade,
   amount numeric(14,2) not null,
   paid_at timestamptz not null default now(),
   channel text,
