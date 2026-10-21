@@ -287,6 +287,50 @@ class ApiService {
     }
   }
 
+  /// Who owns this handset right now, from the two tables that record a serial.
+  ///
+  /// A scanned IMEI is either still in stock (`products.imei1`) or already out on
+  /// a hire-purchase contract (`loans.imei1`). There is no third answer: if
+  /// neither row exists the device was never received through this system, and
+  /// the screen says so instead of inventing a model and a price.
+  Future<ImeiLookup> findUnitByImei(String imei) async {
+    try {
+      final product = await client
+          .from('products')
+          .select()
+          .or('imei1.eq.$imei,imei2.eq.$imei')
+          .maybeSingle();
+      if (product != null) {
+        return ImeiLookup(
+          imei: imei,
+          status: 'in_stock',
+          row: Map<String, dynamic>.from(product),
+        );
+      }
+    } catch (e) {
+      _report('imei lookup (products)', e);
+    }
+
+    try {
+      final loan = await client
+          .from('loans')
+          .select()
+          .or('imei1.eq.$imei,imei2.eq.$imei')
+          .maybeSingle();
+      if (loan != null) {
+        return ImeiLookup(
+          imei: imei,
+          status: 'on_loan',
+          row: Map<String, dynamic>.from(loan),
+        );
+      }
+    } catch (e) {
+      _report('imei lookup (loans)', e);
+    }
+
+    return ImeiLookup(imei: imei, status: 'unknown', row: null);
+  }
+
   Future<Map<String, dynamic>?> getProductBySku(String sku) async {
     try {
       final response = await client.from('products').select().eq('sku', sku).maybeSingle();
@@ -353,3 +397,21 @@ class ApiService {
 }
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+
+/// The result of asking the database about one serial number.
+class ImeiLookup {
+  const ImeiLookup({required this.imei, required this.status, this.row});
+
+  final String imei;
+
+  /// `in_stock`, `on_loan`, or `unknown`.
+  final String status;
+
+  /// The raw row, so the screen can show the model and price it actually holds.
+  final Map<String, dynamic>? row;
+
+  bool get isKnown => status != 'unknown';
+
+  String get model =>
+      (row?['name'] ?? row?['model'] ?? row?['phone_model'] ?? '') as String;
+}

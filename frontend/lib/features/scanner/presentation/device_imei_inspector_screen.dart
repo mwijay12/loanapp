@@ -193,16 +193,12 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         ),
         actions: [
           IconButton(
-            tooltip: 'Skani Barcode / IMEI',
+            tooltip: 'Skani barcode / IMEI',
             icon: const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.brand600),
-            onPressed: () {
-              // Quick simulate scan
-              final sampleImeis = ['354928104829104', '864920042819384', '358920112849102'];
-              final picked = sampleImeis[DateTime.now().second % sampleImeis.length];
-              _imeiController.text = picked;
-              _performSearch(picked);
-              LimsToast.show(context, 'IMEI imeskaniwa kutoka kwenye kifaa!');
-            },
+            // This used to pick a sample IMEI by the second hand and announce it
+            // as a scan. It now opens the camera, and the inspector opens without
+            // a serial rather than guessing one.
+            onPressed: () => context.push('/scanner'),
           ),
         ],
         bottom: PreferredSize(

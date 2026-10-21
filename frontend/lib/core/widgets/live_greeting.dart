@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/strings.dart';
+
 /// "Good morning" that is actually correct at the time it is read.
 ///
 /// The header said good morning at 22:40 because the string was a literal. This
@@ -14,9 +16,13 @@ import 'package:intl/intl.dart';
 /// taken from the device: a handset set to the wrong zone would otherwise show
 /// the wrong greeting, and the shop's day is the EAT day.
 class LiveGreeting extends StatefulWidget {
-  const LiveGreeting({super.key, this.style});
+  const LiveGreeting({super.key, this.style, this.locale = const Locale('en')});
 
   final TextStyle? style;
+
+  /// The greeting is a sentence, so it has to follow the app's language like any
+  /// other label. It used to be an English literal above a Swahili screen.
+  final Locale locale;
 
   @override
   State<LiveGreeting> createState() => _LiveGreetingState();
@@ -46,8 +52,13 @@ class _LiveGreetingState extends State<LiveGreeting> {
 
   @override
   Widget build(BuildContext context) {
+    final key = _now.hour >= 5 && _now.hour < 12
+        ? 'home.greetingMorning'
+        : (_now.hour >= 12 && _now.hour < 17
+            ? 'home.greetingAfternoon'
+            : 'home.greetingEvening');
     return Text(
-      '${greetingFor(_now.hour)},',
+      '${tr(widget.locale, key)},',
       style: widget.style ??
           const TextStyle(
             fontSize: 12,

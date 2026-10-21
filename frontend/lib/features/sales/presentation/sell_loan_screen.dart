@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/pdf_report_service.dart';
@@ -7,6 +10,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_localizations.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/data/lims_repository.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
@@ -57,45 +62,54 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   final _supervisorPinController = TextEditingController();
 
   // Cash Sale Controllers
-  String _cashPaymentChannel = 'M-Pesa Lipa Namba';
+  /// Stored as a code, not as a label.
+  ///
+  /// The channel used to hold the translated text, so a sale rung up in Swahili
+  /// was written to the database as "Fedha kaunta" and one rung up in English as
+  /// "Cash at counter" — the same channel, two values, and a report that splits
+  /// them. The label is now rendered from the code at display time.
+  String _cashPaymentChannel = 'cash';
   final _receiptPhoneController = TextEditingController(text: '0754 892 314');
 
   int _installmentWeeks = 8;
-  bool _contractSigned = true;
-  bool _borrowerConsentAgreed = true;
+  // Unchecked on purpose. A pre-ticked signature box is not consent, and a
+  // hire-purchase agreement that records consent nobody gave is worse than no
+  // record at all.
+  bool _contractSigned = false;
+  bool _borrowerConsentAgreed = false;
   bool _showSchedulePreview = false;
   bool _isProcessing = false;
-  String? _borrowerPassportPhoto = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80';
-  bool _isCameraCapturing = false;
+  /// The bytes the counter actually captured, if any.
+  ///
+  /// This used to be an Unsplash URL: pressing "capture" waited 700 ms and then
+  /// displayed a photograph of a man who has never been in the shop, labelled as
+  /// the borrower's KYC portrait. A file picked here is shown from memory, and
+  /// nothing is claimed when the counter has not taken one.
+  Uint8List? _borrowerPassportBytes;
 
-  void _captureWebcamPassport() async {
-    final allowed = await AppPermissionsService.ensureCamera(context);
-    if (!allowed) {
-      if (mounted) {
-        LimsToast.show(context, 'Camera permission required for passport capture.', isError: true);
+  Future<void> _pickPassportPhoto({required ImageSource source}) async {
+    final locale = _locale;
+    if (source == ImageSource.camera) {
+      final allowed = await AppPermissionsService.ensureCamera(context);
+      if (!allowed) {
+        if (mounted) {
+          LimsToast.show(context, tr(locale, 'sell.cameraNeeded'), isError: true);
+        }
+        return;
       }
-      return;
     }
-    setState(() => _isCameraCapturing = true);
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (mounted) {
-      setState(() {
-        _isCameraCapturing = false;
-        _borrowerPassportPhoto = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80';
-      });
-      LimsToast.show(context, 'Passport photo captured at counter desk.', isSuccess: true);
-    }
-  }
-
-  void _uploadPassportPhoto() async {
-    await AppPermissionsService.ensureStorage();
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 900,
+      imageQuality: 72,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
     if (!mounted) return;
-    setState(() {
-      _borrowerPassportPhoto = 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&auto=format&fit=crop&q=80';
-    });
-    LimsToast.show(context, 'Passport image attached successfully.', isSuccess: true);
+    setState(() => _borrowerPassportBytes = bytes);
+    LimsToast.show(context, tr(locale, 'sell.photoAttached'), isSuccess: true);
   }
-
   @override
   void initState() {
     super.initState();
@@ -155,9 +169,32 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     super.dispose();
   }
 
-  @override
+  Locale get _locale => ref.read(localeProvider);
+
+  /// Codes are stored, labels are shown, so a receipt printed in Kiswahili and
+  /// one printed in English still reconcile to the same channel.
+  String _paymentChannelLabel(String code) {
+    switch (code) {
+      case 'cash':
+        return tr(_locale, 'sell.cashAtCounter');
+      case 'mpesa':
+        return tr(_locale, 'sell.mpesa');
+      case 'airtel':
+        return tr(_locale, 'sell.airtel');
+      case 'tigopesa':
+        return tr(_locale, 'sell.tigopesa');
+      case 'card':
+        return tr(_locale, 'sell.card');
+      default:
+        return code;
+    }
+  }
+
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Watched, not read: a language change has to rebuild the whole form, and
+    // every helper below resolves strings through the same locale.
+    ref.watch(localeProvider);
     final repository = ref.watch(limsRepositoryProvider);
     final activeBranch = ref.watch(activeBranchProvider);
     final availableHandsets = repository.getAvailableHandsets(ref, branch: activeBranch);
@@ -172,7 +209,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
             onPressed: () => context.pop(),
           ),
-          title: const Text('POS Counter Sale & Loan', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
+          title: Text(tr(_locale, 'sell.eyebrow'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
         ),
         body: Center(
           child: Padding(
@@ -189,22 +226,22 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   ),
                   child: const Icon(Icons.inventory_2_outlined, color: AppTheme.brand600, size: 40),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Phones Available in Stock',
+                SizedBox(height: 16),
+                Text(
+                  tr(_locale, 'sell.noStock'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Branch "$activeBranch" currently has 0 available serialized handsets. Please receive stock or transfer units from another branch before initiating checkout.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 13, color: AppTheme.ink500),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () => context.push('/receive-stock'),
                   icon: const Icon(Icons.add_box_rounded, size: 18),
-                  label: const Text('Receive Stock at Branch'),
+                  label: Text(tr(_locale, 'stock.title')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.brand600,
                     foregroundColor: Colors.white,
@@ -239,7 +276,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          _selectedTransaction == 'LOAN' ? 'Issue Phone Loan' : 'POS Cash Sale',
+          _selectedTransaction == 'LOAN' ? tr(_locale, 'sell.loanTitle') : tr(_locale, 'sell.cashTitle'),
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
         ),
         centerTitle: false,
@@ -340,16 +377,16 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Selected Handset',
+              Text(
+                tr(_locale, 'sell.selectedHandset'),
                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink500),
               ),
               InkWell(
                 onTap: () => _showHandsetPickerSheet(allAvailable),
-                child: const Row(
+                child: Row(
                   children: [
                     Text(
-                      'Change Phone',
+                      tr(_locale, 'sell.changePhone'),
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600),
                     ),
                     SizedBox(width: 2),
@@ -439,13 +476,13 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
             ],
           ),
-          const Divider(height: 22, color: Color(0xFFF1F5F9)),
+          Divider(height: 22, color: Color(0xFFF1F5F9)),
           LayoutBuilder(
             builder: (ctx, constraints) {
               final priceStats = [
-                ('Cash Selling Price', 'TZS ${_formatNumber(phone.price)}', AppTheme.ink900),
-                ('Financed Loan Total', 'TZS ${_formatNumber(loanPrice)}', const Color(0xFF7C5CFC)),
-                ('Min Deposit (25%)', 'TZS ${_formatNumber((loanPrice * 0.25).round())}', const Color(0xFF12B76A)),
+                (tr(_locale, 'sell.cashPrice'), 'TZS ${_formatNumber(phone.price)}', AppTheme.ink900),
+                (tr(_locale, 'sell.financed'), 'TZS ${_formatNumber(loanPrice)}', const Color(0xFF7C5CFC)),
+                (tr(_locale, 'sell.minDeposit'), 'TZS ${_formatNumber((loanPrice * 0.25).round())}', const Color(0xFF12B76A)),
               ];
               // Simu nyembamba (<400dp): stats zinapangwa wima — hakuna overflow.
               if (constraints.maxWidth < 400) {
@@ -524,9 +561,9 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   decoration: BoxDecoration(color: const Color(0xFFD4E0F0), borderRadius: BorderRadius.circular(99)),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Select Handset for Checkout',
+              SizedBox(height: 16),
+              Text(
+                tr(_locale, 'sell.selectHandset'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
               ),
               const SizedBox(height: 14),
@@ -694,13 +731,13 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Cash Sale & Instant Checkout',
+          Text(
+            tr(_locale, 'sell.cashSale'),
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Complete payment at cashier desk and disburse device with official store receipt.',
+          Text(
+            tr(_locale, 'sell.cashIntro'),
             style: TextStyle(fontSize: 11.5, color: AppTheme.ink500),
           ),
           const SizedBox(height: 16),
@@ -715,8 +752,8 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             ),
             child: LayoutBuilder(
               builder: (ctx, constraints) {
-                const label = Text(
-                  'Amount Due (Cash Total)',
+                final label = Text(
+                  tr(_locale, 'sell.amountDue'),
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.ink700),
                 );
                 final amount = Text(
@@ -736,7 +773,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Flexible(child: label),
+                    Flexible(child: label),
                     const SizedBox(width: 10),
                     Flexible(child: amount),
                   ],
@@ -744,24 +781,24 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               },
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
-          const Text('Payment Channel', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
-          const SizedBox(height: 8),
+          Text(tr(_locale, 'sell.paymentChannel'), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.ink900)),
+          SizedBox(height: 8),
 
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              'Cash at Counter',
-              'M-Pesa Lipa Namba',
-              'Airtel Money',
-              'Tigo Pesa',
-              'CRDB / NMB Card',
+            children: const [
+              'cash',
+              'mpesa',
+              'airtel',
+              'tigopesa',
+              'card',
             ].map((channel) {
               final isSelected = _cashPaymentChannel == channel;
               return ChoiceChip(
-                label: Text(channel),
+                label: Text(_paymentChannelLabel(channel)),
                 selected: isSelected,
                 selectedColor: AppTheme.brand600,
                 labelStyle: TextStyle(
@@ -775,18 +812,18 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           TextFormField(
             controller: _receiptPhoneController,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Customer Phone (for SMS Receipt & Warranty)',
+            decoration: InputDecoration(
+              labelText: tr(_locale, 'sell.customerPhone'),
               prefixIcon: Icon(Icons.phone_iphone_rounded, size: 20),
               border: OutlineInputBorder(),
               contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter customer phone' : null,
+            validator: (v) => (v == null || v.trim().isEmpty) ? tr(_locale, 'sell.errPhone') : null,
           ),
         ],
       ),
@@ -819,18 +856,18 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 child: const Icon(Icons.person_pin_rounded, color: Color(0xFF7C5CFC), size: 18),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '1. Borrower KYC Verification',
+                      tr(_locale, 'sell.step1'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                     ),
                     Text(
-                      'Customer Identity, Counter Passport Photo & NIDA Record',
+                      tr(_locale, 'sell.kycSection'),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: AppTheme.ink500),
@@ -853,12 +890,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.camera_front_rounded, size: 16, color: Color(0xFF1E60F2)),
                     SizedBox(width: 6),
                     Text(
-                      'Counter Passport Photo',
+                      tr(_locale, 'sell.passportPhoto'),
                       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
                     ),
                   ],
@@ -874,18 +911,16 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                         color: const Color(0xFFE2E8F0),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-                        image: _borrowerPassportPhoto != null
+                        image: _borrowerPassportBytes != null
                             ? DecorationImage(
-                                image: NetworkImage(_borrowerPassportPhoto!),
+                                image: MemoryImage(_borrowerPassportBytes!),
                                 fit: BoxFit.cover,
                               )
                             : null,
                       ),
-                      child: _isCameraCapturing
-                          ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
-                          : (_borrowerPassportPhoto == null
-                              ? const Center(child: Icon(Icons.person_rounded, size: 36, color: Color(0xFF94A3B8)))
-                              : null),
+                      child: _borrowerPassportBytes == null
+                          ? const Center(child: Icon(Icons.person_rounded, size: 36, color: Color(0xFF94A3B8)))
+                          : null,
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -897,9 +932,9 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                             runSpacing: 8,
                             children: [
                               ElevatedButton.icon(
-                                onPressed: _isCameraCapturing ? null : _captureWebcamPassport,
+                                onPressed: () => _pickPassportPhoto(source: ImageSource.camera),
                                 icon: const Icon(Icons.camera_alt_rounded, size: 14),
-                                label: const Text('Capture Photo', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+                                label: Text(tr(_locale, 'sell.capturePhoto'), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1E60F2),
                                   foregroundColor: Colors.white,
@@ -910,9 +945,9 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                                 ),
                               ),
                               OutlinedButton.icon(
-                                onPressed: _uploadPassportPhoto,
+                                onPressed: () => _pickPassportPhoto(source: ImageSource.gallery),
                                 icon: const Icon(Icons.upload_file_rounded, size: 14),
-                                label: const Text('Upload', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                                label: Text(tr(_locale, 'sell.upload'), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                                 style: OutlinedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                   minimumSize: Size.zero,
@@ -923,13 +958,34 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.verified_rounded, size: 13, color: Color(0xFF10B981)),
-                              SizedBox(width: 4),
-                              Text(
-                                'Office KYC: Verified at Counter',
-                                style: TextStyle(fontSize: 10.5, color: Color(0xFF059669), fontWeight: FontWeight.w700),
+                              Icon(
+                                _borrowerPassportBytes == null
+                                    ? Icons.info_outline_rounded
+                                    : Icons.check_circle_rounded,
+                                size: 13,
+                                color: _borrowerPassportBytes == null
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF10B981),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  tr(
+                                    _locale,
+                                    _borrowerPassportBytes == null
+                                        ? 'sell.kycMissing'
+                                        : 'sell.kycAttached',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: _borrowerPassportBytes == null
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF059669),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -941,34 +997,34 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
 
           TextFormField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Borrower Legal Full Name',
+            decoration: InputDecoration(
+              labelText: tr(_locale, 'sell.customerName'),
               prefixIcon: Icon(Icons.badge_outlined, size: 20),
               border: OutlineInputBorder(),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter borrower legal name' : null,
+            validator: (v) => (v == null || v.trim().isEmpty) ? tr(_locale, 'sell.errName') : null,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           TextFormField(
             controller: _nidaController,
-            decoration: const InputDecoration(
-              labelText: 'National NIDA ID (20 Digits)',
+            decoration: InputDecoration(
+              labelText: tr(_locale, 'sell.nida'),
               prefixIcon: Icon(Icons.fingerprint_rounded, size: 20),
-              helperText: 'Tanzania National ID format (e.g. 19920415-XXXXX-XXXXX-XX)',
+              helperText: tr(_locale, 'sell.nidaHint'),
               border: OutlineInputBorder(),
             ),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Please enter NIDA ID number';
-              if (v.trim().length < 15) return 'NIDA ID must be a valid 20-digit identifier';
+              if (v.trim().length < 15) return tr(_locale, 'sell.errNida');
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           Row(
             children: [
@@ -984,7 +1040,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter primary phone' : null,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: TextFormField(
                   controller: _altPhoneController,
@@ -998,16 +1054,16 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           TextFormField(
             controller: _residenceController,
-            decoration: const InputDecoration(
-              labelText: 'Residential Ward / Street Address',
+            decoration: InputDecoration(
+              labelText: tr(_locale, 'sell.address'),
               prefixIcon: Icon(Icons.location_on_outlined, size: 20),
               border: OutlineInputBorder(),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter residential address' : null,
+            validator: (v) => (v == null || v.trim().isEmpty) ? tr(_locale, 'sell.errAddress') : null,
           ),
           const SizedBox(height: 12),
 
@@ -1049,13 +1105,13 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 ),
                 child: const Icon(Icons.supervisor_account_rounded, color: Color(0xFFF79009), size: 18),
               ),
-              const SizedBox(width: 10),
-              const Expanded(
+              SizedBox(width: 10),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '2. Guarantor Reference Verification',
+                      tr(_locale, 'sell.step2'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
@@ -1071,7 +1127,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           Row(
             children: [
@@ -1079,15 +1135,15 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 flex: 3,
                 child: TextFormField(
                   controller: _guarantorNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Guarantor Full Legal Name',
+                  decoration: InputDecoration(
+                    labelText: tr(_locale, 'sell.guarantorName'),
                     prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter guarantor name' : null,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 flex: 2,
                 child: TextFormField(
@@ -1100,7 +1156,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           Row(
             children: [
@@ -1108,20 +1164,20 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 child: TextFormField(
                   controller: _guarantorPhoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Guarantor Phone Number',
+                  decoration: InputDecoration(
+                    labelText: tr(_locale, 'sell.guarantorPhone'),
                     prefixIcon: Icon(Icons.phone_android_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter guarantor phone' : null,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: TextFormField(
                   controller: _guarantorNidaController,
-                  decoration: const InputDecoration(
-                    labelText: 'Guarantor NIDA ID',
+                  decoration: InputDecoration(
+                    labelText: tr(_locale, 'sell.guarantorNida'),
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -1159,12 +1215,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 child: const Icon(Icons.calculate_rounded, color: Color(0xFF12B76A), size: 18),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '3. Transparent Loan Terms & Schedule',
+                      tr(_locale, 'sell.step3'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
@@ -1192,17 +1248,17 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             ),
             child: Column(
               children: [
-                _buildFinancialRow('Cash Retail Price', 'TZS ${_formatNumber(quote.cashPrice)}'),
-                const SizedBox(height: 6),
-                _buildFinancialRow('Disclosed Financing Fee (+20%)', '+ TZS ${_formatNumber(quote.financeFee)}', isPositive: true),
-                const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                _buildFinancialRow('Total Loan Repayable', 'TZS ${_formatNumber(quote.loanPrice)}', isBold: true, highlightColor: const Color(0xFF7C5CFC)),
-                const SizedBox(height: 6),
-                _buildFinancialRow('Minimum Required Deposit (25%)', 'TZS ${_formatNumber(quote.minimumDeposit)}', isSecondary: true),
+                _buildFinancialRow(tr(_locale, 'sell.cashPrice'), 'TZS ${_formatNumber(quote.cashPrice)}'),
+                SizedBox(height: 6),
+                _buildFinancialRow(tr(_locale, 'sell.financeFeePct'), '+ TZS ${_formatNumber(quote.financeFee)}', isPositive: true),
+                Divider(height: 16, color: Color(0xFFE2E8F0)),
+                _buildFinancialRow(tr(_locale, 'sell.repayable'), 'TZS ${_formatNumber(quote.loanPrice)}', isBold: true, highlightColor: const Color(0xFF7C5CFC)),
+                SizedBox(height: 6),
+                _buildFinancialRow(tr(_locale, 'sell.minRequired'), 'TZS ${_formatNumber(quote.minimumDeposit)}', isSecondary: true),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           Row(
             children: [
@@ -1212,7 +1268,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   keyboardType: TextInputType.number,
                   onChanged: (v) => setState(() {}),
                   decoration: InputDecoration(
-                    labelText: 'Down Payment (Deposit)',
+                    labelText: tr(_locale, 'sell.deposit'),
                     prefixText: 'TZS ',
                     helperText: 'Min 25%: TZS ${_formatNumber(quote.minimumDeposit)}',
                     border: const OutlineInputBorder(),
@@ -1220,21 +1276,23 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   validator: (v) {
                     final entered = int.tryParse((v ?? '').replaceAll(',', '')) ?? 0;
                     if (entered < quote.minimumDeposit) {
-                      return 'Must be ≥ TZS ${_formatNumber(quote.minimumDeposit)}';
+                      return trf(_locale, 'sell.mustBeAtLeast', {
+                        'n': _formatNumber(quote.minimumDeposit),
+                      });
                     }
                     if (entered >= quote.loanPrice) {
-                      return 'Deposit cannot equal or exceed loan price';
+                      return tr(_locale, 'sell.errDeposit');
                     }
                     return null;
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _installmentWeeks,
-                  decoration: const InputDecoration(
-                    labelText: 'Repayment Term',
+                  decoration: InputDecoration(
+                    labelText: tr(_locale, 'sell.term'),
                     border: OutlineInputBorder(),
                   ),
                   items: const [
@@ -1268,9 +1326,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 final amount = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Weekly Installment Commitment', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Color(0xFF6D28D9), fontWeight: FontWeight.w600)),
+                    Text(tr(_locale, 'sell.weekly'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Color(0xFF6D28D9), fontWeight: FontWeight.w600)),
                     Text(
-                      'TZS ${_formatNumber(quote.weeklyInstallment)} / week',
+                      trf(_locale, 'sell.perWeek', {
+                        'n': _formatNumber(quote.weeklyInstallment),
+                      }),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF6D28D9)),
@@ -1285,7 +1345,14 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: Icon(_showSchedulePreview ? Icons.expand_less_rounded : Icons.calendar_month_rounded, size: 16, color: const Color(0xFF6D28D9)),
-                  label: Text(_showSchedulePreview ? 'Hide Schedule' : 'View Schedule (${quote.schedule.length})', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9))),
+                  label: Text(
+                    _showSchedulePreview
+                        ? tr(_locale, 'sell.hideSchedule')
+                        : trf(_locale, 'sell.viewSchedule', {'n': quote.schedule.length}),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6D28D9)),
+                  ),
                 );
                 // Simu nyembamba: amount juu, toggle chini — hakuna overflow.
                 if (constraints.maxWidth < 340) {
@@ -1318,7 +1385,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Payment Calendar Preview', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
+                  Text(tr(_locale, 'sell.schedule'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
                   const SizedBox(height: 8),
                   ...quote.schedule.map((item) {
                     return Padding(
@@ -1416,11 +1483,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 child: const Icon(Icons.gavel_rounded, color: AppTheme.brand600, size: 18),
               ),
               const SizedBox(width: 10),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '4. Loan Agreement & Undertaking',
+                    tr(_locale, 'sell.step4'),
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                   ),
                   Text(
@@ -1441,11 +1508,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Key Customer Agreement Terms:',
+                  tr(_locale, 'sell.agreementTitle'),
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
                 SizedBox(height: 4),
@@ -1464,8 +1531,8 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             activeColor: const Color(0xFF7C5CFC),
-            title: const Text(
-              'Physical Hire-Purchase Contract Signed',
+            title: Text(
+              tr(_locale, 'sell.contractTitle'),
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
             ),
             subtitle: const Text(
@@ -1480,8 +1547,8 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             activeColor: const Color(0xFF7C5CFC),
-            title: const Text(
-              'PDPA Data & Guarantor Notification Consent',
+            title: Text(
+              tr(_locale, 'sell.pdpa'),
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
             ),
             subtitle: const Text(
@@ -1506,12 +1573,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.shield_outlined, color: Color(0xFFD97706), size: 20),
               SizedBox(width: 8),
               Text(
-                'Branch Supervisor Override Required',
+                tr(_locale, 'sell.supervisorTitle'),
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF92400E)),
               ),
             ],
@@ -1526,8 +1593,8 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             controller: _supervisorPinController,
             obscureText: true,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Supervisor Authorization PIN',
+            decoration: InputDecoration(
+              labelText: tr(_locale, 'sell.supervisorPin'),
               prefixIcon: Icon(Icons.lock_outline_rounded, size: 18),
               border: OutlineInputBorder(),
               filled: true,
@@ -1549,7 +1616,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
             ? null
             : () {
                 if (!_formKey.currentState!.validate()) {
-                  LimsToast.show(context, 'Please resolve highlighted validation errors.', isError: true);
+                  LimsToast.show(context, tr(_locale, 'sell.errResolve'), isError: true);
                   return;
                 }
 
@@ -1627,7 +1694,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      _selectedTransaction == 'LOAN' ? 'Review Loan Disbursement' : 'Review POS Cash Sale',
+                      _selectedTransaction == 'LOAN' ? tr(_locale, 'sell.reviewDisbursement') : tr(_locale, 'sell.reviewCashTitle'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
@@ -1642,7 +1709,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        _selectedTransaction == 'LOAN' ? 'Credit Sale' : 'Cash Sale',
+                        _selectedTransaction == 'LOAN' ? tr(_locale, 'sell.creditSale') : tr(_locale, 'sell.cashSale'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1668,15 +1735,15 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 child: Column(
                   children: [
                     _buildFinancialRow('Handset Model', phone.name, isBold: true),
-                    const SizedBox(height: 4),
-                    _buildFinancialRow('IMEI 1 (Hardware S/N)', phone.imei1 ?? phone.sku),
+                    SizedBox(height: 4),
+                    _buildFinancialRow(tr(_locale, 'sell.imei1'), phone.imei1 ?? phone.sku),
                     if (_selectedTransaction == 'LOAN') ...[
-                      const Divider(height: 14, color: Color(0xFFE2E8F0)),
+                      Divider(height: 14, color: Color(0xFFE2E8F0)),
                       _buildFinancialRow('Borrower Full Name', _nameController.text.trim()),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       _buildFinancialRow('Borrower NIDA ID', _nidaController.text.trim()),
-                      const SizedBox(height: 4),
-                      _buildFinancialRow('Guarantor Reference', '${_guarantorNameController.text.trim()} (${_guarantorPhoneController.text.trim()})'),
+                      SizedBox(height: 4),
+                      _buildFinancialRow(tr(_locale, 'sell.guarantor'), '${_guarantorNameController.text.trim()} (${_guarantorPhoneController.text.trim()})'),
                     ],
                   ],
                 ),
@@ -1694,24 +1761,29 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 child: Column(
                   children: [
                     if (_selectedTransaction == 'LOAN') ...[
-                      _buildFinancialRow('Total Loan Financed', 'TZS ${_formatNumber(quote.loanPrice)}'),
-                      const SizedBox(height: 4),
-                      _buildFinancialRow('Initial Down Payment (Drawer)', 'TZS ${_formatNumber(quote.downPayment)}', isBold: true, highlightColor: const Color(0xFF10B981)),
-                      const SizedBox(height: 4),
-                      _buildFinancialRow('Remaining Financed Principal', 'TZS ${_formatNumber(quote.financedAmount)}'),
-                      const SizedBox(height: 4),
-                      _buildFinancialRow('Weekly Rejesho (${quote.tenureWeeks} wks)', 'TZS ${_formatNumber(quote.weeklyInstallment)} / wk', isBold: true, highlightColor: const Color(0xFF7C5CFC)),
+                      _buildFinancialRow(tr(_locale, 'sell.totalFinanced'), 'TZS ${_formatNumber(quote.loanPrice)}'),
+                      SizedBox(height: 4),
+                      _buildFinancialRow(tr(_locale, 'sell.initialDeposit'), 'TZS ${_formatNumber(quote.downPayment)}', isBold: true, highlightColor: const Color(0xFF10B981)),
+                      SizedBox(height: 4),
+                      _buildFinancialRow(tr(_locale, 'sell.remainingPrincipal'), 'TZS ${_formatNumber(quote.financedAmount)}'),
+                      SizedBox(height: 4),
+                      _buildFinancialRow(
+                        trf(_locale, 'sell.weeklyRepayment', {'n': quote.tenureWeeks}),
+                        trf(_locale, 'sell.perWeek', {'n': _formatNumber(quote.weeklyInstallment)}),
+                        isBold: true,
+                        highlightColor: const Color(0xFF7C5CFC),
+                      ),
                     ] else ...[
-                      _buildFinancialRow('Payment Channel', _cashPaymentChannel),
-                      const SizedBox(height: 4),
-                      _buildFinancialRow('Customer Contact', _receiptPhoneController.text.trim()),
+                      _buildFinancialRow(tr(_locale, 'sell.paymentChannel'), _paymentChannelLabel(_cashPaymentChannel)),
+                      SizedBox(height: 4),
+                      _buildFinancialRow(tr(_locale, 'sell.customerContact'), _receiptPhoneController.text.trim()),
                       const Divider(height: 12, color: Color(0xFFBBF7D0)),
-                      _buildFinancialRow('Total Collected in Drawer', 'TZS ${_formatNumber(phone.price)}', isBold: true, highlightColor: const Color(0xFF059669)),
+                      _buildFinancialRow(tr(_locale, 'sell.totalCollected'), 'TZS ${_formatNumber(phone.price)}', isBold: true, highlightColor: const Color(0xFF059669)),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
 
               SizedBox(
                 width: double.infinity,
@@ -1728,8 +1800,8 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text(
-                    'Confirm & Complete Handset Handover',
+                  child: Text(
+                    tr(_locale, 'sell.confirmHandover'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
@@ -1763,7 +1835,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
         guarantorName: _guarantorNameController.text.trim(),
         guarantorPhone: _guarantorPhoneController.text.trim(),
         quote: quote,
-        paymentChannel: 'Cashier Drawer (Cash Deposit)',
+        paymentChannel: tr(_locale, 'sell.drawerChannel'),
       );
     } else {
       result = await repository.executeCashSale(
@@ -1823,9 +1895,9 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
               child: const Icon(Icons.check_circle_rounded, color: Color(0xFF12B76A), size: 44),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
-              result.transactionType == 'LOAN' ? 'Phone Loan Disbursed!' : 'POS Cash Sale Completed!',
+              result.transactionType == 'LOAN' ? tr(_locale, 'sell.loanDone') : tr(_locale, 'sell.cashDone'),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.ink900),
               textAlign: TextAlign.center,
             ),
@@ -1850,7 +1922,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     'Receipt ID: ${result.receiptId}',
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     'Handset IMEI: ${result.primaryImei}',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.ink600),
@@ -1858,7 +1930,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             if (result.transactionType == 'LOAN') ...[
               SizedBox(
                 width: double.infinity,
@@ -1878,7 +1950,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     );
                   },
                   icon: const Icon(Icons.badge_rounded, size: 18),
-                  label: const Text('Open Borrower File', style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: Text(tr(_locale, 'loans.viewDossier'), style: TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C5CFC),
                     foregroundColor: Colors.white,
@@ -1886,7 +1958,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
             ],
             Row(
               children: [
@@ -1897,18 +1969,18 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                       context.pop();
                     },
                     icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                    label: const Text('Back to Home'),
+                    label: Text(tr(_locale, 'sell.backHome')),
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _printReceipt(result, ctx),
                     icon: const Icon(Icons.receipt_long_rounded, size: 16),
-                    label: const Text('Print Receipt'),
+                    label: Text(tr(_locale, 'sell.printReceipt')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/ui_kit.dart';
 import 'borrower_loan_details_screen.dart';
 
 class LoansScreen extends ConsumerStatefulWidget {
@@ -18,200 +21,20 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'all'; // 'all', 'overdue', 'current', 'locked'
 
-  void _openNewLoanSheet() {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final nidaCtrl = TextEditingController();
-    final downCtrl = TextEditingController(text: '600,000');
-    final totalAmountCtrl = TextEditingController(text: '2,400,000');
-    String selectedPhone = 'iPhone 15 Pro Max 256GB';
-
-    LimsBottomSheet.show(
-      context: context,
-      title: 'Sajili Mkopo Mpya (Disburse Loan)',
-      subtitle: 'Sajili mkopaji na mkataba wa mauzo ya mkopo kaunta',
-      child: StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F9FF),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.brandGradient,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.phone_android_rounded, color: Colors.white, size: 20),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedPhone,
-                          isExpanded: true,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.ink900),
-                          items: const [
-                            DropdownMenuItem(value: 'iPhone 15 Pro Max 256GB', child: Text('iPhone 15 Pro Max 256GB')),
-                            DropdownMenuItem(value: 'Galaxy S24 Ultra 256GB', child: Text('Galaxy S24 Ultra 256GB')),
-                            DropdownMenuItem(value: 'Tecno Camon 30 Premier', child: Text('Tecno Camon 30 Premier')),
-                            DropdownMenuItem(value: 'Redmi Note 13 Pro 5G', child: Text('Redmi Note 13 Pro 5G')),
-                          ],
-                          onChanged: (v) {
-                            if (v != null) {
-                              setModalState(() {
-                                selectedPhone = v;
-                                if (v.contains('iPhone')) {
-                                  totalAmountCtrl.text = '2,400,000';
-                                  downCtrl.text = '600,000';
-                                } else if (v.contains('Galaxy')) {
-                                  totalAmountCtrl.text = '1,850,000';
-                                  downCtrl.text = '462,500';
-                                } else {
-                                  totalAmountCtrl.text = '750,000';
-                                  downCtrl.text = '187,500';
-                                }
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              _buildField(nameCtrl, 'Full Borrower Name (e.g. Juma Ally)', Icons.person_outline_rounded),
-              const SizedBox(height: 10),
-              _buildField(phoneCtrl, 'Borrower Phone (+255 7XX XXX XXX)', Icons.phone_outlined, keyboardType: TextInputType.phone),
-              const SizedBox(height: 10),
-              _buildField(nidaCtrl, 'NIDA National ID (20 Digits)', Icons.badge_outlined),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildField(totalAmountCtrl, 'Total Loan Price', Icons.price_change_outlined, keyboardType: TextInputType.number),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildField(downCtrl, 'Initial Deposit (25%)', Icons.payments_outlined, keyboardType: TextInputType.number),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.brand50,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.verified_user_rounded, size: 16, color: AppTheme.brand600),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Borrower & Guarantor have signed hire-purchase contract terms (PDPA compliant).',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.brand600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    final customerName = nameCtrl.text.trim().isEmpty ? 'Juma Ally' : nameCtrl.text.trim();
-                    final rawTotal = int.tryParse(totalAmountCtrl.text.replaceAll(',', '').trim()) ?? 2400000;
-                    final rawDeposit = int.tryParse(downCtrl.text.replaceAll(',', '').trim()) ?? 600000;
-                    final paidPct = ((rawDeposit / rawTotal) * 100).round().clamp(10, 100);
-
-                    final newLoan = LoanItem(
-                      id: 'LIMS-LN-${(1000 + DateTime.now().millisecond % 9000)}',
-                      name: customerName,
-                      item: selectedPhone,
-                      amount: rawTotal,
-                      paid: paidPct,
-                      due: 'Due in 7 days',
-                      status: 'current',
-                      grad: const [Color(0xFF1B6EF3), Color(0xFF0A49B8)],
-                      phone: phoneCtrl.text.trim().isEmpty ? '0754 892 314' : phoneCtrl.text.trim(),
-                      nida: nidaCtrl.text.trim().isEmpty ? '19900812-11101-00001-24' : nidaCtrl.text.trim(),
-                      location: 'Kariakoo, Dar es Salaam',
-                      imei: '35${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 13)}',
-                      totalDeposit: rawDeposit,
-                      isKnoxLocked: false,
-                    );
-
-                    ref.read(loansProvider.notifier).addLoan(newLoan);
-                    ref.read(activitiesProvider.notifier).addActivity(
-                      ActivityItem(
-                        icon: Icons.assignment_ind_rounded,
-                        iconColor: const Color(0xFF7C5CFC),
-                        bgColor: const Color(0xFFF0EBFF),
-                        title: 'Loan Disbursed · $customerName',
-                        description: '$selectedPhone · Deposit TZS ${LimsFormatters.formatNumber(rawDeposit)}',
-                        time: 'Just now',
-                      ),
-                    );
-
-                    Navigator.pop(ctx);
-                    LimsToast.show(context, 'Loan for $customerName approved & recorded in active ledger!', isSuccess: true);
-                  },
-                  icon: const Icon(Icons.check_circle_rounded, size: 20),
-                  label: const Text('Approve & Issue Handset', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.brand600,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildField(TextEditingController controller, String hint, IconData icon, {TextInputType? keyboardType}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F9FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.ink900),
-        decoration: InputDecoration(
-          icon: Icon(icon, size: 18, color: AppTheme.ink500),
-          border: InputBorder.none,
-          hintText: hint,
-          hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9AA8BF), fontWeight: FontWeight.w500),
-        ),
-      ),
-    );
-  }
+  /// Opening a loan goes to the counters' real flow.
+  ///
+  /// This screen used to own a second, smaller loan form that invented what it
+  /// did not know: an IMEI built from the millisecond clock, a customer named
+  /// 'Juma Ally' when the field was empty, a fixed Kariakoo address, and a NIDA
+  /// number that was really a literal string. None of it was written to the
+  /// database, so a "disbursed" handset left no record. The POS flow is the one
+  /// that persists, prints and reconciles; there is no reason for a copy of it
+  /// that lies.
+  void _openNewLoanSheet() => context.push('/sell-loan?type=LOAN');
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
     final allLoans = ref.watch(loansProvider);
 
     // Filter & Search
@@ -242,13 +65,13 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
             // Header
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Credit & Borrower Portfolio',
-                        style: TextStyle(
+                        tr(locale, 'loans.eyebrow'),
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.ink500,
@@ -259,8 +82,8 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Borrowers & Active Contracts',
-                          style: TextStyle(
+                          tr(locale, 'loans.title'),
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.4,
@@ -288,14 +111,14 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_rounded, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
+                        const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                        const SizedBox(width: 4),
                         Text(
-                          'Toa Mkopo',
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
+                          tr(locale, 'loans.issue'),
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -310,7 +133,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
               children: [
                 Expanded(
                   child: _buildSummaryCard(
-                    label: 'Wakopaji Hai',
+                    label: tr(locale, 'loans.kpiActive'),
                     value: '$activeCount',
                     icon: Icons.handshake_rounded,
                     iconColor: AppTheme.brand600,
@@ -320,7 +143,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildSummaryCard(
-                    label: 'Wenye Deni',
+                    label: tr(locale, 'loans.kpiOverdue'),
                     value: '$overdueCount',
                     icon: Icons.warning_amber_rounded,
                     iconColor: AppTheme.errorColor,
@@ -331,7 +154,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildSummaryCard(
-                    label: 'On Schedule',
+                    label: tr(locale, 'loans.kpiOnSchedule'),
                     value: '$currentCount',
                     icon: Icons.check_circle_rounded,
                     iconColor: const Color(0xFF027A48),
@@ -359,7 +182,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 decoration: InputDecoration(
                   icon: const Icon(Icons.search_rounded, color: AppTheme.ink500, size: 20),
                   border: InputBorder.none,
-                  hintText: 'Tafuta mteja, namba ya simu au IMEI...',
+                  hintText: tr(locale, 'loans.search'),
                   hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9AA8BF)),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -377,11 +200,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _filterChip('all', 'All Loans ($activeCount)'),
+                  _filterChip('all', trf(locale, 'loans.filterAll', {'n': activeCount})),
                   const SizedBox(width: 8),
-                  _filterChip('overdue', 'Overdue ($overdueCount)'),
+                  _filterChip('overdue', trf(locale, 'loans.filterOverdue', {'n': overdueCount})),
                   const SizedBox(width: 8),
-                  _filterChip('current', 'On Schedule ($currentCount)'),
+                  _filterChip('current', trf(locale, 'loans.filterCurrent', {'n': currentCount})),
                 ],
               ),
             ),
@@ -390,12 +213,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Orodha ya Mikopo na Vifaa',
+                    tr(locale, 'loans.listTitle'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w800,
                       color: AppTheme.ink900,
@@ -405,7 +228,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'Jumla: ${filteredLoans.length}',
+                    trf(locale, 'loans.total', {'n': filteredLoans.length}),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
@@ -425,9 +248,10 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                     children: [
                       const Icon(Icons.search_off_rounded, size: 44, color: Color(0xFFCBD5E1)),
                       const SizedBox(height: 10),
-                      const Text(
-                        'Hakuna mkopaji anayelingana na utafutaji wako',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                      Text(
+                        tr(locale, 'loans.empty'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.ink500),
                       ),
                       const SizedBox(height: 10),
                       TextButton(
@@ -435,14 +259,14 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                           _searchQuery = '';
                           _selectedFilter = 'all';
                         }),
-                        child: const Text('Onyesha Wote'),
+                        child: Text(tr(locale, 'loans.showAll')),
                       ),
                     ],
                   ),
                 ),
               )
             else
-              ...filteredLoans.map((l) => _buildLoanCard(l)),
+              ...filteredLoans.map((l) => _buildLoanCard(l, locale)),
           ],
         ),
       ),
@@ -529,7 +353,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
     );
   }
 
-  Widget _buildLoanCard(LoanItem l) {
+  Widget _buildLoanCard(LoanItem l, Locale locale) {
     final isOverdue = l.status == 'overdue';
 
     return Container(
@@ -727,15 +551,15 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 const SizedBox(height: 10),
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 6),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'View Borrower Dossier & Schedule',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+                      tr(locale, 'loans.viewDossier'),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
                     ),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppTheme.brand600),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppTheme.brand600),
                   ],
                 ),
               ],
