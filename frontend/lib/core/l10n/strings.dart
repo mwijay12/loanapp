@@ -534,6 +534,24 @@ const Map<String, Map<String, String>> _dictionary = {
   'scan.scanAgain': {'en': 'Scan another', 'sw': 'Skani nyingine'},
   'scan.copied': {'en': 'IMEI copied', 'sw': 'IMEI imenakiliwa'},
 
+  // -------------------------------------------------------------- notifications
+  'notif.title': {'en': 'Notifications', 'sw': 'Taarifa'},
+  'notif.unread': {'en': '{n} unread', 'sw': '{n} hazijasomwa'},
+  'notif.allRead': {'en': 'All read', 'sw': 'Zote zimesomwa'},
+  'notif.markAll': {'en': 'Mark all read', 'sw': 'Soma zote'},
+  'notif.markedAll': {'en': 'All marked as read', 'sw': 'Zote zimewekwa kama zimesomwa'},
+  'notif.empty': {
+    'en': 'Nothing needs attention. Low stock and overdue loans will appear here.',
+    'sw': 'Hakuna kinachohitaji kushughulikiwa. Stoo ndogo na mikopo iliyochelewa zitaonekana hapa.',
+  },
+  'notif.detailTitle': {'en': 'Notice', 'sw': 'Taarifa'},
+  'notif.markUnread': {'en': 'Mark unread', 'sw': 'Weka kama haijasomwa'},
+  'notif.open': {'en': 'Open the relevant screen', 'sw': 'Fungua screen husika'},
+  'notif.resolved': {
+    'en': 'This has been resolved since you opened the list.',
+    'sw': 'Hili limeshatatuliwa tangu ufungue orodha.',
+  },
+
   // ------------------------------------------------------------------- generic
   'common.save': {'en': 'Save', 'sw': 'Hifadhi'},
   'common.cancel': {'en': 'Cancel', 'sw': 'Ghairi'},

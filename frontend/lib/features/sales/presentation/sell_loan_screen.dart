@@ -9,6 +9,7 @@ import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_localizations.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/data/product_art.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
@@ -44,18 +45,18 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   int? _selectedHandsetId;
 
   // Borrower KYC Controllers
-  final _nameController = TextEditingController(text: 'Bakari Juma Mwambungu');
-  final _phoneController = TextEditingController(text: '0754 892 314');
-  final _altPhoneController = TextEditingController(text: '0682 110 445');
-  final _nidaController = TextEditingController(text: '19920415-14120-00002-18');
-  final _residenceController = TextEditingController(text: 'Kariakoo, Mtaa wa Swahili / Kongo');
-  final _occupationController = TextEditingController(text: 'Biashara ya Nguo (Duka la Kati)');
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _altPhoneController = TextEditingController();
+  final _nidaController = TextEditingController();
+  final _residenceController = TextEditingController();
+  final _occupationController = TextEditingController();
 
   // Guarantor Controllers
-  final _guarantorNameController = TextEditingController(text: 'Hawa Rashidi Said');
-  final _guarantorPhoneController = TextEditingController(text: '0713 452 980');
-  final _guarantorRelationController = TextEditingController(text: 'Dada Mzazi (Kin)');
-  final _guarantorNidaController = TextEditingController(text: '19890212-14120-00001-24');
+  final _guarantorNameController = TextEditingController();
+  final _guarantorPhoneController = TextEditingController();
+  final _guarantorRelationController = TextEditingController();
+  final _guarantorNidaController = TextEditingController();
 
   // Loan Financial Controllers
   late TextEditingController _depositController;
@@ -69,7 +70,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   /// "Cash at counter" — the same channel, two values, and a report that splits
   /// them. The label is now rendered from the code at display time.
   String _cashPaymentChannel = 'cash';
-  final _receiptPhoneController = TextEditingController(text: '0754 892 314');
+  final _receiptPhoneController = TextEditingController();
 
   int _installmentWeeks = 8;
   // Unchecked on purpose. A pre-ticked signature box is not consent, and a
@@ -400,26 +401,9 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: phone.grad.isNotEmpty ? phone.grad : [AppTheme.brand600, const Color(0xFF7C5CFC)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.brand600.withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.phone_android_rounded, color: Colors.white, size: 28),
-              ),
+              // The handset's own picture, so the cashier sees the device they
+              // are about to hand over rather than a generic phone glyph.
+              _HandsetPhoto(phone: phone),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -905,8 +889,8 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 68,
-                      height: 80,
+                      width: 96,
+                      height: 116,
                       decoration: BoxDecoration(
                         color: const Color(0xFFE2E8F0),
                         borderRadius: BorderRadius.circular(12),
@@ -933,26 +917,24 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                             children: [
                               ElevatedButton.icon(
                                 onPressed: () => _pickPassportPhoto(source: ImageSource.camera),
-                                icon: const Icon(Icons.camera_alt_rounded, size: 14),
-                                label: Text(tr(_locale, 'sell.capturePhoto'), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+                                icon: const Icon(Icons.camera_alt_rounded, size: 17),
+                                label: Text(tr(_locale, 'sell.capturePhoto'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1E60F2),
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  minimumSize: const Size(0, 44),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                               ),
                               OutlinedButton.icon(
                                 onPressed: () => _pickPassportPhoto(source: ImageSource.gallery),
-                                icon: const Icon(Icons.upload_file_rounded, size: 14),
-                                label: Text(tr(_locale, 'sell.upload'), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                                icon: const Icon(Icons.upload_file_rounded, size: 17),
+                                label: Text(tr(_locale, 'sell.upload'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  minimumSize: const Size(0, 44),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                               ),
                             ],
@@ -1993,6 +1975,66 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// The handset picture on the checkout card.
+class _HandsetPhoto extends StatelessWidget {
+  const _HandsetPhoto({required this.phone});
+
+  final ProductItem phone;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = ProductArt.resolve(
+      explicit: phone.imageAsset,
+      brand: phone.brand,
+      name: phone.name,
+      category: phone.cat,
+    );
+    final url = phone.imageUrl;
+
+    Widget fallback = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: phone.grad.isNotEmpty
+              ? phone.grad
+              : [AppTheme.brand600, const Color(0xFF7C5CFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Icon(Icons.phone_android_rounded,
+          color: Colors.white, size: 28),
+    );
+
+    return Container(
+      width: 76,
+      height: 88,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: url != null && url.isNotEmpty
+          ? Image.network(
+              url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Image.asset(
+                asset,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => fallback,
+              ),
+            )
+          : Image.asset(
+              asset,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => fallback,
+            ),
     );
   }
 }

@@ -8,6 +8,7 @@ import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/widgets/live_greeting.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/notifications_provider.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/services/live_data.dart';
 import '../../../core/data/mock_lims_data.dart';
@@ -169,6 +170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ignore: unused_element
   void _showTopNotificationsModal(BuildContext context) {
     showGeneralDialog(
       context: context,
@@ -450,11 +452,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 return Column(
                   children: [
                     _buildLowStockItem(
-                      name: p.name,
-                      leftCount: p.stock,
-                      colorType: p.name.toLowerCase().contains('samsung')
-                          ? 'navy'
-                          : 'silver',
+                      product: p,
                       onTap: () {
                         Navigator.pop(ctx);
                         _showPhoneQuickAction(p.name, p.stock);
@@ -1098,11 +1096,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ]))),
               ),
-              const SizedBox(height: 20),
-
-              // Branch Operational Pulse (Crisp, High-Yield Status Hub)
-              _buildOperationalPulseSection(
-                  context, allLowStock, ref.watch(loansProvider)),
+              // Low stock, overdue accounts and the branch pulse used to be
+              // repeated a third time here. They now live in Notifications, the one
+              // place the shop agreed to look.
             ],
           ),
         ),
@@ -1110,6 +1106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildBorrowerQuickWatchList(
       BuildContext context, List<LoanItem> loans) {
     final watchLoans = loans.take(3).toList();
@@ -1343,6 +1340,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Branch Operational Pulse
+  // ignore: unused_element
   Widget _buildOperationalPulseSection(
       BuildContext context, List<ProductItem> lowStock, List<LoanItem> loans) {
     final activeBranch = ref.watch(activeBranchProvider);
@@ -1575,6 +1573,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ------------------------------------------------------------- Header
   Widget _buildHeader(BuildContext context, String currentRole,
       String activeBranch, StaffMember activeStaff) {
+    final unreadNotifications = ref.watch(unreadNotificationsProvider);
     final isSuperAdmin = currentRole == UserRoles.superAdmin;
     final isBranchManager = currentRole == UserRoles.branchManager;
     final isLoanOfficer = currentRole == UserRoles.loanOfficer;
@@ -1600,10 +1599,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ? Icons.inventory_2_rounded
                     : Icons.point_of_sale_rounded)));
 
-    final allLowStock = ref
-        .watch(inventoryProvider)
-        .where((p) => p.status == 'low' || p.stock <= p.min)
-        .toList();
     final firstName = activeStaff.name.split(' ')[0];
 
     return Row(
@@ -1762,7 +1757,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             InkWell(
-              onTap: () => _showTopNotificationsModal(context),
+              // The bell used to open a mini sheet that repeated the same two
+              // conditions as the home card. It now opens the notification screen,
+              // where the notice can be read full screen.
+              onTap: () => context.push('/notifications'),
               borderRadius: BorderRadius.circular(99),
               child: Stack(
                 clipBehavior: Clip.none,
@@ -1775,7 +1773,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  if (allLowStock.isNotEmpty)
+                  if (unreadNotifications > 0)
                     Positioned(
                       top: 2,
                       right: 2,
@@ -1788,7 +1786,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
                         child: Text(
-                          '${allLowStock.length}',
+                          '$unreadNotifications',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 9.5,
@@ -3143,6 +3141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Low Stock Alert Banner
+  // ignore: unused_element
   Widget _buildLowStockNotificationBanner(
       BuildContext context, List<ProductItem> lowItems) {
     if (lowItems.isEmpty) return const SizedBox.shrink();
@@ -3422,12 +3421,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Low Stock Item
+  /// One low-stock row, with the product's own picture.
+  ///
+  /// The thumbnail was drawn from a colour hint — navy for Samsung, silver for
+  /// everything else — so AirPods Pro and an itel Vision showed the same purple
+  /// phone. Catalogue artwork wins; otherwise ProductArt picks by device type
+  /// before brand, so earbuds look like earbuds.
   Widget _buildLowStockItem({
-    required String name,
-    required int leftCount,
-    required String colorType,
+    required ProductItem product,
     required VoidCallback onTap,
   }) {
+    final name = product.name;
+    final leftCount = product.stock;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -3435,8 +3440,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            // Dual mini phone thumbnail
-            _buildPhoneMiniThumbnail(colorType),
+            _LowStockThumb(product: product),
             const SizedBox(width: 14),
 
             // Name & red count pill
@@ -3509,6 +3513,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPhoneMiniThumbnail(String type) {
     final isBlue = type == 'blue';
     final isSilver = type == 'silver';
@@ -3780,6 +3785,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+/// A low-stock row's picture: catalogue artwork first, then a type-aware stand-in.
+class _LowStockThumb extends StatelessWidget {
+  const _LowStockThumb({required this.product});
+
+  final ProductItem product;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = ProductArt.resolve(
+      explicit: product.imageAsset,
+      brand: product.brand,
+      name: product.name,
+      category: product.cat,
+    );
+    final url = product.imageUrl;
+
+    Widget fallback = Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF5FE),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(Icons.devices_other_rounded,
+          size: 22, color: AppTheme.brand600),
+    );
+
+    return Container(
+      width: 46,
+      height: 54,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8EEF7)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: url != null && url.isNotEmpty
+          ? Image.network(
+              url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Image.asset(
+                asset,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => fallback,
+              ),
+            )
+          : Image.asset(
+              asset,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => fallback,
+            ),
     );
   }
 }
