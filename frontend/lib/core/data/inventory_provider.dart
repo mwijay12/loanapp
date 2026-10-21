@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_constants.dart';
 import 'mock_lims_data.dart';
+import 'sales_provider.dart';
 
 /// User Role State — SERVER-OWNED, read-only projection.
 /// P0: the client can never invent or switch roles. The role starts as
@@ -316,15 +317,14 @@ final activeLoansTotalProvider = Provider<int>((ref) {
   return loans.fold<int>(0, (sum, l) => sum + l.amount);
 });
 
-final todaySalesTotalProvider = Provider<int>((ref) {
-  final products = ref.watch(inventoryProvider);
-  return products.fold<int>(0, (sum, p) => sum + (p.price * p.soldToday));
-});
+// Kept as aliases so existing screens keep compiling, but the numbers now come
+// from the sales ledger. `products.soldToday` was a stored column that only moved
+// when someone edited it by hand.
+final todaySalesTotalProvider =
+    Provider<int>((ref) => ref.watch(salesTodayTotalProvider));
 
-final todayTransactionsCountProvider = Provider<int>((ref) {
-  final products = ref.watch(inventoryProvider);
-  return products.fold<int>(0, (sum, p) => sum + p.soldToday);
-});
+final todayTransactionsCountProvider =
+    Provider<int>((ref) => ref.watch(salesTodayCountProvider));
 
 /// Attendance & Shift Management
 class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {

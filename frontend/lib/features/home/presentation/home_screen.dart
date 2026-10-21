@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/branch_provider.dart';
+import '../../../core/widgets/live_greeting.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/services/live_data.dart';
@@ -1661,14 +1662,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Good morning,',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF475569),
-                      ),
-                    ),
+                    // Real clock, East Africa Time, refreshed on the minute.
+                    const LiveGreeting(),
                     const SizedBox(height: 1),
                     Row(
                       children: [

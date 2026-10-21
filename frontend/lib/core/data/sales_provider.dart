@@ -1,0 +1,108 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// One completed sale, as stored in `public.sales`.
+class SaleRecord {
+  const SaleRecord({
+    required this.receiptNo,
+    required this.total,
+    required this.paid,
+    required this.kind,
+    required this.soldAt,
+    this.branchId,
+    this.imei,
+    this.customerName,
+    this.productId,
+  });
+
+  final String receiptNo;
+  final int total;
+  final int paid;
+  final String kind;
+  final DateTime soldAt;
+  final String? branchId;
+  final String? imei;
+  final String? customerName;
+  final int? productId;
+
+  bool get isCash => kind == 'cash';
+  int get balance => (total - paid).clamp(0, 1 << 62);
+
+  factory SaleRecord.fromRow(Map<String, dynamic> row) {
+    return SaleRecord(
+      receiptNo: (row['receipt_no'] ?? '').toString(),
+      total: _money(row['total']),
+      paid: _money(row['paid']),
+      kind: (row['kind'] ?? 'cash').toString(),
+      soldAt: DateTime.tryParse((row['sold_at'] ?? '').toString())?.toLocal() ??
+          DateTime.now(),
+      branchId: row['branch_id']?.toString(),
+      imei: row['imei']?.toString(),
+      customerName: row['customer_name']?.toString(),
+      productId: row['product_id'] is int ? row['product_id'] as int : null,
+    );
+  }
+
+  static int _money(dynamic v) {
+    if (v is num) return v.round();
+    if (v is String) {
+      final cleaned = v.replaceAll(RegExp(r'[^0-9.\-]'), '');
+      return double.tryParse(cleaned)?.round() ?? 0;
+    }
+    return 0;
+  }
+}
+
+class SalesNotifier extends StateNotifier<List<SaleRecord>> {
+  SalesNotifier([List<SaleRecord> seed = const []]) : super(List.from(seed));
+
+  void replaceAll(List<SaleRecord> rows) {
+    state = List<SaleRecord>.from(rows);
+  }
+
+  /// Adds a sale the counter just wrote, so the totals move immediately instead
+  /// of waiting for the next reload.
+  void add(SaleRecord sale) {
+    state = [sale, ...state];
+  }
+
+  void clear() => state = <SaleRecord>[];
+}
+
+final salesProvider =
+    StateNotifierProvider<SalesNotifier, List<SaleRecord>>((ref) {
+  return SalesNotifier();
+});
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Today's takings, read from the sales ledger.
+///
+/// This replaces a sum over `products.sold_today`, a column that only changes when
+/// someone edits the row by hand. That is why "Today's Sales" read 66,006,000 for
+/// days: it was never a total of anything that happened.
+final salesTodayTotalProvider = Provider<int>((ref) {
+  final now = DateTime.now();
+  return ref
+      .watch(salesProvider)
+      .where((s) => _sameDay(s.soldAt, now))
+      .fold<int>(0, (sum, s) => sum + s.paid);
+});
+
+final salesTodayCountProvider = Provider<int>((ref) {
+  final now = DateTime.now();
+  return ref.watch(salesProvider).where((s) => _sameDay(s.soldAt, now)).length;
+});
+
+/// Last seven days, oldest first, for the home sparkline.
+final salesLastSevenDaysProvider = Provider<List<int>>((ref) {
+  final sales = ref.watch(salesProvider);
+  final today = DateTime.now();
+  return List<int>.generate(7, (i) {
+    final day = DateTime(today.year, today.month, today.day)
+        .subtract(Duration(days: 6 - i));
+    return sales
+        .where((s) => _sameDay(s.soldAt, day))
+        .fold<int>(0, (sum, s) => sum + s.paid);
+  });
+});

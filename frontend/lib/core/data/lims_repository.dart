@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import 'mock_lims_data.dart';
 import 'branch_provider.dart';
 import 'inventory_provider.dart';
+import 'sales_provider.dart';
 import 'supabase_source.dart';
 
 /// Representation of an installment schedule item for loans
@@ -188,7 +189,7 @@ class MockLimsRepository implements LimsRepository {
         break;
       }
     }
-    await SupabaseSource.recordSale(
+    final stored = await SupabaseSource.recordSale(
       receiptNo: result.receiptId,
       kind: kind,
       total: result.totalAmount,
@@ -202,6 +203,20 @@ class MockLimsRepository implements LimsRepository {
       branchId: branchId,
       productId: phone.id,
     );
+    if (stored) {
+      ref.read(salesProvider.notifier).add(
+            SaleRecord(
+              receiptNo: result.receiptId,
+              total: result.totalAmount,
+              paid: result.amountPaid,
+              kind: kind,
+              soldAt: result.timestamp,
+              imei: result.primaryImei,
+              customerName: result.customerName,
+              productId: phone.id,
+            ),
+          );
+    }
   }
 
   @override

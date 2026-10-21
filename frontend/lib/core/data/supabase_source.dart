@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/api_service.dart';
 import 'branch_provider.dart';
+import 'sales_provider.dart';
 import 'mock_lims_data.dart';
 
 /// Reads the app's rows out of Supabase.
@@ -21,6 +22,31 @@ class SupabaseSource {
   const SupabaseSource();
 
   bool get isConfigured => SupabaseConfig.isConfigured;
+
+  /// Sales for the last [days] days. The home screen totals come from here, so a
+  /// completed sale changes the numbers without a reload or a rebuild.
+  static Future<List<SaleRecord>> fetchSales({int days = 60}) async {
+    if (!SupabaseConfig.isConfigured) return const [];
+    try {
+      final client = Supabase.instance.client;
+      final since = DateTime.now()
+          .subtract(Duration(days: days))
+          .toUtc()
+          .toIso8601String();
+      final rows = await client
+          .from('sales')
+          .select()
+          .gte('sold_at', since)
+          .order('sold_at', ascending: false);
+      return (rows as List)
+          .map((r) => SaleRecord.fromRow(Map<String, dynamic>.from(r)))
+          .toList();
+    } catch (e) {
+      ApiService.lastBackendError = 'fetchSales: $e';
+      debugPrint('LIMS: could not read sales -> $e');
+      return const [];
+    }
+  }
 
   /// Writes one completed sale to `public.sales`.
   ///

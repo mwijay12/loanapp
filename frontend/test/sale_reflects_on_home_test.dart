@@ -32,14 +32,13 @@ ProductItem _phone({int id = 1, int stock = 3, int price = 1000000}) => ProductI
     );
 
 void main() {
-  test('a cash sale raises today revenue and the transaction count', () {
+  test('stock moves, but revenue comes from the ledger, not from stock', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
     container.read(inventoryProvider.notifier).replaceAll([_phone()]);
 
     final beforeSales = container.read(todaySalesTotalProvider);
-    final beforeTx = container.read(todayTransactionsCountProvider);
     final beforeStock = container.read(totalPhonesCountProvider);
 
     final phone = container
@@ -48,9 +47,11 @@ void main() {
 
     container.read(inventoryProvider.notifier).sellProduct(phone.id);
 
-    expect(container.read(todaySalesTotalProvider), beforeSales + phone.price);
-    expect(container.read(todayTransactionsCountProvider), beforeTx + 1);
+    // The unit left the shelf...
     expect(container.read(totalPhonesCountProvider), beforeStock - 1);
+    // ...but revenue is not inferred from that. It is read from public.sales, so a
+    // stock edit cannot inflate today's takings.
+    expect(container.read(todaySalesTotalProvider), beforeSales);
   });
 
   test('a financed sale moves a unit to loans, not to cash sales', () {
