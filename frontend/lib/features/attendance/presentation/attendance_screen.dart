@@ -8,6 +8,8 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/location_service.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/services/pdf_labels.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -363,6 +365,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                         _showTopAlert(context, title: 'Generating Audit PDF', message: 'Preparing official timesheet report...', isSuccess: true);
                         try {
                           await PdfReportService.generateAndDownloadTimesheetReport(
+                            lang: ref.read(localeProvider).languageCode == 'sw'
+                                ? PdfLang.sw
+                                : PdfLang.en,
                             branchName: branchName,
                             records: records,
                           );

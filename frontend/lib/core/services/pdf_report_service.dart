@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
+
+import 'pdf_labels.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../constants/app_constants.dart';
@@ -10,12 +12,14 @@ class PdfReportService {
   PdfReportService._();
 
   static Future<void> generateAndDownloadFinancialReport({
+    PdfLang lang = PdfLang.en,
     required String branchName,
     required List<ProductItem> products,
     required List<LoanItem> loans,
     required int totalSales,
     required int totalStock,
   }) async {
+    final l = PdfLabels(lang);
     final pdf = pw.Document();
     final now = DateTime.now();
     final dateStr = DateFormat('dd MMMM yyyy, HH:mm').format(now);
@@ -47,7 +51,7 @@ class PdfReportService {
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    'Branch Operations, Sales & Credit Audit Report',
+                    l.reportTitle,
                     style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
                   ),
                   pw.Text(
@@ -81,10 +85,10 @@ class PdfReportService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              _buildPdfKpiBox('Total Handset Units', '$totalStock units', PdfColors.blue700),
-              _buildPdfKpiBox('Active Credit Ledger', 'TZS ${_formatNumber(totalLoanBal)}', PdfColors.purple700),
-              _buildPdfKpiBox('Overdue Accounts', '${overdueLoans.length} active', overdueLoans.isNotEmpty ? PdfColors.red700 : PdfColors.green700),
-              _buildPdfKpiBox('Audit Status', 'Reconciled', PdfColors.green700),
+              _buildPdfKpiBox(l.totalUnits, '$totalStock units', PdfColors.blue700),
+              _buildPdfKpiBox(l.activeLedger, 'TZS ${_formatNumber(totalLoanBal)}', PdfColors.purple700),
+              _buildPdfKpiBox(l.overdueAccounts, '${overdueLoans.length} active', overdueLoans.isNotEmpty ? PdfColors.red700 : PdfColors.green700),
+              _buildPdfKpiBox('Audit Status', l.reconciled, PdfColors.green700),
             ],
           ),
           pw.SizedBox(height: 20),
@@ -96,7 +100,7 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
-            headers: ['Model', 'Variant / SKU', 'Unit Price', 'In Stock', 'Status'],
+            headers: [l.model, l.sku, l.unitPrice, l.inStock, l.status],
             data: products.take(8).map((p) {
               return [
                 p.name,
@@ -120,7 +124,7 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
-            headers: ['Customer', 'Handset Item', 'Remaining Balance', 'Guarantor', 'Status'],
+            headers: [l.customer, l.handset, 'Remaining Balance', l.guarantor, l.status],
             data: loans.map((l) {
               return [
                 l.name,
@@ -150,7 +154,7 @@ class PdfReportService {
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),
-                  pw.Text('Signature & Date', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  pw.Text(l.signatureDate, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
                 ],
               ),
               pw.Column(
@@ -160,7 +164,7 @@ class PdfReportService {
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),
-                  pw.Text('Executive Stamp & Approval', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  pw.Text(l.execStamp, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
                 ],
               ),
             ],
@@ -177,9 +181,11 @@ class PdfReportService {
   }
 
   static Future<void> generateAndDownloadTimesheetReport({
+    PdfLang lang = PdfLang.en,
     required String branchName,
     required List<AttendanceRecord> records,
   }) async {
+    final l = PdfLabels(lang);
     final pdf = pw.Document();
     final now = DateTime.now();
     final dateStr = DateFormat('dd MMMM yyyy, HH:mm').format(now);
@@ -208,7 +214,7 @@ class PdfReportService {
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    'Official Staff Attendance & Timesheet Audit',
+                    l.timesheetTitle,
                     style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
                   ),
                   pw.Text(
@@ -243,10 +249,10 @@ class PdfReportService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              _buildPdfKpiBox('Total Staff Logged', '${records.length} Staff', PdfColors.blue800),
-              _buildPdfKpiBox('Active Shifts', '${records.where((r) => r.clockOutTime == null).length} On Duty', PdfColors.green800),
-              _buildPdfKpiBox('Completed Shifts', '${records.where((r) => r.clockOutTime != null).length} Shifts', PdfColors.indigo800),
-              _buildPdfKpiBox('Compliance Score', '97.4% On-Time', PdfColors.teal800),
+              _buildPdfKpiBox(l.totalStaff, '${records.length} Staff', PdfColors.blue800),
+              _buildPdfKpiBox(l.activeShifts, '${records.where((r) => r.clockOutTime == null).length} On Duty', PdfColors.green800),
+              _buildPdfKpiBox(l.completedShifts, '${records.where((r) => r.clockOutTime != null).length} Shifts', PdfColors.indigo800),
+              _buildPdfKpiBox(l.compliance, '97.4% On-Time', PdfColors.teal800),
             ],
           ),
           pw.SizedBox(height: 16),
@@ -256,7 +262,7 @@ class PdfReportService {
 
           // Timesheet Table
           pw.TableHelper.fromTextArray(
-            headers: ['Staff Name', 'Role', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Verification & GPS', 'Status'],
+            headers: [l.staffName, l.role, l.date, l.clockIn, l.clockOut, l.shiftHours, 'Verification & GPS', l.status],
             headerStyle: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8),
@@ -267,7 +273,7 @@ class PdfReportService {
               r.role,
               r.date,
               r.clockInTime,
-              r.clockOutTime ?? 'Active',
+              r.clockOutTime ?? l.active,
               '${r.shiftHours}h',
               r.verifiedBy,
               r.status,
@@ -286,17 +292,17 @@ class PdfReportService {
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),
-                  pw.Text('Signature & Date', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  pw.Text(l.signatureDate, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
                 ],
               ),
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('Executive Approval: Managing Director', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  pw.Text(l.execApproval, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                   pw.SizedBox(height: 24),
                   pw.Container(width: 140, height: 1, color: PdfColors.grey400),
                   pw.SizedBox(height: 4),
-                  pw.Text('Executive Stamp & Signature', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  pw.Text(l.execStamp, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
                 ],
               ),
             ],
@@ -318,10 +324,12 @@ class PdfReportService {
   /// of the actual device — the thing a buyer checks if the handset is ever
   /// disputed — plus the deposit, the financed balance and the weekly amount.
   static Future<void> generateAndDownloadReceipt({
+    PdfLang lang = PdfLang.en,
     required LoanItem loan,
     required String branchName,
     required String servedBy,
   }) async {
+    final l = PdfLabels(lang);
     final pdf = pw.Document();
     final now = DateTime.now();
     final receiptNo =
@@ -343,11 +351,11 @@ class PdfReportService {
                       style: pw.TextStyle(
                           fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 2),
-                  pw.Text('Smartphone Retail & Hire Purchase',
+                  pw.Text(l.brand,
                       style: const pw.TextStyle(fontSize: 8)),
                   pw.Text(branchName, style: const pw.TextStyle(fontSize: 8)),
                   pw.SizedBox(height: 6),
-                  pw.Text('RISITI YA MAUZO',
+                  pw.Text(l.saleReceipt,
                       style: pw.TextStyle(
                           fontSize: 10, fontWeight: pw.FontWeight.bold)),
                 ],
@@ -355,29 +363,28 @@ class PdfReportService {
             ),
             pw.SizedBox(height: 8),
             pw.Divider(),
-            _row('Risiti Na.', receiptNo),
-            _row('Tarehe', DateFormat('dd/MM/yyyy HH:mm').format(now)),
-            _row('Aliyehudumia', servedBy),
+            _row(l.receiptNo, receiptNo),
+            _row(l.date, DateFormat('dd/MM/yyyy HH:mm').format(now)),
+            _row(l.servedBy, servedBy),
             pw.Divider(),
-            _row('Mteja', loan.name),
-            _row('Simu', loan.phone),
-            _row('NIDA', loan.nida),
-            _row('Mahali', loan.location),
+            _row(l.customer, loan.name),
+            _row(l.phone, loan.phone),
+            _row(l.nida, loan.nida),
+            _row(l.location, loan.location),
             pw.Divider(),
-            _row('Bidhaa', loan.item),
+            _row(l.item, loan.item),
             _row('IMEI', loan.imei),
             pw.Divider(),
-            _row('Bei ya rejareja', _tzs(loan.amount)),
-            _row('Malipo ya kwanza', _tzs(deposit)),
-            _row('Deni lililobaki', _tzs(financed)),
-            _row('Mkopo wa wiki', _tzs(loan.weeklyInstallment)),
-            _row('Muda', '${loan.installmentWeeks} wiki'),
-            _row('Malipo ya kwanza tarehe', loan.due),
+            _row(l.retailPrice, _tzs(loan.amount)),
+            _row(l.deposit, _tzs(deposit)),
+            _row(l.balance, _tzs(financed)),
+            _row(l.weekly, _tzs(loan.weeklyInstallment)),
+            _row(l.term, '${loan.installmentWeeks} ${l.weeks}'),
+            _row(l.firstDue, loan.due),
             pw.Divider(),
             pw.SizedBox(height: 4),
             pw.Text(
-              'Kifaa hiki kimeandikishwa kwa IMEI hapo juu. Risiti hii ni '
-              'uthibitisho wa umiliki na wa mkataba wa malipo kwa awamu.',
+              l.loanNote,
               style: const pw.TextStyle(fontSize: 7),
             ),
             pw.SizedBox(height: 10),
@@ -387,18 +394,18 @@ class PdfReportService {
                 pw.Column(children: [
                   pw.Container(width: 70, height: 1, color: PdfColors.grey500),
                   pw.SizedBox(height: 3),
-                  pw.Text('Mteja', style: const pw.TextStyle(fontSize: 7)),
+                  pw.Text(l.customer, style: const pw.TextStyle(fontSize: 7)),
                 ]),
                 pw.Column(children: [
                   pw.Container(width: 70, height: 1, color: PdfColors.grey500),
                   pw.SizedBox(height: 3),
-                  pw.Text('Muuzaji', style: const pw.TextStyle(fontSize: 7)),
+                  pw.Text(l.sellerSign, style: const pw.TextStyle(fontSize: 7)),
                 ]),
               ],
             ),
             pw.SizedBox(height: 6),
             pw.Center(
-              child: pw.Text('Asante kwa kuchagua LIMS',
+              child: pw.Text(l.thanks,
                   style: const pw.TextStyle(fontSize: 8)),
             ),
           ],
@@ -408,7 +415,7 @@ class PdfReportService {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'LIMS_Risiti_$receiptNo.pdf',
+      name: 'LIMS_${l.receiptFilePrefix}_$receiptNo.pdf',
     );
   }
 
@@ -416,10 +423,12 @@ class PdfReportService {
   /// Counter receipt for a completed sale, printed while the customer is still
   /// at the till. Cash and loan sales both land here.
   static Future<void> generateAndDownloadSaleReceipt({
+    PdfLang lang = PdfLang.en,
     required POSSaleResult sale,
     required String branchName,
     required String servedBy,
   }) async {
+    final l = PdfLabels(lang);
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -436,14 +445,14 @@ class PdfReportService {
                       style: pw.TextStyle(
                           fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 2),
-                  pw.Text('Smartphone Retail & Hire Purchase',
+                  pw.Text(l.brand,
                       style: const pw.TextStyle(fontSize: 8)),
                   pw.Text(branchName, style: const pw.TextStyle(fontSize: 8)),
                   pw.SizedBox(height: 6),
                   pw.Text(
                     sale.transactionType == 'LOAN'
-                        ? 'RISITI YA MKOPO'
-                        : 'RISITI YA MAUZO',
+                        ? l.loanReceipt
+                        : l.saleReceipt,
                     style: pw.TextStyle(
                         fontSize: 10, fontWeight: pw.FontWeight.bold),
                   ),
@@ -452,28 +461,27 @@ class PdfReportService {
             ),
             pw.SizedBox(height: 8),
             pw.Divider(),
-            _row('Risiti Na.', sale.receiptId),
-            _row('Tarehe',
+            _row(l.receiptNo, sale.receiptId),
+            _row(l.date,
                 DateFormat('dd/MM/yyyy HH:mm').format(sale.timestamp)),
-            _row('Aliyehudumia', servedBy),
+            _row(l.servedBy, servedBy),
             pw.Divider(),
-            _row('Mteja', sale.customerName),
-            _row('Simu', sale.customerPhone),
+            _row(l.customer, sale.customerName),
+            _row(l.phone, sale.customerPhone),
             pw.Divider(),
-            _row('Bidhaa', sale.phoneModel),
+            _row(l.item, sale.phoneModel),
             _row('IMEI', sale.primaryImei),
             if ((sale.secondaryImei ?? '').isNotEmpty)
-              _row('IMEI 2', sale.secondaryImei!),
+              _row(l.imei2, sale.secondaryImei!),
             pw.Divider(),
-            _row('Jumla', _tzs(sale.totalAmount)),
+            _row(l.total, _tzs(sale.totalAmount)),
             _row('Imelipwa', _tzs(sale.amountPaid)),
-            _row('Salio', _tzs(sale.balanceRemaining)),
-            _row('Njia ya malipo', sale.paymentChannel),
+            _row(l.remaining, _tzs(sale.balanceRemaining)),
+            _row(l.channel, sale.paymentChannel),
             pw.Divider(),
             pw.SizedBox(height: 4),
             pw.Text(
-              'Bidhaa hii imeandikishwa kwa IMEI hapo juu. Hifadhi risiti hii '
-              'kwa dhamana ya kifaa na mkataba wa malipo.',
+              l.saleNote,
               style: const pw.TextStyle(fontSize: 7),
             ),
             pw.SizedBox(height: 10),
@@ -483,18 +491,18 @@ class PdfReportService {
                 pw.Column(children: [
                   pw.Container(width: 70, height: 1, color: PdfColors.grey500),
                   pw.SizedBox(height: 3),
-                  pw.Text('Mteja', style: const pw.TextStyle(fontSize: 7)),
+                  pw.Text(l.customer, style: const pw.TextStyle(fontSize: 7)),
                 ]),
                 pw.Column(children: [
                   pw.Container(width: 70, height: 1, color: PdfColors.grey500),
                   pw.SizedBox(height: 3),
-                  pw.Text('Muuzaji', style: const pw.TextStyle(fontSize: 7)),
+                  pw.Text(l.sellerSign, style: const pw.TextStyle(fontSize: 7)),
                 ]),
               ],
             ),
             pw.SizedBox(height: 6),
             pw.Center(
-              child: pw.Text('Asante kwa kuchagua LIMS',
+              child: pw.Text(l.thanks,
                   style: const pw.TextStyle(fontSize: 8)),
             ),
           ],
@@ -504,7 +512,7 @@ class PdfReportService {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'LIMS_Risiti_${sale.receiptId}.pdf',
+      name: 'LIMS_${l.receiptFilePrefix}_${sale.receiptId}.pdf',
     );
   }
 
@@ -513,9 +521,11 @@ class PdfReportService {
   /// remains, with a week-by-week schedule so the balance can be checked at a
   /// glance.
   static Future<void> generateAndDownloadLoanStatement({
+    PdfLang lang = PdfLang.en,
     required LoanItem loan,
     required String branchName,
   }) async {
+    final l = PdfLabels(lang);
     final pdf = pw.Document();
     final now = DateTime.now();
     final deposit = loan.totalDeposit;
@@ -537,7 +547,7 @@ class PdfReportService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('LIMS · TAARIFA YA MKOPO',
+                  pw.Text('LIMS · ${l.statementTitle}',
                       style: pw.TextStyle(
                           fontSize: 16,
                           fontWeight: pw.FontWeight.bold,
@@ -587,7 +597,7 @@ class PdfReportService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Mteja',
+                      pw.Text(l.customer,
                           style: pw.TextStyle(
                               fontSize: 9, fontWeight: pw.FontWeight.bold)),
                       pw.SizedBox(height: 3),
@@ -602,14 +612,14 @@ class PdfReportService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Kifaa',
+                      pw.Text(l.handset,
                           style: pw.TextStyle(
                               fontSize: 9, fontWeight: pw.FontWeight.bold)),
                       pw.SizedBox(height: 3),
                       pw.Text(loan.item, style: const pw.TextStyle(fontSize: 10)),
                       pw.Text('IMEI: ${loan.imei}',
                           style: const pw.TextStyle(fontSize: 9)),
-                      pw.Text('Dhamana: ${loan.guarantorName}',
+                      pw.Text('${l.guarantor}: ${loan.guarantorName}',
                           style: const pw.TextStyle(fontSize: 9)),
                       pw.Text(loan.guarantorPhone,
                           style: const pw.TextStyle(fontSize: 9)),
@@ -622,9 +632,9 @@ class PdfReportService {
           pw.SizedBox(height: 14),
           pw.Row(
             children: [
-              _buildPdfKpiBox('Bei ya rejareja', _tzs(loan.amount), PdfColors.blue800),
+              _buildPdfKpiBox(l.retailPrice, _tzs(loan.amount), PdfColors.blue800),
               pw.SizedBox(width: 8),
-              _buildPdfKpiBox('Malipo ya kwanza', _tzs(deposit), PdfColors.blue800),
+              _buildPdfKpiBox(l.deposit, _tzs(deposit), PdfColors.blue800),
               pw.SizedBox(width: 8),
               _buildPdfKpiBox('Deni', _tzs(financed), PdfColors.blue800),
             ],
@@ -634,19 +644,19 @@ class PdfReportService {
             children: [
               _buildPdfKpiBox('Iliyolipwa', _tzs(paidAmount), PdfColors.green700),
               pw.SizedBox(width: 8),
-              _buildPdfKpiBox('Salio', _tzs(balance), PdfColors.red700),
+              _buildPdfKpiBox(l.remaining, _tzs(balance), PdfColors.red700),
               pw.SizedBox(width: 8),
-              _buildPdfKpiBox('Mkopo wa wiki', _tzs(loan.weeklyInstallment),
+              _buildPdfKpiBox(l.weekly, _tzs(loan.weeklyInstallment),
                   PdfColors.blue800),
             ],
           ),
           pw.SizedBox(height: 16),
-          pw.Text('Ratiba ya malipo',
+          pw.Text(l.schedule,
               style:
                   pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.TableHelper.fromTextArray(
-            headers: const ['Wiki', 'Tarehe', 'Kiasi', 'Hali'],
+            headers: [l.weeks, l.date, l.amount, l.status],
             headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
             cellStyle: const pw.TextStyle(fontSize: 9),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
@@ -668,9 +678,7 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 18),
           pw.Text(
-            'Taarifa hii inaonyesha rekodi zilizopo kwenye mfumo wa LIMS. '
-            'Kama kuna malipo ambayo hayajaonekana, wasiliana na tawi lako na '
-            'leta risiti ya malipo.',
+            l.statementNote,
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
           ),
           pw.SizedBox(height: 20),
@@ -680,13 +688,13 @@ class PdfReportService {
               pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                 pw.Container(width: 150, height: 1, color: PdfColors.grey400),
                 pw.SizedBox(height: 4),
-                pw.Text('Sahihi ya mteja',
+                pw.Text(l.customerSign,
                     style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
               ]),
               pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                 pw.Container(width: 150, height: 1, color: PdfColors.grey400),
                 pw.SizedBox(height: 4),
-                pw.Text('Mhuri wa tawi',
+                pw.Text(l.branchStamp,
                     style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
               ]),
             ],
@@ -697,7 +705,7 @@ class PdfReportService {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'LIMS_Taarifa_${loan.id}.pdf',
+      name: 'LIMS_${l.statementFile}_${loan.id}.pdf',
     );
   }
 

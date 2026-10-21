@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/services/app_permissions_service.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/services/pdf_labels.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -308,6 +310,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         LimsToast.show(screenContext, 'Generating official PDF document...', isSuccess: true);
                         try {
                           await PdfReportService.generateAndDownloadFinancialReport(
+                            lang: ref.read(localeProvider).languageCode == 'sw'
+                                ? PdfLang.sw
+                                : PdfLang.en,
                             branchName: activeBranch,
                             products: products,
                             loans: loans,

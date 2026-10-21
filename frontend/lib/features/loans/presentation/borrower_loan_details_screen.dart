@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/services/pdf_labels.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/telecom_service.dart';
 import '../../../core/l10n/locale_provider.dart';
@@ -383,12 +384,14 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               final staff = ref.read(activeStaffMemberProvider);
               if (value == 'receipt') {
                 await PdfReportService.generateAndDownloadReceipt(
+                  lang: _locale.languageCode == 'sw' ? PdfLang.sw : PdfLang.en,
                   loan: loan,
                   branchName: branch,
                   servedBy: staff.name,
                 );
               } else {
                 await PdfReportService.generateAndDownloadLoanStatement(
+                  lang: _locale.languageCode == 'sw' ? PdfLang.sw : PdfLang.en,
                   loan: loan,
                   branchName: branch,
                 );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/pdf_labels.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -1843,6 +1844,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   Future<void> _printReceipt(POSSaleResult result, BuildContext dialogContext) async {
     final dialogNavigator = Navigator.of(dialogContext, rootNavigator: true);
     await PdfReportService.generateAndDownloadSaleReceipt(
+      lang: _locale.languageCode == 'sw' ? PdfLang.sw : PdfLang.en,
       sale: result,
       branchName: ref.read(activeBranchProvider),
       servedBy: ref.read(activeStaffMemberProvider).name,
