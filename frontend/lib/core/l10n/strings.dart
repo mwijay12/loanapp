@@ -39,6 +39,57 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Gusa akaunti ya majaribio kujaza fomu',
   },
 
+  // ----------------------------------------------------------------- transfer
+  'transfer.title': {'en': 'Transfer stock', 'sw': 'Hamisha stock'},
+  'transfer.from': {'en': 'FROM', 'sw': 'KUTOKA'},
+  'transfer.to': {'en': 'TO', 'sw': 'KWENDA'},
+  'transfer.noBranches': {
+    'en': 'There is no second open branch to send stock to.',
+    'sw': 'Hakuna tawi lingine lililo wazi la kupeleka stock.',
+  },
+  'transfer.devices': {'en': 'Devices at this branch', 'sw': 'Vifaa vilivyopo tawi hili'},
+  'transfer.inStock': {'en': 'in stock', 'sw': 'zipo stock'},
+  'transfer.selected': {'en': 'selected', 'sw': 'zimechaguliwa'},
+  'transfer.atThisBranch': {'en': 'at this branch', 'sw': 'katika tawi hili'},
+  'transfer.all': {'en': 'Select all', 'sw': 'Chagua zote'},
+  'transfer.clear': {'en': 'Clear', 'sw': 'Ondoa zote'},
+  'transfer.useSelection': {'en': 'Use selection', 'sw': 'Tumia zilizochaguliwa'},
+  'transfer.unspecified': {'en': 'Unspecified handset', 'sw': 'Simu bila jina'},
+  'transfer.noUnitsTitle': {
+    'en': 'No serials at this branch yet',
+    'sw': 'Hakuna serial tawi hili bado',
+  },
+  'transfer.noUnitsBody': {
+    'en': 'A transfer moves individual handsets, so the serials have to be on file first. Receive the delivery with its IMEIs scanned, and those devices appear here.',
+    'sw': 'Uhamishaji unaondoa simu halisi, kwa hiyo serial lazima ziwe kwenye kumbukumbu kwanza. Pokea mzigo ukiwa umepima IMEI, na hizo simu zitaonekana hapa.',
+  },
+  'transfer.noDatabase': {
+    'en': 'This build has no database connection, so branch stock cannot be listed.',
+    'sw': 'Build hii haina muunganisho wa database, kwa hiyo stock ya tawi haiwezi kuorodheshwa.',
+  },
+  'transfer.chooseDestination': {
+    'en': 'Choose the branch receiving the stock.',
+    'sw': 'Chagua tawi linalopokea stock.',
+  },
+  'transfer.chooseUnits': {
+    'en': 'Select at least one handset.',
+    'sw': 'Chagua angalau simu moja.',
+  },
+  'transfer.sendEmpty': {'en': 'Select devices to send', 'sw': 'Chagua vifaa vya kupeleka'},
+  'transfer.send': {'en': 'Send', 'sw': 'Tuma'},
+  'transfer.unit': {'en': 'unit', 'sw': 'kifaa'},
+  'transfer.units': {'en': 'units', 'sw': 'vifaa'},
+  'transfer.sent': {'en': 'transferred', 'sw': 'zimehamishwa'},
+  'transfer.reference': {'en': 'reference', 'sw': 'kumbukumbu'},
+  'transfer.failed': {
+    'en': 'The transfer was not recorded. Nothing moved.',
+    'sw': 'Uhamishaji haukuandikwa. Hakuna kilichohama.',
+  },
+  'transfer.noteTotals': {
+    'en': 'Company stock does not change: the phones changed branch, not owner.',
+    'sw': 'Stock ya kampuni haibadiliki: simu zimebadili tawi, sio mmiliki.',
+  },
+
   // ---------------------------------------------------------------------- home
   'home.todaySales': {'en': "Today's Sales", 'sw': 'Mauzo ya Leo'},
   'home.transactionsToday': {

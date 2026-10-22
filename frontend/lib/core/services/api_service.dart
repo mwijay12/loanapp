@@ -374,6 +374,102 @@ class ApiService {
     }
   }
 
+  /// Every handset physically present at one branch.
+  ///
+  /// Branch stock is not a number on the product row: `products.stock` is the
+  /// company total. What is at Mbagala is the set of serials whose `product_units.branch`
+  /// says so, which is the only claim the shop can defend when a customer asks.
+  Future<List<Map<String, dynamic>>> listStockUnits(String branch) async {
+    if (!isConfigured) return [];
+    try {
+      final rows = await client
+          .from('product_units')
+          .select()
+          .eq('branch', branch)
+          .eq('status', 'in_stock')
+          .order('received_at');
+      return List<Map<String, dynamic>>.from(rows);
+    } catch (e) {
+      _report('list stock units', e);
+      return [];
+    }
+  }
+
+  /// Moves handsets to another branch and records the movement.
+  ///
+  /// An internal transfer does not change how many phones the company owns, so
+  /// `products.stock` is deliberately untouched - the old screen decremented it,
+  /// which quietly wrote off stock every time a unit changed shops.
+  ///
+  /// Returns the receipt id, or null when nothing moved.
+  Future<int?> transferUnits({
+    required List<String> imeis,
+    required String from,
+    required String to,
+    String? note,
+  }) async {
+    if (!isConfigured || imeis.isEmpty) return null;
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    try {
+      final units = await client
+          .from('product_units')
+          .select()
+          .inFilter('imei', imeis)
+          .eq('branch', from)
+          .eq('status', 'in_stock');
+
+      final rows = List<Map<String, dynamic>>.from(units);
+      if (rows.isEmpty) {
+        lastBackendError = 'No matching units at $from.';
+        return null;
+      }
+
+      final receipt = await client
+          .from('stock_receipts')
+          .insert({
+            'branch': to,
+            'source': 'transfer',
+            'from_branch': from,
+            'units': rows.length,
+            'note': note,
+            'received_at': now,
+          })
+          .select('id')
+          .single();
+
+      final receiptId = receipt['id'];
+
+      // Lines by model, so the receiving branch sees what arrived.
+      final byModel = <String, int>{};
+      for (final r in rows) {
+        final model = (r['model'] as String?)?.trim();
+        final key = (model == null || model.isEmpty) ? 'Unspecified handset' : model;
+        byModel[key] = (byModel[key] ?? 0) + 1;
+      }
+      await client.from('stock_receipt_lines').insert([
+        for (final e in byModel.entries)
+          {
+            'receipt_id': receiptId,
+            'name': e.key,
+            'qty': e.value,
+            'unit_cost': 0,
+          },
+      ]);
+
+      await client
+          .from('product_units')
+          .update({'branch': to, 'receipt_id': receiptId, 'updated_at': now})
+          .inFilter('imei', rows.map((r) => r['imei']).toList())
+          .eq('branch', from);
+
+      return receiptId as int;
+    } catch (e) {
+      _report('transfer units', e);
+      return null;
+    }
+  }
+
   /// Writes the scanned serials so the shop can answer "where is this handset?"
   ///
   /// One row per IMEI in `product_units`, one row for the delivery in
