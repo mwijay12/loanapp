@@ -199,27 +199,60 @@ class UserRoles {
     return value != null && assignable.contains(value);
   }
 
-  /// Human label including the Swahili gloss used in the admin panel.
+  /// Plain English label.
+  ///
+  /// This used to return bilingual strings - "Super Admin (Mamlaka Kamili)" -
+  /// which meant an English screen always carried Swahili in parentheses. The
+  /// label is now one language; the screens pass the role through [labelKey]
+  /// and translate it, so a Swahili session gets a Swahili label and an English
+  /// one gets English.
   static String label(String role) {
     switch (role) {
       case superAdmin:
-        return 'Super Admin (Mamlaka Kamili)';
+        return 'Super Admin';
       case branchManager:
-        return 'Branch Manager (Meneja wa Tawi)';
+        return 'Branch Manager';
       case loanOfficer:
-        return 'Loan Officer (Afisa Mkopo)';
+        return 'Loan Officer';
       case storekeeper:
-        return 'Storekeeper (Afisa Stoo)';
+        return 'Storekeeper';
       case counterCashier:
-        return 'Counter Cashier (Mweka Hazina)';
+        return 'Counter Cashier';
       case auditor:
-        return 'Auditor (Mkaguzi — Kusoma Tu)';
+        return 'Auditor';
       case pending:
-        return 'Pending (Anasubiri Mwaliko)';
+        return 'Pending';
       default:
         return role;
     }
   }
+
+  /// The dictionary key for a role label, so the UI can translate it.
+  static String labelKey(String? raw) {
+    switch (normalize(raw)) {
+      case superAdmin:
+        return 'role.superAdmin';
+      case branchManager:
+        return 'role.branchManager';
+      case loanOfficer:
+        return 'role.loanOfficer';
+      case storekeeper:
+        return 'role.storekeeper';
+      case counterCashier:
+        return 'role.counterCashier';
+      case auditor:
+        return 'role.auditor';
+      case pending:
+        return 'role.pending';
+      default:
+        return 'role.unknown';
+    }
+  }
+
+  /// A branch assignment is a fact about a person, not a preference. Only the
+  /// Super Admin looks across the network, so only the Super Admin may move the
+  /// terminal between branches. Everyone else is pinned to their own branch.
+  static bool canSwitchBranch(String? raw) => normalize(raw) == superAdmin;
 
   // ---------------------------------------------------------------------
   // Capability sets.

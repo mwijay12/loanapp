@@ -380,6 +380,7 @@ class StaffMember {
     bool? canEditStock,
     bool? canApproveOverrides,
     String? lastActive,
+    String? avatarAsset,
     List<Color>? grad,
   }) {
     return StaffMember(
@@ -398,6 +399,7 @@ class StaffMember {
       canEditStock: canEditStock ?? this.canEditStock,
       canApproveOverrides: canApproveOverrides ?? this.canApproveOverrides,
       lastActive: lastActive ?? this.lastActive,
+      avatarAsset: avatarAsset ?? this.avatarAsset,
       grad: grad ?? this.grad,
     );
   }

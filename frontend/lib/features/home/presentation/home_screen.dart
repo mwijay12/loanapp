@@ -28,17 +28,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isSyncing = false;
 
-  final List<String> _branches = [
-    'Kariakoo Branch',
-    'Posta Main Branch',
-    'Mwenge Branch',
-    'Mlimani City Mall',
-    'Mbezi Branch',
-    'Mwanza Branch',
-    'Arusha Branch',
-    'Dodoma Branch',
-    'Zanzibar Branch',
-  ];
+  /// The picker used to carry its own hardcoded list of nine branches, which
+  /// did not include the launch branch (Mbagala) and did include branches that
+  /// do not exist in the database. It now reads the branch store.
 
   // P0: client-side role switcher removed. Role is server-assigned and
   // shown read-only in the header chip below.
@@ -62,6 +54,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isSuperAdmin =
         UserRoles.normalize(currentRole) == UserRoles.superAdmin;
     final activeBranch = ref.read(activeBranchProvider);
+    // Real branches, plus the terminal's own branch in case the store has not
+    // loaded yet - a picker that cannot show where you already are is a lie.
+    final branchNames = <String>[
+      ...ref
+          .read(branchesProvider)
+          .where((b) => b.active)
+          .map((b) => b.name),
+      if (!ref
+          .read(branchesProvider)
+          .any((b) => b.name == activeBranch))
+        activeBranch,
+    ];
 
     if (!isSuperAdmin) {
       ScaffoldMessenger.of(context).clearSnackBars();
@@ -101,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           fontSize: 13),
                     ),
                     Text(
-                      '$currentRole permissions are scoped to $activeBranch terminal.',
+                      'Branch Manager permissions are scoped to $activeBranch.',
                       style: const TextStyle(
                           color: Color(0xFF94A3B8), fontSize: 11),
                     ),
@@ -125,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ..._branches.map((b) {
+            ...branchNames.map((b) {
               final isSelected = activeBranch == b;
               return ListTile(
                 contentPadding:
@@ -158,10 +162,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         color: AppTheme.brand600)
                     : null,
                 onTap: () {
-                  ref.read(activeBranchProvider.notifier).setBranch(b);
+                  final moved =
+                      ref.read(activeBranchProvider.notifier).setBranch(b);
                   Navigator.pop(ctx);
-                  LimsToast.show(context, 'Switched terminal to $b',
-                      isSuccess: true);
+                  LimsToast.show(
+                    context,
+                    moved
+                        ? 'Switched terminal to $b'
+                        : 'Your role is pinned to $activeBranch.',
+                    isSuccess: moved,
+                  );
                 },
               );
             }),

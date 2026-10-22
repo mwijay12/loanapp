@@ -37,6 +37,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     _selectedTab = widget.initialTab == 'staff' ? 1 : 0;
   }
 
+  /// The staff tab is the Super Admin's console.
+  ///
+  /// `?tab=staff` used to open it for whoever held the link, and the menu row
+  /// that carried it was rendered for Branch Managers too. Opening the tab is
+  /// now decided by the role as well as by the link, and the build falls back to
+  /// the network view, which is what a manager is scoped to.
+  bool get _mayOpenStaffTab =>
+      UserRoles.canAdministerStaff(ref.watch(userRoleProvider));
+
   /// Today's takings against the same day-shape yesterday, or null when there is
   /// no yesterday to compare with.
   int? get _yesterdayDelta {
@@ -163,8 +172,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         actions: [
           // Active Role Badge Pill
           InkWell(
-            onTap:
-                canAdminister ? () => setState(() => _selectedTab = 1) : null,
+            onTap: _mayOpenStaffTab
+                ? () => setState(() => _selectedTab = 1)
+                : null,
             borderRadius: BorderRadius.circular(12),
             child: Container(
               margin: const EdgeInsets.only(right: 14),
@@ -293,7 +303,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             : null,
       ),
       body: SafeArea(
-        child: (_selectedTab == 0 || !canAdminister)
+        child: (_selectedTab == 0 || !canAdminister || !_mayOpenStaffTab)
             ? _buildNetworkOverviewTab(todaySales, activeLoansTotal,
                 lowStockCount, branches, alertList)
             : _buildStaffRbacTab(),
@@ -1381,15 +1391,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (modalCtx, setModalState) {
           return LimsBottomSheet(
-            title: 'Hariri Majukumu & Ruhusa (RBAC)',
+            title: tr(ref.read(localeProvider), 'adm.editRbacTitle'),
             subtitle: '${staff.name} · ${staff.staffCode}',
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Role Dropdown
-                const Text('Nafasi / Jukumu la Mfanyakazi:',
-                    style: TextStyle(
+                Text(tr(ref.read(localeProvider), 'adm.roleLabel'),
+                    style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.ink900)),
@@ -1481,7 +1491,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       ref.read(staffProvider.notifier).updateStaff(updated);
                       Navigator.pop(ctx);
                       LimsToast.show(
-                          context, 'Taarifa za ${staff.name} zimesasishwa!');
+                          context,
+                          trf(ref.read(localeProvider), 'adm.staffUpdated',
+                              {'name': staff.name}));
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
                     label: Text(tr(ref.read(localeProvider), 'adm.saveChanges'),
@@ -1545,7 +1557,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (modalCtx, setModalState) {
           return LimsBottomSheet(
-            title: 'Ongeza Mfanyakazi Mpya',
+            title: tr(ref.read(localeProvider), 'adm.addStaffTitle'),
             subtitle: tr(ref.read(localeProvider), 'adm.userSheetSubtitle'),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1554,7 +1566,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Jina Kamili la Mfanyakazi',
+                    labelText: tr(ref.read(localeProvider), 'adm.fullName'),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
@@ -1570,7 +1582,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         controller: phoneCtrl,
                         keyboardType: TextInputType.phone,
                         decoration: InputDecoration(
-                          labelText: 'Namba ya Simu',
+                          labelText:
+                              tr(ref.read(localeProvider), 'adm.phoneNumber'),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
@@ -1619,7 +1632,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     if (v != null) setModalState(() => selectedRole = v);
                   },
                   decoration: InputDecoration(
-                    labelText: 'Jukumu (Role)',
+                    labelText: tr(ref.read(localeProvider), 'adm.roleLabel'),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
@@ -1633,9 +1646,21 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   // Driven by AppConstants.branches. The old hand-written list
                   // omitted Mbagala entirely, so a Mbagala staff member could
                   // not be assigned to their own branch.
+                  // Read from the branch store, not from the constant list.
+                  // The constant list and the database disagreed on names
+                  // ('Kariakoo Main Branch' vs 'Kariakoo Branch'), so a new hire
+                  // could be assigned to a branch that no picker or sales query
+                  // ever matched.
                   items: [
-                    for (final b in AppConstants.branches)
-                      DropdownMenuItem(value: b, child: Text(b)),
+                    for (final b in ref
+                        .watch(branchesProvider)
+                        .where((b) => b.active))
+                      DropdownMenuItem(value: b.name, child: Text(b.name)),
+                    if (!ref
+                        .watch(branchesProvider)
+                        .any((b) => b.name == selectedBranch))
+                      DropdownMenuItem(
+                          value: selectedBranch, child: Text(selectedBranch)),
                   ],
                   onChanged: (v) {
                     if (v != null) setModalState(() => selectedBranch = v);
@@ -1672,7 +1697,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       final name = nameCtrl.text.trim();
                       if (name.isEmpty) {
                         LimsToast.show(
-                            context, 'Tafadhali ingiza jina la mfanyakazi',
+                            context,
+                            tr(ref.read(localeProvider), 'adm.nameRequired'),
                             isError: true);
                         return;
                       }

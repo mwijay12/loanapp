@@ -55,15 +55,26 @@ class PersonAvatar extends StatelessWidget {
       border: border,
     );
 
+    // A portrait is either a bundled asset (the seeded staff) or a URL the
+    // person uploaded to storage. Treating every value as an asset meant an
+    // uploaded photo silently fell back to initials.
     final child = asset == null
         ? _initialsTile()
-        : Image.asset(
-            asset!,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _initialsTile(),
-          );
+        : (asset!.startsWith('http')
+            ? Image.network(
+                asset!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _initialsTile(),
+              )
+            : Image.asset(
+                asset!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _initialsTile(),
+              ));
 
     return Container(
       width: size,
