@@ -37,6 +37,22 @@ class StorekeeperDashboard extends ConsumerWidget {
     final lowStock = ref.watch(lowStockCountProvider);
     final handsets = ref.watch(totalPhonesCountProvider);
     final days = ref.watch(storeDayCountsProvider);
+    // A real catalogue photo beats stand-in art. The bundled duo is the fallback
+    // for a shop whose rows carry no image, not a claim about what is on the
+    // shelf.
+    String? heroAsset;
+    String? heroUrl;
+    for (final p in ref.watch(inventoryProvider)) {
+      if (p.cat != 'phones') continue;
+      if ((p.imageAsset ?? '').isNotEmpty) {
+        heroAsset = p.imageAsset;
+        break;
+      }
+      if ((p.imageUrl ?? '').isNotEmpty) {
+        heroUrl = p.imageUrl;
+        break;
+      }
+    }
     final movements = ref.watch(recentStoreMovementsProvider);
 
     return Scaffold(
@@ -81,6 +97,8 @@ class StorekeeperDashboard extends ConsumerWidget {
                 locale: locale,
                 handsets: handsets,
                 day: days,
+                heroAsset: heroAsset,
+                heroUrl: heroUrl,
                 onViewInventory: () => context.go('/stock'),
               ),
               const SizedBox(height: 14),
@@ -419,12 +437,18 @@ class _StockSummaryCard extends StatelessWidget {
     required this.locale,
     required this.handsets,
     required this.day,
+    required this.heroAsset,
+    required this.heroUrl,
     required this.onViewInventory,
   });
 
   final Locale locale;
   final int handsets;
   final AsyncValue<StoreDayCounts> day;
+
+  /// Artwork from the catalogue, when a phone row carries one.
+  final String? heroAsset;
+  final String? heroUrl;
   final VoidCallback onViewInventory;
 
   @override
@@ -530,17 +554,40 @@ class _StockSummaryCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Image.asset(
-                  'assets/images/blue_iphones_duo.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.medium,
-                ),
+                _heroArt(),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+extension on _StockSummaryCard {
+  Widget _heroArt() {
+    Widget fallback() => Image.asset(
+          'assets/images/blue_iphones_duo.png',
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+        );
+    final url = heroUrl;
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => fallback(),
+      );
+    }
+    final asset = heroAsset;
+    if (asset != null && asset.isNotEmpty) {
+      return Image.asset(
+        asset,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => fallback(),
+      );
+    }
+    return fallback();
   }
 }
 
