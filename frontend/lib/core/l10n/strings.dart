@@ -619,6 +619,7 @@ const Map<String, Map<String, String>> _dictionary = {
   'recv.offline': {'en': 'No database connection in this build.', 'sw': 'Hakuna muunganisho wa database kwenye build hii.'},
   'recv.serialsStored': {'en': '{n} IMEIs saved to the handset register', 'sw': 'IMEI {n} zimehifadhiwa kwenye rejista ya simu'},
   'recv.serialsSkipped': {'en': '{n} serials were already on file and were skipped', 'sw': 'Serial {n} zilikuwa zimekwisha hifadhiwa, zimerukwa'},
+  'recv.serialsFailed': {'en': '{n} IMEIs could not be saved — the handset register did not accept them', 'sw': 'IMEI {n} hazikuweza kuhifadhiwa — rejista ya simu haikuzipokea'},
   'recv.noSerials': {'en': 'No IMEIs scanned — the units arrived but the individual handsets are not on file', 'sw': 'Hakuna IMEI iliyopimwa — vifaa vimefika lakini simu mahususi haziko kwenye kumbukumbu'},
   'recv.err_lines': {'en': 'Add at least one model.', 'sw': 'Ongeza modeli angalau moja.'},
   'recv.err_quantity': {'en': 'Every line needs a quantity of at least 1.', 'sw': 'Kila bidhaa inahitaji idadi ya angalau 1.'},
