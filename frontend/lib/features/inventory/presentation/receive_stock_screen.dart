@@ -233,12 +233,32 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
     setState(() => _busy = false);
 
     if (result.ok) {
+      final scanned = receipt.imeis.length;
+      final stored = result.unitsStored;
+      final skipped = scanned - stored;
+
+      final head = result.persisted
+          ? tf('recv.ok', {'n': '${receipt.units}', 'b': receipt.branch})
+          : tf('recv.okLocal', {'n': '${receipt.units}'});
+
+      // Say plainly what happened to the serials. "29 units received" is true
+      // even when not one IMEI was saved, and that gap is what the register is
+      // meant to close.
+      final String tail;
+      if (!result.persisted) {
+        tail = '';
+      } else if (scanned == 0) {
+        tail = t('recv.noSerials');
+      } else if (skipped > 0) {
+        tail = tf('recv.serialsSkipped', {'n': '$skipped'});
+      } else {
+        tail = tf('recv.serialsStored', {'n': '$stored'});
+      }
+
       LimsToast.show(
         context,
-        result.persisted
-            ? tf('recv.ok', {'n': '${receipt.units}', 'b': receipt.branch})
-            : tf('recv.okLocal', {'n': '${receipt.units}'}),
-        isSuccess: true,
+        tail.isEmpty ? head : '$head · $tail',
+        isSuccess: stored > 0 || scanned == 0,
       );
       Navigator.pop(context, true);
       return;

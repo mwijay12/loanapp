@@ -295,40 +295,52 @@ class ApiService {
   /// the screen says so instead of inventing a model and a price.
   Future<ImeiLookup> findUnitByImei(String imei) async {
     try {
+      // A serialised handset answers for itself: this row is the physical phone,
+      // so its status beats whatever the model-level stock says.
+      final unit = await client
+          .from('product_units')
+          .select()
+          .eq('imei', imei)
+          .maybeSingle();
+
+      if (unit != null) {
+        return ImeiLookup(
+          imei: imei,
+          status: (unit['status'] as String?) ?? 'in_stock',
+          row: unit,
+        );
+      }
+
       final product = await client
           .from('products')
           .select()
-          .or('imei1.eq.$imei,imei2.eq.$imei')
+          .eq('imei1', imei)
           .maybeSingle();
-      if (product != null) {
-        return ImeiLookup(
-          imei: imei,
-          status: 'in_stock',
-          row: Map<String, dynamic>.from(product),
-        );
-      }
-    } catch (e) {
-      _report('imei lookup (products)', e);
-    }
 
-    try {
+      if (product != null) {
+        return ImeiLookup(imei: imei, status: 'in_stock', row: product);
+      }
+
       final loan = await client
           .from('loans')
           .select()
-          .or('imei1.eq.$imei,imei2.eq.$imei')
+          .eq('imei', imei)
           .maybeSingle();
+
       if (loan != null) {
+        final overdue = (loan['status'] as String?) == 'overdue';
         return ImeiLookup(
           imei: imei,
-          status: 'on_loan',
-          row: Map<String, dynamic>.from(loan),
+          status: overdue ? 'overdue' : 'on_loan',
+          row: loan,
         );
       }
-    } catch (e) {
-      _report('imei lookup (loans)', e);
-    }
 
-    return ImeiLookup(imei: imei, status: 'unknown', row: null);
+      return ImeiLookup(imei: imei, status: 'unknown');
+    } catch (e) {
+      _report('backend call', e);
+      return ImeiLookup(imei: imei, status: 'unknown');
+    }
   }
 
   Future<Map<String, dynamic>?> getProductBySku(String sku) async {
@@ -362,13 +374,73 @@ class ApiService {
     }
   }
 
-  // ------------------------------------------------------------- Branches
-  /// The staff directory, including each person's own portrait.
+  /// Writes the scanned serials so the shop can answer "where is this handset?"
   ///
-  /// Nothing read this table before, so `staffProvider` stayed empty in a live
-  /// build and the header fell back to a role illustration — a male storekeeper
-  /// could be shown the female placeholder for his role. The person's own
-  /// `avatar_asset` is the only thing that can get this right.
+  /// One row per IMEI in `product_units`, one row for the delivery in
+  /// `stock_receipts`. Returns how many serials were stored; a partial write is
+  /// reported rather than rounded up to success.
+  Future<int> recordUnits({
+    required List<String> imeis,
+    required String branch,
+    required String source,
+    required List<Map<String, dynamic>> lines,
+    String? supplier,
+    String? invoiceNo,
+  }) async {
+    if (!isConfigured || imeis.isEmpty) return 0;
+    final now = DateTime.now().toUtc().toIso8601String();
+    try {
+      final receipt = await client
+          .from('stock_receipts')
+          .insert({
+            'branch': branch,
+            'source': source,
+            'supplier_name': supplier,
+            'invoice_no': invoiceNo,
+            'units': imeis.length,
+            'received_at': now,
+          })
+          .select('id')
+          .single();
+
+      final receiptId = receipt['id'];
+
+      // The lines say what the delivery contained; without them the receipt is a
+      // count with no memory of which models it covered.
+      if (lines.isNotEmpty) {
+        try {
+          await client.from('stock_receipt_lines').insert([
+            for (final l in lines) {...l, 'receipt_id': receiptId},
+          ]);
+        } catch (e) {
+          _report('stock receipt lines', e);
+        }
+      }
+
+      var stored = 0;
+      for (final imei in imeis) {
+        try {
+          await client.from('product_units').insert({
+            'imei': imei,
+            'branch': branch,
+            'receipt_id': receiptId,
+            'status': 'in_stock',
+            'received_at': now,
+          });
+          stored++;
+        } catch (e) {
+          // A unique-constraint hit means this serial is already on file; that is
+          // a duplicate, not a failure of the whole delivery.
+          _report('backend call', e);
+        }
+      }
+      return stored;
+    } catch (e) {
+      _report('backend call', e);
+      return 0;
+    }
+  }
+
   /// Adds received units to a product, and says whether the row really moved.
   ///
   /// Receiving used to call `updateStock(1..4)` on the local provider with product
