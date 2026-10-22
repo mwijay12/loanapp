@@ -641,10 +641,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             selectedUrl = 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80';
                             urlCtrl.text = selectedUrl!;
                           });
-                          LimsToast.show(context, 'Picha imechaguliwa kutoka Galari ya simu na kubanwa!');
+                          LimsToast.show(context, 'Product photo set.');
                         },
                         icon: const Icon(Icons.photo_library_rounded, size: 16, color: AppTheme.brand600),
-                        label: const Text('Pakia Galari', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
+                        label: const Text('Upload photo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFCEE1FE)),
                           padding: const EdgeInsets.symmetric(vertical: 11),
@@ -828,7 +828,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Angalia', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                      child: const Text('View', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -1344,7 +1344,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             SizedBox(width: 5),
                             Expanded(
                               child: Text(
-                                'Quick Setup Presets (Jaza Taarifa Haraka):',
+                                'Quick setup presets:',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -1380,7 +1380,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     selectedAsset = preset['asset'];
                                     selectedImageUrl = preset['url'];
                                   });
-                                  LimsToast.show(context, 'Taarifa za ${preset['name']} zimejazwa moja kwa moja!');
+                                  LimsToast.show(context, '${preset['name']} details filled in.');
                                 },
                                 borderRadius: BorderRadius.circular(99),
                                 child: Container(

@@ -251,7 +251,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         ),
       );
     } else {
-      LimsToast.show(context, 'Hakuna mkopo unaoendelea kwenye kifaa hiki.');
+      LimsToast.show(context, 'This device has no active loan.');
     }
   }
 
@@ -524,7 +524,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
             children: [
               _buildParamItem('Serial No.', _serialNumber),
               _buildParamItem(tr(_locale, 'insp.branch'), _branch),
-              _buildParamItem('Thamani ya Mkopo', 'TZS ${LimsFormatters.formatNumber(_totalLoanAmount)}'),
+              _buildParamItem('Loan value', 'TZS ${LimsFormatters.formatNumber(_totalLoanAmount)}'),
             ],
           ),
         ],
@@ -708,7 +708,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: OutlinedButton.icon(
                   onPressed: _sendPaymentReminderSms,
                   icon: const Icon(Icons.sms_outlined, size: 16),
-                  label: const Text('Tuma SMS ya Rejesho', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  label: const Text('Send payment SMS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.brand600,
                     side: const BorderSide(color: Color(0xFFCEE1FE)),
@@ -849,7 +849,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Tarehe ya Rejesho', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
+                    const Text('Due date', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
                     const SizedBox(height: 2),
                     Text(
                       _nextDueDate,
@@ -871,7 +871,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 context.push('/sell-loan?type=LOAN&model=$_model&imei=$_imei');
               },
               icon: const Icon(Icons.payments_rounded, size: 18),
-              label: const Text('Pokea Rejesho (Record Payment)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              label: const Text('Record a payment', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.brand600,
                 foregroundColor: Colors.white,
@@ -916,7 +916,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: const Color(0xFFE7F8F0), borderRadius: BorderRadius.circular(8)),
                   child: Text(
-                    'Siku $_warrantyDaysLeft zimebaki',
+                    '$_warrantyDaysLeft days left',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF12B76A)),

@@ -61,7 +61,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
 
     LimsBottomSheet.show(
       context: context,
-      title: 'Pokea Rejesho (Record Payment)',
+      title: 'Record a payment',
       subtitle: 'Mkopaji: ${loan.name} · Salio: ${loan.formattedRemainingAmount}',
       child: StatefulBuilder(
         builder: (ctx, setModalState) {
@@ -119,7 +119,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Kiasi cha Rejesho (TZS)',
+                  labelText: 'Payment amount (TZS)',
                   prefixText: 'TZS ',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -193,7 +193,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
   void _showContractModal(LoanItem loan) {
     LimsBottomSheet.show(
       context: context,
-      title: 'Mkataba wa Mauzo ya Mkopo',
+      title: 'Loan sale agreement',
       subtitle: trf(_locale, 'borrower.accountSubtitle', {'id': loan.id}),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +278,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 children: [
                   _receiptRow(tr(_locale, 'borrower.customer'), loan.name),
                   _receiptRow('Kifaa', loan.item),
-                  _receiptRow('Kiasi Kilicholipwa', record.formattedAmount, isBold: true),
+                  _receiptRow('Amount paid', record.formattedAmount, isBold: true),
                   _receiptRow(tr(_locale, 'borrower.channel'), record.channel),
                   _receiptRow('Ref Code', record.refNumber),
                   _receiptRow('Tarehe', record.date),
@@ -295,7 +295,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Funga Stakabadhi'),
+                child: const Text('Close receipt'),
               ),
             ),
           ],
@@ -341,8 +341,8 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
     if (loan == null) {
       return Scaffold(
         backgroundColor: AppTheme.canvas,
-        appBar: AppBar(title: const Text('Taarifa za Mkopo')),
-        body: const Center(child: Text('Mkopo haujapatikana')),
+        appBar: AppBar(title: const Text('Loan details')),
+        body: const Center(child: Text('Loan not found')),
       );
     }
 
