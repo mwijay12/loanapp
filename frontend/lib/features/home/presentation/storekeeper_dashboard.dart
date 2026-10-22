@@ -83,6 +83,11 @@ class StorekeeperDashboard extends ConsumerWidget {
                 day: days,
                 onViewInventory: () => context.go('/stock'),
               ),
+              const SizedBox(height: 14),
+              _AiAssistantCard(
+                locale: locale,
+                onTap: () => context.push('/ai'),
+              ),
               const SizedBox(height: 22),
               _SectionTitle(tr(locale, 'skdash.services')),
               const SizedBox(height: 12),
@@ -178,7 +183,7 @@ class _ProfileRow extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 const Icon(Icons.notifications_none_rounded,
-                    size: 23, color: Color(0xFF101D3A)),
+                    size: 23, color: Color(0xFF10213F)),
                 if (unread > 0)
                   Positioned(
                     right: 11,
@@ -217,21 +222,21 @@ class _Greeting extends StatelessWidget {
         Text(
           tr(locale, 'skdash.welcome'),
           style: const TextStyle(
-            fontSize: 33,
-            height: 1.12,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.8,
-            color: Color(0xFF101D3A),
+            fontSize: 32,
+            height: 1.14,
+            fontWeight: FontWeight.w400,
+            letterSpacing: -0.6,
+            color: Color(0xFF10213F),
           ),
         ),
         Text(
           roleLabel,
           style: const TextStyle(
-            fontSize: 33,
-            height: 1.12,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.8,
-            color: Color(0xFF101D3A),
+            fontSize: 32,
+            height: 1.14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.6,
+            color: Color(0xFF10213F),
           ),
         ),
       ],
@@ -291,14 +296,14 @@ class _SearchFieldState extends State<_SearchField> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 23, color: Color(0xFF101D3A)),
+          const Icon(Icons.search_rounded, size: 23, color: Color(0xFF10213F)),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: _ctrl,
               textInputAction: TextInputAction.search,
               onSubmitted: _submit,
-              style: const TextStyle(fontSize: 15, color: Color(0xFF101D3A)),
+              style: const TextStyle(fontSize: 15, color: Color(0xFF10213F)),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
@@ -306,7 +311,7 @@ class _SearchFieldState extends State<_SearchField> {
                 hintStyle: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF8A9CB8),
+                  color: Color(0xFF7184A7),
                 ),
               ),
             ),
@@ -360,14 +365,14 @@ class _LowStockBanner extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF5B9BFF), Color(0xFF86C1FF)],
+            colors: [Color(0xFF2678FF), Color(0xFF42C8F5)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x2E4C8DFF),
+              color: Color(0x332D7BF7),
               blurRadius: 22,
               offset: Offset(0, 10),
             ),
@@ -458,7 +463,7 @@ class _StockSummaryCard extends StatelessWidget {
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.3,
-                    color: Color(0xFF101D3A),
+                    color: Color(0xFF10213F),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -467,7 +472,7 @@ class _StockSummaryCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF8A9CB8),
+                    color: Color(0xFF7184A7),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -481,7 +486,7 @@ class _StockSummaryCard extends StatelessWidget {
                         height: 1,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -1.2,
-                        color: Color(0xFF101D3A),
+                        color: Color(0xFF10213F),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -493,7 +498,7 @@ class _StockSummaryCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF5A6C8C),
+                            color: Color(0xFF5B7194),
                           ),
                         ),
                       ),
@@ -510,8 +515,8 @@ class _StockSummaryCard extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           SizedBox(
-            width: 116,
-            height: 148,
+            width: 126,
+            height: 156,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -551,19 +556,26 @@ class _ViewInventoryButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF4A90FF), Color(0xFF2E6FE8)],
+            colors: [Color(0xFF246BFD), Color(0xFF5AA5FF)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x334A90FF),
-              blurRadius: 14,
-              offset: Offset(0, 6),
+              color: const Color(0xFF246BFD).withValues(alpha: 0.34),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.55),
+              blurRadius: 1,
+              offset: const Offset(0, -1),
             ),
           ],
         ),
@@ -592,6 +604,120 @@ class _ViewInventoryButton extends StatelessWidget {
   }
 }
 
+// ------------------------------------------------------------- AI shortcut
+
+/// The AI assistant is the one card that is allowed to look like a product.
+///
+/// The artwork is a violet plane with a glass orb, so the headline sits on the
+/// dark left half and stays readable; the orb never overlaps the text. The tap
+/// target is the existing `/ai` route — no new screen, no placeholder action.
+class _AiAssistantCard extends StatelessWidget {
+  const _AiAssistantCard({required this.locale, required this.onTap});
+
+  final Locale locale;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(26),
+      child: Container(
+        height: 118,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7757F8), Color(0xFF5B3BD6)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7757F8).withValues(alpha: 0.30),
+              blurRadius: 22,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/images/ai_orb_card.jpg',
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+                filterQuality: FilterQuality.medium,
+              ),
+              // Keeps the left half dark enough for white text on any screen
+              // width, without dimming the orb.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xE65B3BD6), Color(0x005B3BD6)],
+                    stops: [0.34, 0.78],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 16, 18),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            tr(locale, 'skdash.aiTitle'),
+                            style: const TextStyle(
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            tr(locale, 'skdash.aiSub'),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.78),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 14,
+                right: 14,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.20),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.38),
+                    ),
+                  ),
+                  child: const Icon(Icons.arrow_forward_rounded,
+                      size: 16, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ------------------------------------------------------------------- services
 
 class _SectionTitle extends StatelessWidget {
@@ -607,7 +733,7 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 17,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.3,
-        color: Color(0xFF101D3A),
+        color: Color(0xFF10213F),
       ),
     );
   }
@@ -626,36 +752,32 @@ class _ServiceRow extends StatelessWidget {
     final items = <_ServiceItem>[
       _ServiceItem(
         label: tr(locale, 'skdash.receiveStock'),
-        icon: Icons.inventory_2_rounded,
+        art: 'assets/images/icon_box_3d.png',
         tint: const Color(0xFFEAF2FF),
-        iconColor: const Color(0xFF347FF5),
         route: '/receive',
       ),
       _ServiceItem(
         label: tr(locale, 'skdash.dispatch'),
-        icon: Icons.local_shipping_rounded,
+        art: 'assets/images/icon_truck_3d.png',
         tint: const Color(0xFFE7F9EF),
-        iconColor: const Color(0xFF12B76A),
         route: '/transfer',
       ),
       _ServiceItem(
         label: tr(locale, 'skdash.scanImei'),
-        icon: Icons.qr_code_scanner_rounded,
+        art: 'assets/images/icon_scanner_3d.png',
         tint: const Color(0xFFF1EBFF),
-        iconColor: const Color(0xFF7C5CFC),
         route: '/scan',
       ),
       _ServiceItem(
         label: tr(locale, 'skdash.reports'),
-        icon: Icons.bar_chart_rounded,
-        tint: const Color(0xFFFFF1E6),
-        iconColor: const Color(0xFFF79009),
+        art: 'assets/images/icon_chart_3d.png',
+        tint: const Color(0xFFFFF3E8),
         route: '/reports',
       ),
     ];
 
     return SizedBox(
-      height: 88,
+      height: 104,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
@@ -666,8 +788,8 @@ class _ServiceRow extends StatelessWidget {
             onTap: () => context.push(item.route),
             borderRadius: BorderRadius.circular(22),
             child: Container(
-              width: 116,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              width: 118,
+              padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
               decoration: BoxDecoration(
                 color: item.tint,
                 borderRadius: BorderRadius.circular(22),
@@ -676,14 +798,12 @@ class _ServiceRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(item.icon, size: 18, color: item.iconColor),
+                  Image.asset(
+                    item.art,
+                    width: 46,
+                    height: 46,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.medium,
                   ),
                   Text(
                     item.label,
@@ -693,7 +813,7 @@ class _ServiceRow extends StatelessWidget {
                       fontSize: 12.5,
                       height: 1.15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF101D3A),
+                      color: Color(0xFF10213F),
                     ),
                   ),
                 ],
@@ -709,16 +829,17 @@ class _ServiceRow extends StatelessWidget {
 class _ServiceItem {
   const _ServiceItem({
     required this.label,
-    required this.icon,
+    required this.art,
     required this.tint,
-    required this.iconColor,
     required this.route,
   });
 
   final String label;
-  final IconData icon;
+
+  /// 3D render on a transparent background. One per shortcut, so the row reads
+  /// as a set rather than four unrelated glyphs.
+  final String art;
   final Color tint;
-  final Color iconColor;
   final String route;
 }
 
@@ -810,7 +931,7 @@ class _ActivityPlaceholder extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12.5,
                 height: 1.4,
-                color: Color(0xFF5A6C8C),
+                color: Color(0xFF5B7194),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -914,7 +1035,7 @@ class _MovementCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF101D3A),
+                      color: Color(0xFF10213F),
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -926,7 +1047,7 @@ class _MovementCard extends StatelessWidget {
                       fontSize: 12,
                       height: 1.25,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF6B83A6),
+                      color: Color(0xFF7184A7),
                     ),
                   ),
                 ],
