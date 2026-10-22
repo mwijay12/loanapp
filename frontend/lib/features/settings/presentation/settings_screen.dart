@@ -106,53 +106,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// gradient, not a flat app bar. Settings is a page of the app, not a
   /// different app.
   Widget _header(Locale locale) {
-    return Row(
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x142F6BD6),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => context.pop(),
-              child: const SizedBox(
-                width: 42,
-                height: 42,
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  size: 20,
-                  color: DashPalette.ink,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            tr(locale, 'set.title'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              color: DashPalette.ink,
-            ),
-          ),
-        ),
-      ],
+    return DashPageHeader(
+      title: tr(locale, 'set.title'),
+      onBack: () => context.pop(),
     );
   }
 
