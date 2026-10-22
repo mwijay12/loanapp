@@ -160,6 +160,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // when DEMO_MODE is not true, so a production build never shows
                 // this card.
                 if (AppConstants.demoMode) ...[
+                  // Only compiled in with --dart-define=DEMO_MODE=true. On a
+                  // build with Supabase configured these are real Auth users,
+                  // so the card fills the form and the password is still checked
+                  // server-side.
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -214,6 +218,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       fontSize: 10.5,
                                       color: AppTheme.ink500,
                                     ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'USE',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.9,
+                                    color: AppTheme.brand600,
                                   ),
                                 ),
                               ],
