@@ -13,6 +13,7 @@ import '../../../core/data/product_art.dart';
 import '../../../core/services/live_data.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/phone_deals_carousel.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
@@ -1632,26 +1633,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      activeStaff.avatarAsset ??
-                          UserRoles.personAvatar(activeStaff.name) ??
-                          UserRoles.avatarAsset(activeStaff.role),
-                      width: 44,
-                      height: 44,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(
-                        child: Text(
-                          activeStaff.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
+                  child: PersonAvatar(
+                    name: activeStaff.name,
+                    asset: activeStaff.avatarAsset,
+                    size: 44,
+                    grad: activeStaff.grad,
                   ),
                 ),
               ),

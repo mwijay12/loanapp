@@ -6,6 +6,7 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 
 import '../../../core/data/analytics.dart';
@@ -1026,37 +1027,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         children: [
           Row(
             children: [
-              // Avatar
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: s.grad,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.asset(
-                    s.avatarAsset ?? UserRoles.avatarAsset(s.role),
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Center(
-                      child: Text(
-                        s.initials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              // Avatar. No role fallback: a new staff member gets their
+              // initials until somebody sets their own photo.
+              PersonAvatar(
+                name: s.name,
+                asset: s.avatarAsset,
+                size: 44,
+                radius: 14,
+                grad: s.grad,
               ),
               const SizedBox(width: 12),
 
