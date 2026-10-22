@@ -40,8 +40,9 @@ String _longDate(DateTime d) {
 void main() {
   final today = eatTodayDate;
 
-  Future<void> pumpConsole(WidgetTester tester, List<SaleRecord> rows) async {
-    tester.view.physicalSize = const Size(400, 1200) * 2.0;
+  Future<void> pumpConsole(WidgetTester tester, List<SaleRecord> rows,
+      {double width = 400}) async {
+    tester.view.physicalSize = Size(width, 1200) * 2.0;
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.reset);
 
@@ -174,6 +175,26 @@ void main() {
     await pumpConsole(tester, const []);
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Tap a bar to see that day'), findsOneWidget);
+  });
+
+  testWidgets('the console fits a small phone without overflowing',
+      (tester) async {
+    // A seventeen-digit loan book and a plus-signed percentage in a half-width
+    // card is where this screen used to spill. 360 logical pixels is the
+    // narrowest handset worth supporting.
+    await pumpConsole(
+      tester,
+      [
+        _sale(today, 987654321, 'A'),
+        _sale(today.subtract(const Duration(days: 1)), 123456789, 'B'),
+      ],
+      width: 360,
+    );
+
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey<String>('revbar-0')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   test('every console string key exists in the dictionary', () async {
