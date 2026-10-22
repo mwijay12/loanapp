@@ -249,6 +249,10 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
         tail = '';
       } else if (scanned == 0) {
         tail = t('recv.noSerials');
+      } else if (stored == 0) {
+        // Nothing landed and something was scanned: a missing table or a refused
+        // write. Saying "skipped" here would blame the operator for a backend gap.
+        tail = tf('recv.serialsFailed', {'n': '$scanned'});
       } else if (skipped > 0) {
         tail = tf('recv.serialsSkipped', {'n': '$skipped'});
       } else {
