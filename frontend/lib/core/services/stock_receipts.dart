@@ -88,6 +88,7 @@ class ReceiveResult {
     required this.updated,
     required this.failed,
     required this.persisted,
+    required this.unitsStored,
     this.error,
   });
 
@@ -96,6 +97,10 @@ class ReceiveResult {
 
   /// False when the build has no database: the stock moved in this session only.
   final bool persisted;
+
+  /// How many serial numbers were written to `product_units`. Zero is a real
+  /// answer: the goods arrived, but nobody scanned the labels.
+  final int unitsStored;
 
   final String? error;
 
@@ -129,10 +134,39 @@ class StockReceiptService {
       }
     }
 
+    // The serials are the point of a handset ledger: without them the shop knows
+    // it has four iPhones but not which four, and a warranty claim or a police
+    // query later cannot be answered from the system.
+    int units = 0;
+    if (failed.isEmpty && _api.isConfigured && receipt.imeis.isNotEmpty) {
+      try {
+        units = await _api.recordUnits(
+          imeis: receipt.imeis,
+          branch: receipt.branch,
+          source: receipt.source.code,
+          supplier: receipt.supplierName,
+          invoiceNo: receipt.invoiceNo,
+          lines: [
+            for (final l in receipt.lines)
+              {
+                'product_id': l.productId,
+                'sku': l.sku,
+                'name': l.name,
+                'qty': l.qty,
+                'unit_cost': l.unitCost,
+              },
+          ],
+        );
+      } catch (e) {
+        error ??= e.toString();
+      }
+    }
+
     return ReceiveResult(
       updated: updated,
       failed: failed,
       persisted: _api.isConfigured,
+      unitsStored: units,
       error: error ?? ApiService.lastBackendError,
     );
   }
