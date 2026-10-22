@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/services/onboarding_prefs.dart';
 import '../../../core/services/app_permissions_service.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// First run: three screens that explain the product to an adult shopkeeper.
 ///
@@ -10,9 +11,11 @@ import '../../../core/services/app_permissions_service.dart';
 /// inside a pastel circle, on a light-blue canvas. A shopkeeper deciding whether
 /// to trust the system with their stock does not read that as software.
 ///
-/// This version uses flat, printed-illustration artwork on warm paper stock, in
-/// the register of a trade catalogue rather than a nursery. The colour is ink and
-/// oxblood, not primary blue.
+/// This version keeps the flat printed-illustration artwork, but draws it in the
+/// app's own palette: the same blue as the login screen, white cards, the same
+/// ink text. The reference was about the drawing style, not about importing a
+/// second colour scheme - a first run that looks like a different product is a
+/// branding bug, not a mood.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -24,13 +27,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // Warm paper, ink and oxblood. Kept local to onboarding so the rest of the app
-  // keeps its blue identity.
-  static const _paper = Color(0xFFF7F3EA);
-  static const _paperEdge = Color(0xFFE3DACB);
-  static const _ink = Color(0xFF17130F);
-  static const _inkSoft = Color(0xFF5C554B);
-  static const _oxblood = Color(0xFF7C2D33);
+  // The app's own tokens, so onboarding cannot drift into a second palette.
+  static const _paper = AppTheme.brand50;
+  static const _paperEdge = Color(0xFFE2E8F0);
+  static const _ink = AppTheme.ink900;
+  static const _inkSoft = AppTheme.ink500;
+  static const _accent = AppTheme.brand600;
 
   final List<Map<String, dynamic>> _slides = [
     {
@@ -111,7 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.6,
-                            color: _oxblood,
+                            color: _accent,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -177,11 +179,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           );
                         },
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 54),
-                          side: const BorderSide(color: _paperEdge, width: 1.2),
+                          minimumSize: const Size(0, 58),
+                          side: const BorderSide(color: _paperEdge, width: 1.4),
                           foregroundColor: _ink,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppTheme.rMd),
                           ),
                         ),
                         child: const Text(
@@ -197,12 +199,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: ElevatedButton(
                       onPressed: _next,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _ink,
+                        backgroundColor: _accent,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        minimumSize: const Size(0, 54),
+                        minimumSize: const Size(0, 58),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppTheme.rMd),
                         ),
                       ),
                       child: Text(
@@ -210,8 +212,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ? 'Get started'
                             : 'Next',
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -232,8 +234,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       aspectRatio: 3 / 2,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFFCFAF4),
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.rLg),
           border: Border.all(color: _paperEdge),
         ),
         clipBehavior: Clip.antiAlias,
@@ -248,8 +250,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Row(
         children: [
           Container(
-            width: 30,
-            height: 30,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: _ink,
               borderRadius: BorderRadius.circular(8),

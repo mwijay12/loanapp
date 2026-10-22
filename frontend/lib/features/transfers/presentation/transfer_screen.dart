@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/data/mock_lims_data.dart';
+
+import '../../../core/data/branch_provider.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 
+/// Moving handsets from one shop to another.
+///
+/// The old screen was a picture of a transfer: four hardcoded branches, three
+/// hardcoded items with quantities of 2/3/4, "Available: 12" that came from
+/// nowhere, a receipt number `TR-902` that was typed into the source, and a
+/// confirm button that subtracted from `products.stock`. That last part is the
+/// real bug: an internal transfer does not change how many phones the company
+/// owns, so every "transfer" wrote stock off the business.
+///
+/// This version reads the branches the business actually has, lists the serials
+/// physically at this branch, and moves those serials. `products.stock` is left
+/// alone, because the phones did not leave the company - they changed address.
 class TransferScreen extends ConsumerStatefulWidget {
   const TransferScreen({super.key});
 
@@ -14,72 +30,238 @@ class TransferScreen extends ConsumerStatefulWidget {
 }
 
 class _TransferScreenState extends ConsumerState<TransferScreen> {
-  String _selectedDestination = 'Mwanza Branch';
+  final _api = ApiService();
 
-  final List<String> _branches = [
-    'Mwanza Branch',
-    'Arusha Branch',
-    'Dodoma Branch',
-    'Kariakoo Branch',
-  ];
+  String? _to;
+  final Set<String> _selected = {};
+  bool _loading = true;
+  bool _sending = false;
+  String? _error;
 
-  final List<Map<String, dynamic>> _transferItems = [
-    {
-      'id': 7,
-      'name': 'iPhone 15',
-      'qty': 2,
-      'available': 12,
-      'grad': [AppTheme.brand600, AppTheme.brand700],
-    },
-    {
-      'id': 5,
-      'name': 'AirPods Pro (2nd Gen)',
-      'qty': 3,
-      'available': 8,
-      'grad': [const Color(0xFFF472B6), const Color(0xFFDB2777)],
-    },
-    {
-      'id': 11,
-      'name': 'Smart Watch X2',
-      'qty': 4,
-      'available': 15,
-      'grad': [const Color(0xFFEC4899), const Color(0xFFBE185D)],
-    },
-  ];
+  List<Map<String, dynamic>> _units = [];
 
-  void _sendTransfer() {
-    int totalTransferred = 0;
-    for (final item in _transferItems) {
-      final id = item['id'] as int;
-      final qty = item['qty'] as int;
-      totalTransferred += qty;
-      ref.read(inventoryProvider.notifier).updateStock(id, -qty);
+  Locale get _locale => ref.read(localeProvider);
+  String t(String k) => tr(_locale, k);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    final from = ref.read(activeBranchProvider);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final units = await _api.listStockUnits(from);
+    if (!mounted) return;
+    setState(() {
+      _units = units;
+      _loading = false;
+      if (units.isEmpty && !_api.isConfigured) {
+        _error = t('transfer.noDatabase');
+      }
+    });
+  }
+
+  /// Grouped by model, because a storekeeper moves "three Camon 30s", not a
+  /// flattened list of serials.
+  Map<String, List<Map<String, dynamic>>> get _byModel {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final u in _units) {
+      final model = (u['model'] as String?)?.trim();
+      final key = (model == null || model.isEmpty) ? t('transfer.unspecified') : model;
+      grouped.putIfAbsent(key, () => []).add(u);
+    }
+    return grouped;
+  }
+
+  Future<void> _pickSerials(String model, List<Map<String, dynamic>> units) async {
+    final picked = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final chosen = <String>{
+          for (final u in units)
+            if (_selected.contains(u['imei'])) u['imei'] as String,
+        };
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            height: MediaQuery.of(ctx).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 12, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(model,
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w800)),
+                            Text(
+                              '${units.length} ${t('transfer.atThisBranch')}',
+                              style: const TextStyle(
+                                  fontSize: 11.5, color: AppTheme.ink500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setSheet(() {
+                            if (chosen.length == units.length) {
+                              chosen.clear();
+                            } else {
+                              chosen
+                                ..clear()
+                                ..addAll(units.map((u) => u['imei'] as String));
+                            }
+                          });
+                        },
+                        child: Text(
+                          chosen.length == units.length
+                              ? t('transfer.clear')
+                              : t('transfer.all'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: units.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    itemBuilder: (_, i) {
+                      final imei = units[i]['imei'] as String;
+                      final on = chosen.contains(imei);
+                      return CheckboxListTile(
+                        value: on,
+                        onChanged: (v) => setSheet(() {
+                          if (v == true) {
+                            chosen.add(imei);
+                          } else {
+                            chosen.remove(imei);
+                          }
+                        }),
+                        title: Text(
+                          '•••• ${imei.substring(imei.length - 4)}',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(
+                          imei,
+                          style: const TextStyle(
+                              fontSize: 11, color: AppTheme.ink500),
+                        ),
+                        activeColor: AppTheme.brand600,
+                        controlAffinity: ListTileControlAffinity.trailing,
+                      );
+                    },
+                  ),
+                ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                    child: SizedBox(
+                      height: 50,
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(ctx, chosen),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.brand600,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Text(
+                          '${t('transfer.useSelection')} (${chosen.length})',
+                          style: const TextStyle(
+                              fontSize: 14.5, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (picked == null) return;
+    setState(() {
+      _selected.removeAll(units.map((u) => u['imei'] as String));
+      _selected.addAll(picked);
+    });
+  }
+
+  Future<void> _send() async {
+    final from = ref.read(activeBranchProvider);
+    final to = _to;
+    if (to == null) {
+      LimsToast.show(context, t('transfer.chooseDestination'));
+      return;
+    }
+    if (_selected.isEmpty) {
+      LimsToast.show(context, t('transfer.chooseUnits'));
+      return;
     }
 
-    ref.read(activitiesProvider.notifier).addActivity(
-      ActivityItem(
-        icon: Icons.swap_horiz_rounded,
-        iconColor: const Color(0xFF7C5CFC),
-        bgColor: const Color(0xFFF0EBFF),
-        title: 'Transfer Sent · $totalTransferred units',
-        description: 'To $_selectedDestination (Transit #TR-902)',
-        time: 'Just now',
-      ),
+    setState(() => _sending = true);
+    final receiptId = await _api.transferUnits(
+      imeis: _selected.toList(),
+      from: from,
+      to: to,
     );
+    if (!mounted) return;
+    setState(() => _sending = false);
+
+    if (receiptId == null) {
+      LimsToast.show(context, t('transfer.failed'));
+      return;
+    }
 
     LimsToast.show(
       context,
-      'Stock transfer ($totalTransferred units) dispatched to $_selectedDestination!',
+      '${_selected.length} ${t('transfer.sent')} → $to '
+      '(${t('transfer.reference')} #TR-$receiptId)',
       isSuccess: true,
     );
-
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (mounted) context.pop();
-    });
+    Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(localeProvider);
+    final from = ref.watch(activeBranchProvider);
+    final branches = ref
+        .watch(branchesProvider)
+        .where((b) => b.name != from && b.active)
+        .toList();
+
     return Scaffold(
       backgroundColor: AppTheme.canvas,
       appBar: AppBar(
@@ -90,13 +272,12 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Transfer Stock',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.ink900,
-          ),
+        title: Text(
+          t('transfer.title'),
+          style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.ink900),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -105,240 +286,277 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
           children: [
-            // Route Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
+            _routeCard(from, branches),
+            const SizedBox(height: 14),
+            _unitsCard(),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.ink500, height: 1.4)),
+            ],
+          ],
+        ),
+      ),
+      bottomSheet: Container(
+        color: Colors.white,
+        padding: EdgeInsets.fromLTRB(
+            16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+        child: SizedBox(
+          height: 52,
+          child: FilledButton(
+            onPressed: (_sending || _selected.isEmpty || _to == null)
+                ? null
+                : _send,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.brand600,
+              disabledBackgroundColor: const Color(0xFFCBD5E1),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+            child: _sending
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : Text(
+                    _selected.isEmpty
+                        ? t('transfer.sendEmpty')
+                        : '${t('transfer.send')} ${_selected.length} '
+                            '${_selected.length == 1 ? t('transfer.unit') : t('transfer.units')}',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w800),
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(child: _buildRouteBox('From', 'Mbezi Branch')),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 6),
-                        child: Icon(Icons.arrow_forward_rounded, color: AppTheme.brand600, size: 20),
-                      ),
-                      Expanded(
-                        child: _buildRouteBox('To', _selectedDestination, alignRight: true),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
+          ),
+        ),
+      ),
+    );
+  }
 
-                  // Destination Chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _branches.map((b) {
-                      final isSelected = _selectedDestination == b;
-                      final shortName = b.replaceAll(' Branch', '');
-                      return InkWell(
-                        onTap: () => setState(() => _selectedDestination = b),
-                        borderRadius: BorderRadius.circular(99),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.brand600 : const Color(0xFFF4F9FF),
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(
-                              color: isSelected ? AppTheme.brand600 : const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                          child: Text(
-                            shortName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? Colors.white : AppTheme.ink700,
-                            ),
-                          ),
+  Widget _routeCard(String from, List<BranchRecord> branches) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t('transfer.from'),
+                        style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: AppTheme.ink500)),
+                    const SizedBox(height: 3),
+                    Text(from,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.arrow_forward_rounded,
+                    size: 18, color: AppTheme.brand600),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t('transfer.to'),
+                        style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: AppTheme.ink500)),
+                    const SizedBox(height: 3),
+                    Text(_to ?? '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (branches.isEmpty)
+            Text(
+              t('transfer.noBranches'),
+              style: const TextStyle(
+                  fontSize: 12, color: AppTheme.ink500, height: 1.4),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final b in branches)
+                  GestureDetector(
+                    onTap: () => setState(() => _to = b.name),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _to == b.name ? AppTheme.brand600 : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _to == b.name
+                              ? AppTheme.brand600
+                              : const Color(0xFFE2E8F0),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            const Text(
-              'Items to transfer',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Transfer items list with stepper
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: _transferItems.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final item = entry.value;
-                  final isLast = idx == _transferItems.length - 1;
-
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                      ),
+                      child: Text(
+                        b.name.replaceAll(' Branch', ''),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              _to == b.name ? Colors.white : AppTheme.ink700,
+                        ),
+                      ),
                     ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _unitsCard() {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    final grouped = _byModel;
+    if (grouped.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t('transfer.noUnitsTitle'),
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text(
+              t('transfer.noUnitsBody'),
+              style: const TextStyle(
+                  fontSize: 12, color: AppTheme.ink500, height: 1.45),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(t('transfer.devices'),
+            style:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              for (final entry in grouped.entries)
+                InkWell(
+                  onTap: () => _pickSerials(entry.key, entry.value),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                     child: Row(
                       children: [
                         Container(
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: item['grad'] as List<Color>,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(13),
+                            color: AppTheme.brand50,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.smartphone_rounded, color: Colors.white, size: 20),
+                          child: const Icon(Icons.phone_iphone_rounded,
+                              size: 20, color: AppTheme.brand600),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(entry.key,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 2),
                               Text(
-                                item['name'] as String,
+                                () {
+                                  final picked = entry.value
+                                      .where((u) =>
+                                          _selected.contains(u['imei']))
+                                      .length;
+                                  final total = entry.value.length;
+                                  return picked == 0
+                                      ? '$total ${t('transfer.inStock')}'
+                                      : '$picked / $total ${t('transfer.selected')}';
+                                }(),
                                 style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.ink900,
-                                ),
-                              ),
-                              Text(
-                                'Available: ${item['available']}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.ink500,
-                                ),
+                                    fontSize: 11.5, color: AppTheme.ink500),
                               ),
                             ],
                           ),
                         ),
-
-                        // Stepper
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF4F9FF),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_rounded, size: 16),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  if ((item['qty'] as int) > 1) {
-                                    setState(() => item['qty'] = (item['qty'] as int) - 1);
-                                  }
-                                },
-                              ),
-                              Text(
-                                '${item['qty']}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.ink900,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_rounded, size: 16),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  if ((item['qty'] as int) < (item['available'] as int)) {
-                                    setState(() => item['qty'] = (item['qty'] as int) + 1);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: AppTheme.ink500),
                       ],
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            ElevatedButton(
-              onPressed: _sendTransfer,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.brand600,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Send Transfer',
-                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRouteBox(String label, String branch, {bool alignRight = false}) {
-    return Column(
-      crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.ink500,
+                  ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 8),
         Text(
-          branch,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignRight ? TextAlign.right : TextAlign.left,
+          t('transfer.noteTotals'),
           style: const TextStyle(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.ink900,
-          ),
+              fontSize: 11, color: AppTheme.ink500, height: 1.4),
         ),
       ],
     );
