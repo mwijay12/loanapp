@@ -590,7 +590,7 @@ class AppTheme {
       scrollbarTheme: const ScrollbarThemeData(
         thickness: WidgetStatePropertyAll(4),
         radius: Radius.circular(999),
-        thumbColor: WidgetStatePropertyAll(Color(0xFFC3D2CB)),
+        thumbColor: WidgetStatePropertyAll((Color(0xFFC3D2CB))),
         crossAxisMargin: 2,
       ),
 

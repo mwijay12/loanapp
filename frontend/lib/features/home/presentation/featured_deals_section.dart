@@ -33,7 +33,12 @@ class FeaturedDealsSection extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final phones = ref
         .watch(inventoryProvider)
-        .where((p) => p.cat == 'phones' && p.stock > 0 && p.status != 'out')
+        .where((p) =>
+            p.cat == 'phones' &&
+            p.stock > 0 &&
+            p.status != 'out' &&
+            // Only feature phones with high-quality real assets
+            p.name != 'Infinix Zero 40')
         .toList()
       ..sort((a, b) {
         if (a.onOffer != b.onOffer) return a.onOffer ? -1 : 1;
@@ -69,6 +74,7 @@ class FeaturedDealsSection extends ConsumerWidget {
           imageAsset: p.imageAsset ??
               ProductArt.resolve(brand: p.brand, name: p.name, category: p.cat),
           imageUrl: p.imageUrl,
+          product: p,
           spec: p.variant.isNotEmpty ? p.variant : p.sku,
           units: trf(locale, 'deals.units', {'n': p.stock}),
           cashPrice: LimsFormatters.currencyCompact(p.price),

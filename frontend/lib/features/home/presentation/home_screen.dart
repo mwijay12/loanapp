@@ -187,7 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Notifications',
-      barrierColor: Colors.black.withValues(alpha: 0.45),
+      barrierColor: Colors.black.withOpacity(0.45),
       transitionDuration: const Duration(milliseconds: 250),
       pageBuilder: (ctx, anim1, anim2) {
         return Align(
@@ -1706,10 +1706,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 2.5),
                             decoration: BoxDecoration(
-                              color: roleColor.withValues(alpha: 0.12),
+                              color: roleColor.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(99),
                               border: Border.all(
-                                color: roleColor.withValues(alpha: 0.35),
+                                color: roleColor.withOpacity(0.35),
                               ),
                             ),
                             child: Row(
@@ -1877,7 +1877,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .where((p) =>
             p.cat == tr(ref.watch(localeProvider), 'home.phones') &&
             p.stock > 0 &&
-            p.status != 'out')
+            p.status != 'out' &&
+            // Exclude products without a dedicated real photo to keep carousel consistent
+            p.name != 'Infinix Zero 40')
         .toList()
       ..sort((a, b) => b.stock.compareTo(a.stock));
 
@@ -1914,6 +1916,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           glowColor: glows[i % glows.length],
           imageAsset: p.imageAsset ??
               ProductArt.resolve(brand: p.brand, name: p.name, category: p.cat),
+          imageUrl: p.imageUrl,
+          product: p,
           spec: p.variant,
           units: '${p.stock} in stock',
           cashPrice: LimsFormatters.currencyCompact(p.price),
@@ -2002,8 +2006,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Colors.white.withValues(alpha: 0.22),
-                  Colors.white.withValues(alpha: 0.0),
+                  Colors.white.withOpacity(0.22),
+                  Colors.white.withOpacity(0.0),
                 ],
               ),
             ),
@@ -2054,7 +2058,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: Colors.white.withOpacity(0.12),
                 ),
               ),
             ),
@@ -2076,7 +2080,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
@@ -2096,10 +2100,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(99),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2173,7 +2177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: Colors.white.withOpacity(0.12),
                 ),
               ),
             ),
@@ -2193,7 +2197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
@@ -2213,10 +2217,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(99),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2288,7 +2292,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: Colors.white.withOpacity(0.12),
                 ),
               ),
             ),
@@ -2308,7 +2312,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
@@ -2328,10 +2332,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(99),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2456,7 +2460,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: Colors.white.withOpacity(0.12),
                 ),
               ),
             ),
@@ -2479,7 +2483,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: Colors.white.withOpacity(0.9),
                           ),
                         ),
                       ),
@@ -2500,10 +2504,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(99),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2570,7 +2574,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: Colors.white.withOpacity(0.12),
                 ),
               ),
             ),
@@ -2590,7 +2594,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
@@ -2610,10 +2614,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(99),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2999,7 +3003,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: trendColor.withValues(alpha: 0.12),
+                      color: trendColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -3213,7 +3217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFF43F5E).withValues(alpha: 0.35),
+                      color: const Color(0xFFF43F5E).withOpacity(0.35),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -3371,7 +3375,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                    color: const Color(0xFF7C3AED).withOpacity(0.35),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -3404,7 +3408,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             horizontal: 6, vertical: 1.5),
                         decoration: BoxDecoration(
                           color:
-                              const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                              const Color(0xFF7C3AED).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -3579,7 +3583,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: chassisColor,
                 borderRadius: BorderRadius.circular(5),
                 border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.1), width: 0.5),
+                    color: Colors.black.withOpacity(0.1), width: 0.5),
               ),
               child: Stack(
                 children: [

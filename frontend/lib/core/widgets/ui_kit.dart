@@ -1062,7 +1062,7 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
                       offset: Offset(0, 8),
                     ),
                   ],
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  border: Border.all(color: Colors.white.withOpacity(0.15)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -1070,7 +1070,7 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(widget.icon, color: Colors.white, size: 18),
@@ -1093,7 +1093,7 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
                         onPressed: widget.onAction,
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
-                          backgroundColor: Colors.white.withValues(alpha: 0.25),
+                          backgroundColor: Colors.white.withOpacity(0.25),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           minimumSize: Size.zero,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1112,7 +1112,7 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
                         padding: const EdgeInsets.all(4.0),
                         child: Icon(
                           Icons.close_rounded,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.white.withOpacity(0.8),
                           size: 16,
                         ),
                       ),
