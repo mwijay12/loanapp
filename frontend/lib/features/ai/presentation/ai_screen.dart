@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/services/mercury_ai_service.dart';
 import '../../../core/services/store_facts.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../home/presentation/dashboard_kit.dart';
 
 class AIScreen extends ConsumerStatefulWidget {
   const AIScreen({super.key});
@@ -21,8 +22,18 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   /// Chips are answered by the same code as typed questions, so every one of them
   /// returns real rows.
   List<String> _chips(bool swahili) => swahili
-      ? const ['Mauzo ya leo', 'Modeli zinazoisha', 'Mikopo iliyochelewa', 'Stoo yote']
-      : const ["Today's sales summary", 'Which phones are low?', 'Overdue loans', 'Total stock'];
+      ? const [
+          'Mauzo ya leo',
+          'Modeli zinazoisha',
+          'Mikopo iliyochelewa',
+          'Stoo yote'
+        ]
+      : const [
+          "Today's sales summary",
+          'Which phones are low?',
+          'Overdue loans',
+          'Total stock'
+        ];
 
   @override
   void initState() {
@@ -135,193 +146,175 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   Widget build(BuildContext context) {
     final swahili = ref.watch(localeProvider).languageCode == 'sw';
     return Scaffold(
-      backgroundColor: AppTheme.canvas,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
-          onPressed: () => Navigator.of(context).pop(),
+      backgroundColor: DashPalette.page,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: DashPalette.pageGradient,
+            stops: DashPalette.pageStops,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-        title: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7C5CFC), Color(0xFF5B34EA)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+                child: DashPageHeader(
+                  title: swahili ? 'Msaidizi wa LIMS' : 'LIMS Assistant',
+                  subtitle: swahili
+                      ? 'Husoma data ya duka lako'
+                      : 'Reads your shop data',
+                  onBack: () => Navigator.of(context).pop(),
                 ),
-                borderRadius: BorderRadius.circular(11),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
-            ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'LIMS Assistant',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.ink900,
-                  ),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    return _MessageBubble(message: _messages[index]);
+                  },
                 ),
-                Text(
-                  'Reads your shop data',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF12B76A),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  return _MessageBubble(message: _messages[index]);
-                },
               ),
-            ),
 
-            if (_isLoading)
+              if (_isLoading)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0EBFF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.auto_awesome_rounded,
+                            size: 15, color: Color(0xFF7C5CFC)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        swahili ? 'Inafikiria…' : 'Thinking…',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7C5CFC)),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Chips
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                alignment: Alignment.centerLeft,
+                height: 40,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _chips(swahili).length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final text = _chips(swahili)[index];
+                    return InkWell(
+                      onTap: () => _sendMessage(text),
+                      borderRadius: BorderRadius.circular(99),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x080F3478),
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          text,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.ink700,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Input bar
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0EBFF),
-                        borderRadius: BorderRadius.circular(8),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F9FF),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.ink900),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Ask about stock, loans, sales…',
+                            hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF9AA8BF),
+                                fontWeight: FontWeight.w500),
+                          ),
+                          onSubmitted: _sendMessage,
+                        ),
                       ),
-                      child: const Icon(Icons.auto_awesome_rounded, size: 15, color: Color(0xFF7C5CFC)),
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Mercury 2.5 is thinking…',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF7C5CFC)),
+                    const SizedBox(width: 10),
+                    InkWell(
+                      onTap: () => _sendMessage(_controller.text),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppTheme.brand600,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x331B6EF3),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.send_rounded,
+                            color: Colors.white, size: 20),
+                      ),
                     ),
                   ],
                 ),
               ),
-
-            // Chips
-            Container(
-              height: 40,
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _chips(swahili).length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final text = _chips(swahili)[index];
-                  return InkWell(
-                    onTap: () => _sendMessage(text),
-                    borderRadius: BorderRadius.circular(99),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x080F3478),
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        text,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.ink700,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Input bar
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F9FF),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.ink900),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Ask about stock, loans, sales…',
-                          hintStyle: TextStyle(fontSize: 13, color: Color(0xFF9AA8BF), fontWeight: FontWeight.w500),
-                        ),
-                        onSubmitted: _sendMessage,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  InkWell(
-                    onTap: () => _sendMessage(_controller.text),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppTheme.brand600,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x331B6EF3),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -448,7 +441,8 @@ class _MessageBubble extends StatelessWidget {
 
       widgets.add(
         Padding(
-          padding: EdgeInsets.only(bottom: isHeader ? 4 : 2, top: isHeader ? 4 : 0),
+          padding:
+              EdgeInsets.only(bottom: isHeader ? 4 : 2, top: isHeader ? 4 : 0),
           child: RichText(
             text: TextSpan(children: spans),
           ),

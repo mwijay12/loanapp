@@ -7,6 +7,7 @@ import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../home/presentation/dashboard_kit.dart';
 
 /// Everything that needs attention, in one readable place.
 ///
@@ -26,94 +27,124 @@ class NotificationsScreen extends ConsumerWidget {
     final unread = feed.where((n) => !readIds.contains(n.id)).length;
 
     return Scaffold(
-      backgroundColor: AppTheme.canvas,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              tr(locale, 'notif.title'),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
+      backgroundColor: DashPalette.page,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: DashPalette.pageGradient,
+            stops: DashPalette.pageStops,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: DashPageHeader(
+                  title: tr(locale, 'notif.title'),
+                  subtitle: unread == 0
+                      ? tr(locale, 'notif.allRead')
+                      : trf(locale, 'notif.unread', {'n': unread}),
+                  onBack: () => context.pop(),
+                  trailing: feed.isEmpty
+                      ? null
+                      : _MarkAllButton(
+                          label: tr(locale, 'notif.markAll'),
+                          onTap: () {
+                            ref
+                                .read(readNotificationsProvider.notifier)
+                                .markAll(feed.map((n) => n.id));
+                            LimsToast.show(
+                              context,
+                              tr(locale, 'notif.markedAll'),
+                              isSuccess: true,
+                            );
+                          },
+                        ),
+                ),
               ),
-            ),
-            Text(
-              unread == 0
-                  ? tr(locale, 'notif.allRead')
-                  : trf(locale, 'notif.unread', {'n': unread}),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.ink500,
+              Expanded(
+                child: feed.isEmpty
+                    ? _EmptyState(locale: locale)
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 2, 20, 40),
+                        itemCount: feed.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, i) {
+                          final n = feed[i];
+                          return _NotificationCard(
+                            notification: n,
+                            locale: locale,
+                            read: readIds.contains(n.id),
+                            onTap: () {
+                              // Reading it is what marks it read — not opening the list.
+                              ref
+                                  .read(readNotificationsProvider.notifier)
+                                  .markRead(n.id);
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  fullscreenDialog: true,
+                                  builder: (_) => NotificationDetailScreen(
+                                    notificationId: n.id,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MarkAllButton extends StatelessWidget {
+  const _MarkAllButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x142F6BD6),
+              blurRadius: 14,
+              offset: Offset(0, 6),
             ),
           ],
         ),
-        centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          if (feed.isNotEmpty)
-            TextButton.icon(
-              onPressed: () {
-                ref
-                    .read(readNotificationsProvider.notifier)
-                    .markAll(feed.map((n) => n.id));
-                LimsToast.show(context, tr(locale, 'notif.markedAll'),
-                    isSuccess: true);
-              },
-              icon: const Icon(Icons.done_all_rounded,
-                  size: 16, color: AppTheme.brand600),
-              label: Text(
-                tr(locale, 'notif.markAll'),
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.brand600),
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: const SizedBox(
+              width: 42,
+              height: 42,
+              child: Icon(
+                Icons.done_all_rounded,
+                size: 19,
+                color: Color(0xFF1B6EF3),
               ),
             ),
-          const SizedBox(width: 8),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
+          ),
         ),
       ),
-      body: feed.isEmpty
-          ? _EmptyState(locale: locale)
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
-              itemCount: feed.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, i) {
-                final n = feed[i];
-                return _NotificationCard(
-                  notification: n,
-                  locale: locale,
-                  read: readIds.contains(n.id),
-                  onTap: () {
-                    // Reading it is what marks it read — not opening the list.
-                    ref.read(readNotificationsProvider.notifier).markRead(n.id);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        fullscreenDialog: true,
-                        builder: (_) => NotificationDetailScreen(
-                          notificationId: n.id,
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
     );
   }
 }
@@ -220,8 +251,7 @@ class _NotificationCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              notificationTitle(notification,
-                                  swahili: swahili),
+                              notificationTitle(notification, swahili: swahili),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -331,9 +361,7 @@ class NotificationDetailScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () {
-              ref
-                  .read(readNotificationsProvider.notifier)
-                  .markUnread(n.id);
+              ref.read(readNotificationsProvider.notifier).markUnread(n.id);
               Navigator.pop(context);
             },
             child: Text(
