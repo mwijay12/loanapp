@@ -18,6 +18,72 @@ import 'dart:ui';
 const Map<String, Map<String, String>> _dictionary = {
   // ---------------------------------------------------------------- navigation
   'nav.home': {'en': 'Home', 'sw': 'Nyumbani'},
+
+  // Storekeeper dashboard
+  'skdash.welcome': {'en': 'Welcome Back,', 'sw': 'Karibu Tena,'},
+  'skdash.searchHint': {
+    'en': 'Search IMEI, model, serial...',
+    'sw': 'Tafuta IMEI, modeli, serial...',
+  },
+  'skdash.searchEmpty': {
+    'en': 'Enter an IMEI or serial number first.',
+    'sw': 'Ingiza IMEI au namba ya kifaa kwanza.',
+  },
+  'skdash.alertsOne': {
+    'en': '1 low stock alert',
+    'sw': 'tahadhari 1 ya stoo ndogo'
+  },
+  'skdash.alertsMany': {
+    'en': '{n} low stock alerts',
+    'sw': 'tahadhari {n} za stoo ndogo',
+  },
+  'skdash.alertsNone': {
+    'en': 'No low stock alerts',
+    'sw': 'Hakuna tahadhari ya stoo'
+  },
+  'skdash.todayActivity': {
+    'en': "Today's Stock Activity",
+    'sw': 'Shughuli za Stoo Leo'
+  },
+  'skdash.addedPos': {
+    'en': '{imeis} IMEIs added · {pos} POs',
+    'sw': 'IMEI {imeis} zimeongezwa · PO {pos}',
+  },
+  'skdash.handsetsInStock': {
+    'en': 'handsets in stock',
+    'sw': 'simu zilizopo stoo'
+  },
+  'skdash.viewInventory': {'en': 'View Inventory', 'sw': 'Angalia Stoo'},
+  'skdash.services': {'en': 'Services', 'sw': 'Huduma'},
+  'skdash.recentActivity': {
+    'en': 'Recent Activity',
+    'sw': 'Shughuli za Karibuni'
+  },
+  'skdash.receiveStock': {'en': 'Receive Stock', 'sw': 'Pokea Stoo'},
+  'skdash.dispatch': {'en': 'Dispatch', 'sw': 'Safirisha'},
+  'skdash.scanImei': {'en': 'Scan IMEI', 'sw': 'Skani IMEI'},
+  'skdash.reports': {'en': 'Reports', 'sw': 'Ripoti'},
+  'skdash.mvSupplier': {
+    'en': 'New stock received',
+    'sw': 'Stoo mpya imepokelewa'
+  },
+  'skdash.mvTransfer': {'en': 'Dispatched', 'sw': 'Imesafirishwa'},
+  'skdash.mvReturn': {'en': 'Customer return', 'sw': 'Marejeo ya mteja'},
+  'skdash.mvUnits': {'en': '{n} units', 'sw': 'vifaa {n}'},
+  'skdash.mvEmpty': {
+    'en':
+        'No stock movements recorded yet. Receive a delivery and it will appear here.',
+    'sw': 'Bado hakuna shughuli za stoo. Pokea mzigo na itaonekana hapa.',
+  },
+  'skdash.mvError': {
+    'en': 'Stock movements could not be loaded.',
+    'sw': 'Shughuli za stoo hazikuweza kupakiwa.',
+  },
+  'skdash.retry': {'en': 'Retry', 'sw': 'Jaribu tena'},
+  'skdash.notConnected': {
+    'en': 'Not connected to the database',
+    'sw': 'Haijaunganishwa na hifadhidata',
+  },
   'nav.inventory': {'en': 'Inventory', 'sw': 'Stoo'},
   'nav.loans': {'en': 'Loans', 'sw': 'Mikopo'},
   'nav.operations': {'en': 'Operations', 'sw': 'Uendeshaji'},
@@ -47,25 +113,35 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'There is no second open branch to send stock to.',
     'sw': 'Hakuna tawi lingine lililo wazi la kupeleka stock.',
   },
-  'transfer.devices': {'en': 'Devices at this branch', 'sw': 'Vifaa vilivyopo tawi hili'},
+  'transfer.devices': {
+    'en': 'Devices at this branch',
+    'sw': 'Vifaa vilivyopo tawi hili'
+  },
   'transfer.inStock': {'en': 'in stock', 'sw': 'zipo stock'},
   'transfer.selected': {'en': 'selected', 'sw': 'zimechaguliwa'},
   'transfer.atThisBranch': {'en': 'at this branch', 'sw': 'katika tawi hili'},
   'transfer.all': {'en': 'Select all', 'sw': 'Chagua zote'},
   'transfer.clear': {'en': 'Clear', 'sw': 'Ondoa zote'},
-  'transfer.useSelection': {'en': 'Use selection', 'sw': 'Tumia zilizochaguliwa'},
+  'transfer.useSelection': {
+    'en': 'Use selection',
+    'sw': 'Tumia zilizochaguliwa'
+  },
   'transfer.unspecified': {'en': 'Unspecified handset', 'sw': 'Simu bila jina'},
   'transfer.noUnitsTitle': {
     'en': 'No serials at this branch yet',
     'sw': 'Hakuna serial tawi hili bado',
   },
   'transfer.noUnitsBody': {
-    'en': 'A transfer moves individual handsets, so the serials have to be on file first. Receive the delivery with its IMEIs scanned, and those devices appear here.',
-    'sw': 'Uhamishaji unaondoa simu halisi, kwa hiyo serial lazima ziwe kwenye kumbukumbu kwanza. Pokea mzigo ukiwa umepima IMEI, na hizo simu zitaonekana hapa.',
+    'en':
+        'A transfer moves individual handsets, so the serials have to be on file first. Receive the delivery with its IMEIs scanned, and those devices appear here.',
+    'sw':
+        'Uhamishaji unaondoa simu halisi, kwa hiyo serial lazima ziwe kwenye kumbukumbu kwanza. Pokea mzigo ukiwa umepima IMEI, na hizo simu zitaonekana hapa.',
   },
   'transfer.noDatabase': {
-    'en': 'This build has no database connection, so branch stock cannot be listed.',
-    'sw': 'Build hii haina muunganisho wa database, kwa hiyo stock ya tawi haiwezi kuorodheshwa.',
+    'en':
+        'This build has no database connection, so branch stock cannot be listed.',
+    'sw':
+        'Build hii haina muunganisho wa database, kwa hiyo stock ya tawi haiwezi kuorodheshwa.',
   },
   'transfer.chooseDestination': {
     'en': 'Choose the branch receiving the stock.',
@@ -75,7 +151,10 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Select at least one handset.',
     'sw': 'Chagua angalau simu moja.',
   },
-  'transfer.sendEmpty': {'en': 'Select devices to send', 'sw': 'Chagua vifaa vya kupeleka'},
+  'transfer.sendEmpty': {
+    'en': 'Select devices to send',
+    'sw': 'Chagua vifaa vya kupeleka'
+  },
   'transfer.send': {'en': 'Send', 'sw': 'Tuma'},
   'transfer.unit': {'en': 'unit', 'sw': 'kifaa'},
   'transfer.units': {'en': 'units', 'sw': 'vifaa'},
@@ -86,7 +165,8 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Uhamishaji haukuandikwa. Hakuna kilichohama.',
   },
   'transfer.noteTotals': {
-    'en': 'Company stock does not change: the phones changed branch, not owner.',
+    'en':
+        'Company stock does not change: the phones changed branch, not owner.',
     'sw': 'Stock ya kampuni haibadiliki: simu zimebadili tawi, sio mmiliki.',
   },
 
@@ -134,7 +214,10 @@ const Map<String, Map<String, String>> _dictionary = {
   'home.greetingEvening': {'en': 'Good evening', 'sw': 'Habari za jioni'},
   'home.summary': {'en': 'Today at a glance', 'sw': 'Muhtasari wa leo'},
   'home.quickActions': {'en': 'Quick actions', 'sw': 'Vitendo vya haraka'},
-  'home.needsAttention': {'en': 'Needs attention', 'sw': 'Zinahitaji kushughulikiwa'},
+  'home.needsAttention': {
+    'en': 'Needs attention',
+    'sw': 'Zinahitaji kushughulikiwa'
+  },
   'home.allClear': {
     'en': 'Nothing needs attention right now.',
     'sw': 'Hakuna kinachohitaji kushughulikiwa sasa.',
@@ -153,7 +236,10 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'mizigo {n} inasubiri mlangoni',
   },
 
-  'home.refresh': {'en': 'Refresh from database', 'sw': 'Sasisha kutoka database'},
+  'home.refresh': {
+    'en': 'Refresh from database',
+    'sw': 'Sasisha kutoka database'
+  },
   'home.notifications': {'en': 'Notifications', 'sw': 'Taarifa'},
   'home.live': {'en': 'Live', 'sw': 'Hai'},
   'home.offline': {'en': 'Offline', 'sw': 'Nje ya mtandao'},
@@ -173,7 +259,10 @@ const Map<String, Map<String, String>> _dictionary = {
 
   // Quick actions: one vocabulary for every role.
   'action.adminHub': {'en': 'Admin hub', 'sw': 'Kitovu cha msimamizi'},
-  'action.adminHubSub': {'en': 'Staff & roles', 'sw': 'Wafanyakazi na majukumu'},
+  'action.adminHubSub': {
+    'en': 'Staff & roles',
+    'sw': 'Wafanyakazi na majukumu'
+  },
   'action.audit': {'en': 'Stock audits', 'sw': 'Ukaguzi wa stoo'},
   'action.auditSub': {'en': 'Verify IMEI balance', 'sw': 'Hakiki IMEI'},
   'action.reports': {'en': 'Reports', 'sw': 'Ripoti'},
@@ -189,11 +278,17 @@ const Map<String, Map<String, String>> _dictionary = {
   'action.issueLoan': {'en': 'Issue loan', 'sw': 'Toa mkopo'},
   'action.issueLoanSub': {'en': 'KYC & collateral', 'sw': 'KYC na dhamana'},
   'action.collections': {'en': 'Collections', 'sw': 'Makusanyo'},
-  'action.collectionsSub': {'en': 'Overdue queue', 'sw': 'Orodha ya ucheleweshaji'},
+  'action.collectionsSub': {
+    'en': 'Overdue queue',
+    'sw': 'Orodha ya ucheleweshaji'
+  },
   'action.scan': {'en': 'Scan IMEI', 'sw': 'Skani IMEI'},
   'action.scanSub': {'en': 'Verify a handset', 'sw': 'Hakiki kifaa'},
   'action.borrowers': {'en': 'Borrowers', 'sw': 'Wakopaji'},
-  'action.borrowersSub': {'en': 'Contracts & balances', 'sw': 'Mikataba na salio'},
+  'action.borrowersSub': {
+    'en': 'Contracts & balances',
+    'sw': 'Mikataba na salio'
+  },
   'action.receive': {'en': 'Receive stock', 'sw': 'Pokea stoo'},
   'action.receiveSub': {'en': 'Supplier intake', 'sw': 'Mapokezi ya mzigo'},
   'action.count': {'en': 'Physical count', 'sw': 'Hesabu ya rafu'},
@@ -230,7 +325,10 @@ const Map<String, Map<String, String>> _dictionary = {
   'loans.filterAll': {'en': 'All loans ({n})', 'sw': 'Mikopo yote ({n})'},
   'loans.filterOverdue': {'en': 'Overdue ({n})', 'sw': 'Iliyochelewa ({n})'},
   'loans.filterCurrent': {'en': 'On schedule ({n})', 'sw': 'Kwa wakati ({n})'},
-  'loans.listTitle': {'en': 'Loan & device ledger', 'sw': 'Orodha ya mikopo na vifaa'},
+  'loans.listTitle': {
+    'en': 'Loan & device ledger',
+    'sw': 'Orodha ya mikopo na vifaa'
+  },
   'loans.total': {'en': 'Total: {n}', 'sw': 'Jumla: {n}'},
   'loans.empty': {
     'en': 'No borrower matches your search',
@@ -267,10 +365,15 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Malipo ya kwanza (25%)',
   },
   'loans.consent': {
-    'en': 'Borrower and guarantor have signed the hire-purchase contract (PDPA compliant).',
-    'sw': 'Mkopaji na mdhamini wamesaini mkataba wa mauzo ya mkopo (kwa mujibu wa PDPA).',
+    'en':
+        'Borrower and guarantor have signed the hire-purchase contract (PDPA compliant).',
+    'sw':
+        'Mkopaji na mdhamini wamesaini mkataba wa mauzo ya mkopo (kwa mujibu wa PDPA).',
   },
-  'loans.approve': {'en': 'Approve & issue handset', 'sw': 'Kubali na toa simu'},
+  'loans.approve': {
+    'en': 'Approve & issue handset',
+    'sw': 'Kubali na toa simu'
+  },
   'loans.disbursedTitle': {'en': 'Loan disbursed', 'sw': 'Mkopo umetolewa'},
   'loans.disbursedBody': {
     'en': '{name} approved and recorded in the active ledger.',
@@ -304,7 +407,10 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': '{n} units expected · {scanned} IMEIs scanned',
     'sw': 'vifaa {n} vinatarajiwa · IMEI {scanned} zimeskaniwa',
   },
-  'stock.scanTitle': {'en': 'Scan / add serial IMEI', 'sw': 'Skani / ongeza IMEI'},
+  'stock.scanTitle': {
+    'en': 'Scan / add serial IMEI',
+    'sw': 'Skani / ongeza IMEI'
+  },
   'stock.scanHint': {
     'en': 'Enter or scan the 15-digit GSMA IMEI',
     'sw': 'Weka au skani IMEI ya GSMA yenye tarakimu 15',
@@ -372,7 +478,10 @@ const Map<String, Map<String, String>> _dictionary = {
   },
 
   // ---------------------------------------------------------------------- sell
-  'sell.eyebrow': {'en': 'POS counter sale & loan', 'sw': 'Mauzo na mikopo kaunta'},
+  'sell.eyebrow': {
+    'en': 'POS counter sale & loan',
+    'sw': 'Mauzo na mikopo kaunta'
+  },
   'sell.cashTitle': {'en': 'Cash sale', 'sw': 'Mauzo ya fedha'},
   'sell.loanTitle': {'en': 'Phone loan (financed)', 'sw': 'Mkopo wa simu'},
   'sell.backHome': {'en': 'Back to home', 'sw': 'Rudi nyumbani'},
@@ -389,28 +498,49 @@ const Map<String, Map<String, String>> _dictionary = {
   'sell.cashSale': {'en': 'Cash sale', 'sw': 'Mauzo ya fedha'},
   'sell.creditSale': {'en': 'Credit sale', 'sw': 'Mauzo ya mkopo'},
   'sell.cashPrice': {'en': 'Cash retail price', 'sw': 'Bei ya fedha'},
-  'sell.amountDue': {'en': 'Amount due (cash total)', 'sw': 'Kiasi cha kulipa (jumla)'},
+  'sell.amountDue': {
+    'en': 'Amount due (cash total)',
+    'sw': 'Kiasi cha kulipa (jumla)'
+  },
   'sell.paymentChannel': {'en': 'Payment channel', 'sw': 'Njia ya malipo'},
   'sell.cashAtCounter': {'en': 'Cash at counter', 'sw': 'Fedha kaunta'},
   'sell.mpesa': {'en': 'M-Pesa Lipa Namba', 'sw': 'M-Pesa Lipa Namba'},
   'sell.airtel': {'en': 'Airtel Money', 'sw': 'Airtel Money'},
   'sell.tigopesa': {'en': 'Tigo Pesa', 'sw': 'Tigo Pesa'},
   'sell.card': {'en': 'CRDB / NMB card', 'sw': 'Kadi ya CRDB / NMB'},
-  'sell.customerContact': {'en': 'Customer contact', 'sw': 'Mawasiliano ya mteja'},
-  'sell.customerName': {'en': 'Borrower legal full name', 'sw': 'Jina kamili la mkopaji'},
+  'sell.customerContact': {
+    'en': 'Customer contact',
+    'sw': 'Mawasiliano ya mteja'
+  },
+  'sell.customerName': {
+    'en': 'Borrower legal full name',
+    'sw': 'Jina kamili la mkopaji'
+  },
   'sell.customerPhone': {
     'en': 'Customer phone (SMS receipt & warranty)',
     'sw': 'Simu ya mteja (risiti ya SMS na dhamana)',
   },
-  'sell.nida': {'en': 'National NIDA ID (20 digits)', 'sw': 'Namba ya NIDA (tarakimu 20)'},
+  'sell.nida': {
+    'en': 'National NIDA ID (20 digits)',
+    'sw': 'Namba ya NIDA (tarakimu 20)'
+  },
   'sell.address': {
     'en': 'Residential ward / street address',
     'sw': 'Mtaa / anuani ya makazi',
   },
-  'sell.imei1': {'en': 'IMEI 1 (hardware S/N)', 'sw': 'IMEI 1 (namba ya kifaa)'},
+  'sell.imei1': {
+    'en': 'IMEI 1 (hardware S/N)',
+    'sw': 'IMEI 1 (namba ya kifaa)'
+  },
   'sell.guarantor': {'en': 'Guarantor reference', 'sw': 'Mdhamini'},
-  'sell.guarantorName': {'en': 'Guarantor full legal name', 'sw': 'Jina kamili la mdhamini'},
-  'sell.guarantorPhone': {'en': 'Guarantor phone number', 'sw': 'Simu ya mdhamini'},
+  'sell.guarantorName': {
+    'en': 'Guarantor full legal name',
+    'sw': 'Jina kamili la mdhamini'
+  },
+  'sell.guarantorPhone': {
+    'en': 'Guarantor phone number',
+    'sw': 'Simu ya mdhamini'
+  },
   'sell.guarantorNida': {'en': 'Guarantor NIDA ID', 'sw': 'NIDA ya mdhamini'},
   'sell.term': {'en': 'Repayment term', 'sw': 'Muda wa malipo'},
   'sell.weeks': {'en': '{n} weeks', 'sw': 'wiki {n}'},
@@ -445,27 +575,49 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Receipt {n} is ready to print.',
     'sw': 'Risiti {n} iko tayari kuchapishwa.',
   },
-  'sell.cashDone': {'en': 'POS cash sale completed', 'sw': 'Mauzo ya fedha yamekamilika'},
-  'sell.loanDone': {'en': 'Phone loan disbursed', 'sw': 'Mkopo wa simu umetolewa'},
-  'sell.selectedHandset': {'en': 'Selected handset', 'sw': 'Simu iliyochaguliwa'},
+  'sell.cashDone': {
+    'en': 'POS cash sale completed',
+    'sw': 'Mauzo ya fedha yamekamilika'
+  },
+  'sell.loanDone': {
+    'en': 'Phone loan disbursed',
+    'sw': 'Mkopo wa simu umetolewa'
+  },
+  'sell.selectedHandset': {
+    'en': 'Selected handset',
+    'sw': 'Simu iliyochaguliwa'
+  },
   'sell.cashIntro': {
-    'en': 'Take payment at the counter and hand over the device with an official receipt.',
+    'en':
+        'Take payment at the counter and hand over the device with an official receipt.',
     'sw': 'Pokea malipo kaunta na mkabidhi kifaa kwa risiti rasmi.',
   },
-  'sell.step1': {'en': '1. Borrower KYC verification', 'sw': '1. Uthibitisho wa KYC wa mkopaji'},
+  'sell.step1': {
+    'en': '1. Borrower KYC verification',
+    'sw': '1. Uthibitisho wa KYC wa mkopaji'
+  },
   'sell.step2': {'en': '2. Guarantor reference', 'sw': '2. Mdhamini'},
-  'sell.step3': {'en': '3. Transparent terms & schedule', 'sw': '3. Masharti na ratiba wazi'},
+  'sell.step3': {
+    'en': '3. Transparent terms & schedule',
+    'sw': '3. Masharti na ratiba wazi'
+  },
   'sell.step4': {'en': '4. Loan agreement', 'sw': '4. Mkataba wa mkopo'},
   'sell.kycSection': {
     'en': 'Customer identity, counter photo & NIDA record',
     'sw': 'Utambulisho wa mteja, picha ya kaunta na NIDA',
   },
-  'sell.passportPhoto': {'en': 'Counter passport photo', 'sw': 'Picha ya mteja kaunta'},
+  'sell.passportPhoto': {
+    'en': 'Counter passport photo',
+    'sw': 'Picha ya mteja kaunta'
+  },
   'sell.nidaHint': {
     'en': 'Tanzania NIDA format (e.g. 19920415-XXXXX-XXXXX-XX)',
     'sw': 'Muundo wa NIDA Tanzania (mf. 19920415-XXXXX-XXXXX-XX)',
   },
-  'sell.minDeposit': {'en': 'Min deposit (25%)', 'sw': 'Kiwango cha chini (25%)'},
+  'sell.minDeposit': {
+    'en': 'Min deposit (25%)',
+    'sw': 'Kiwango cha chini (25%)'
+  },
   'sell.minRequired': {
     'en': 'Minimum required deposit (25%)',
     'sw': 'Malipo ya chini yanayotakiwa (25%)',
@@ -483,8 +635,14 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Weekly repayment ({n} wks)',
     'sw': 'Malipo ya kila wiki (wiki {n})',
   },
-  'sell.schedule': {'en': 'Payment calendar preview', 'sw': 'Onyesho la ratiba ya malipo'},
-  'sell.agreementTitle': {'en': 'Key customer agreement terms:', 'sw': 'Masharti muhimu ya mkataba:'},
+  'sell.schedule': {
+    'en': 'Payment calendar preview',
+    'sw': 'Onyesho la ratiba ya malipo'
+  },
+  'sell.agreementTitle': {
+    'en': 'Key customer agreement terms:',
+    'sw': 'Masharti muhimu ya mkataba:'
+  },
   'sell.contractTitle': {
     'en': 'Physical hire-purchase contract signed',
     'sw': 'Mkataba wa karatasi umesainiwa',
@@ -497,13 +655,22 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Branch supervisor override required',
     'sw': 'Idhini ya msimamizi wa tawi inahitajika',
   },
-  'sell.supervisorPin': {'en': 'Supervisor authorization PIN', 'sw': 'PIN ya msimamizi'},
+  'sell.supervisorPin': {
+    'en': 'Supervisor authorization PIN',
+    'sw': 'PIN ya msimamizi'
+  },
   'sell.errResolve': {
     'en': 'Please resolve the highlighted validation errors.',
     'sw': 'Tafadhali rekebisha makosa yaliyoangaziwa.',
   },
-  'sell.reviewDisbursement': {'en': 'Review loan disbursement', 'sw': 'Kagua utoaji wa mkopo'},
-  'sell.reviewCashTitle': {'en': 'Review POS cash sale', 'sw': 'Kagua mauzo ya fedha'},
+  'sell.reviewDisbursement': {
+    'en': 'Review loan disbursement',
+    'sw': 'Kagua utoaji wa mkopo'
+  },
+  'sell.reviewCashTitle': {
+    'en': 'Review POS cash sale',
+    'sw': 'Kagua mauzo ya fedha'
+  },
   'sell.totalFinanced': {'en': 'Total loan financed', 'sw': 'Jumla ya mkopo'},
   'sell.initialDeposit': {
     'en': 'Initial down payment (drawer)',
@@ -544,17 +711,26 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Please enter the borrower legal name',
     'sw': 'Weka jina kamili la mkopaji',
   },
-  'sell.errPhone': {'en': 'Please enter the customer phone', 'sw': 'Weka simu ya mteja'},
+  'sell.errPhone': {
+    'en': 'Please enter the customer phone',
+    'sw': 'Weka simu ya mteja'
+  },
   'sell.errAddress': {
     'en': 'Please enter the residential address',
     'sw': 'Weka anuani ya makazi',
   },
 
   // ------------------------------------------------------------------- scanner
-  'scan.eyebrow': {'en': 'Serialized stock operations', 'sw': 'Uendeshaji wa vifaa vilivyosajiliwa'},
+  'scan.eyebrow': {
+    'en': 'Serialized stock operations',
+    'sw': 'Uendeshaji wa vifaa vilivyosajiliwa'
+  },
   'scan.title': {'en': 'Scan & verify IMEI', 'sw': 'Skani na hakiki IMEI'},
   'scan.inspector': {'en': 'IMEI inspector', 'sw': 'Mkaguzi wa IMEI'},
-  'scan.searchHint': {'en': 'Type or paste a 15-digit IMEI', 'sw': 'Andika au bandika IMEI ya tarakimu 15'},
+  'scan.searchHint': {
+    'en': 'Type or paste a 15-digit IMEI',
+    'sw': 'Andika au bandika IMEI ya tarakimu 15'
+  },
   'scan.start': {'en': 'Start camera scan', 'sw': 'Anzisha skani ya kamera'},
   'scan.stop': {'en': 'Stop camera', 'sw': 'Simamisha kamera'},
   'scan.looking': {
@@ -568,7 +744,8 @@ const Map<String, Map<String, String>> _dictionary = {
   },
   'scan.cameraDenied': {
     'en': 'Camera permission denied. Allow it in settings or type the IMEI.',
-    'sw': 'Ruhusa ya kamera imekataliwa. Iruhusu kwenye mipangilio au andika IMEI.',
+    'sw':
+        'Ruhusa ya kamera imekataliwa. Iruhusu kwenye mipangilio au andika IMEI.',
   },
   'scan.invalid': {
     'en': 'That code is not a valid IMEI (15 digits, checksum failed)',
@@ -586,10 +763,22 @@ const Map<String, Map<String, String>> _dictionary = {
   'scan.copied': {'en': 'IMEI copied', 'sw': 'IMEI imenakiliwa'},
 
   // ------------------------------------------------------------- borrower screen
-  'borrower.chooseChannel': {'en': 'Choose payment channel', 'sw': 'Chagua Njia ya Malipo'},
-  'borrower.refNo': {'en': 'Payment reference / Ref No.', 'sw': 'Kumbukumbu ya Malipo / Ref No.'},
-  'borrower.confirmReceipt': {'en': 'Confirm and issue receipt', 'sw': 'Thibitisha na Weka Risiti'},
-  'borrower.paymentVoucher': {'en': 'Payment voucher', 'sw': 'Stakabadhi ya Malipo'},
+  'borrower.chooseChannel': {
+    'en': 'Choose payment channel',
+    'sw': 'Chagua Njia ya Malipo'
+  },
+  'borrower.refNo': {
+    'en': 'Payment reference / Ref No.',
+    'sw': 'Kumbukumbu ya Malipo / Ref No.'
+  },
+  'borrower.confirmReceipt': {
+    'en': 'Confirm and issue receipt',
+    'sw': 'Thibitisha na Weka Risiti'
+  },
+  'borrower.paymentVoucher': {
+    'en': 'Payment voucher',
+    'sw': 'Stakabadhi ya Malipo'
+  },
   'borrower.customer': {'en': 'Customer', 'sw': 'Mteja'},
   'borrower.channel': {'en': 'Payment channel', 'sw': 'Njia ya Malipo'},
   'borrower.receiptPdf': {'en': 'Receipt (PDF)', 'sw': 'Risiti (PDF)'},
@@ -600,43 +789,81 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Hire-purchase contract and guarantor',
     'sw': 'Mkataba wa Hire-Purchase & Mdhamini',
   },
-  'borrower.totalPaid': {'en': 'Total: {paid} of {total}', 'sw': 'Jumla: {paid} kati ya {total}'},
+  'borrower.totalPaid': {
+    'en': 'Total: {paid} of {total}',
+    'sw': 'Jumla: {paid} kati ya {total}'
+  },
   'borrower.receipt': {'en': 'Receipt', 'sw': 'Risiti'},
-  'borrower.recordedPayments': {'en': 'Recorded payments: {n}', 'sw': 'Marejesho yaliyorekodiwa: {n}'},
+  'borrower.recordedPayments': {
+    'en': 'Recorded payments: {n}',
+    'sw': 'Marejesho yaliyorekodiwa: {n}'
+  },
   'borrower.payNow': {'en': '+ Pay', 'sw': '+ Lipa'},
-  'borrower.noPayments': {'en': 'No payments recorded yet', 'sw': 'Hakuna marejesho yaliyorekodiwa bado'},
-  'borrower.firstPayment': {'en': 'Record the first payment', 'sw': 'Rekodi rejesho la kwanza'},
+  'borrower.noPayments': {
+    'en': 'No payments recorded yet',
+    'sw': 'Hakuna marejesho yaliyorekodiwa bado'
+  },
+  'borrower.firstPayment': {
+    'en': 'Record the first payment',
+    'sw': 'Rekodi rejesho la kwanza'
+  },
   'borrower.contract': {'en': 'Contract', 'sw': 'Mkataba'},
   'borrower.loanCleared': {'en': 'Loan settled', 'sw': 'Mkopo umekamilika'},
   'borrower.receivePayment': {'en': 'Receive payment', 'sw': 'Pokea rejesho'},
-  'borrower.accountLine': {'en': 'Account: {id} · {item}', 'sw': 'Akaunti: {id} · {item}'},
-  'borrower.accountSubtitle': {'en': 'Loan account: {id}', 'sw': 'Akaunti ya mkopo: {id}'},
+  'borrower.accountLine': {
+    'en': 'Account: {id} · {item}',
+    'sw': 'Akaunti: {id} · {item}'
+  },
+  'borrower.accountSubtitle': {
+    'en': 'Loan account: {id}',
+    'sw': 'Akaunti ya mkopo: {id}'
+  },
   'borrower.overdueBadge': {'en': 'Overdue', 'sw': 'Imechelewa'},
   'borrower.currentBadge': {'en': 'Current', 'sw': 'Inalipika vizuri'},
   'borrower.accountState': {'en': 'Account state', 'sw': 'Hali ya akaunti'},
   'borrower.fullyPaid': {'en': 'Fully paid', 'sw': 'Imelipwa yote'},
-  'borrower.statementPdf': {'en': 'Loan statement (PDF)', 'sw': 'Taarifa ya mkopo (PDF)'},
-  'borrower.tabSummary': {'en': 'Summary & security', 'sw': 'Muhtasari & Ulinzi'},
+  'borrower.statementPdf': {
+    'en': 'Loan statement (PDF)',
+    'sw': 'Taarifa ya mkopo (PDF)'
+  },
+  'borrower.tabSummary': {
+    'en': 'Summary & security',
+    'sw': 'Muhtasari & Ulinzi'
+  },
 
   // --------------------------------------------------------------- receive stock
   'recv.title': {'en': 'Receive stock', 'sw': 'Pokea stoo'},
-  'recv.noLines': {'en': 'No lines yet — add what arrived', 'sw': 'Hakuna bidhaa bado — ongeza zilizofika'},
+  'recv.noLines': {
+    'en': 'No lines yet — add what arrived',
+    'sw': 'Hakuna bidhaa bado — ongeza zilizofika'
+  },
   'recv.linesSummary': {
     'en': '{lines} lines · {units} units · TZS {value}',
     'sw': 'Bidhaa {lines} · vifaa {units} · TZS {value}',
   },
-  'recv.sourceTitle': {'en': 'Where is this stock coming from?', 'sw': 'Stoo hii inatoka wapi?'},
+  'recv.sourceTitle': {
+    'en': 'Where is this stock coming from?',
+    'sw': 'Stoo hii inatoka wapi?'
+  },
   'recv.sourceSupplier': {'en': 'Supplier', 'sw': 'Msambazaji'},
   'recv.sourceTransfer': {'en': 'Branch transfer', 'sw': 'Uhamisho wa tawi'},
   'recv.sourceReturn': {'en': 'Customer return', 'sw': 'Marejesho ya mteja'},
   'recv.supplierName': {'en': 'Supplier name', 'sw': 'Jina la msambazaji'},
-  'recv.supplierHint': {'en': 'e.g. Tech Distributors Ltd', 'sw': 'mf. Tech Distributors Ltd'},
-  'recv.invoice': {'en': 'Invoice or delivery note no.', 'sw': 'Namba ya ankara / hati ya mzigo'},
+  'recv.supplierHint': {
+    'en': 'e.g. Tech Distributors Ltd',
+    'sw': 'mf. Tech Distributors Ltd'
+  },
+  'recv.invoice': {
+    'en': 'Invoice or delivery note no.',
+    'sw': 'Namba ya ankara / hati ya mzigo'
+  },
   'recv.invoiceHint': {'en': 'e.g. INV-2026-0412', 'sw': 'mf. INV-2026-0412'},
   'recv.fromBranch': {'en': 'Branch it left', 'sw': 'Tawi lilikotoka'},
   'recv.transferNote': {
-    'en': 'The sending branch should record the same transfer, so both counts agree.',
-    'sw': 'Tawi linalotuma linapaswa kurekodi uhamisho huo huo ili hesabu zilingane.',
+    'en':
+        'The sending branch should record the same transfer, so both counts agree.',
+    'sw':
+        'Tawi linalotuma linapaswa kurekodi uhamisho huo huo ili hesabu zilingane.',
   },
   'recv.returnNote': {
     'en': 'Add the serials so the unit returns to stock as the same device.',
@@ -645,37 +872,108 @@ const Map<String, Map<String, String>> _dictionary = {
   'recv.whatArrived': {'en': 'What arrived', 'sw': 'Kilichofika'},
   'recv.addLine': {'en': 'Add model', 'sw': 'Ongeza modeli'},
   'recv.emptyLines': {
-    'en': 'Add the models in this delivery. Quantities start at 1 and can be changed.',
-    'sw': 'Ongeza modeli zilizo kwenye mzigo huu. Idadi inaanza na 1 na inaweza kubadilishwa.',
+    'en':
+        'Add the models in this delivery. Quantities start at 1 and can be changed.',
+    'sw':
+        'Ongeza modeli zilizo kwenye mzigo huu. Idadi inaanza na 1 na inaweza kubadilishwa.',
   },
-  'recv.totals': {'en': '{units} units · TZS {value}', 'sw': 'Vifaa {units} · TZS {value}'},
+  'recv.totals': {
+    'en': '{units} units · TZS {value}',
+    'sw': 'Vifaa {units} · TZS {value}'
+  },
   'recv.catalogue': {'en': 'models in catalogue', 'sw': 'modeli kwenye orodha'},
   'recv.inBranch': {'en': 'in branch', 'sw': 'tawi hili'},
   'recv.pickModel': {'en': 'Add a model', 'sw': 'Ongeza modeli'},
-  'recv.noProducts': {'en': 'No models in the catalogue yet.', 'sw': 'Hakuna modeli kwenye orodha bado.'},
-  'recv.scanTitle': {'en': 'Scan or type the IMEI', 'sw': 'Skani au andika IMEI'},
-  'recv.scanHint': {'en': '15-digit IMEI from the box', 'sw': 'IMEI ya tarakimu 15 kutoka kwenye boksi'},
-  'recv.scanFirst': {'en': 'Set the quantities before scanning serials', 'sw': 'Weka idadi kabla ya kuskani IMEI'},
-  'recv.scanProgress': {'en': '{scanned} of {expected} IMEIs scanned', 'sw': '{scanned} kati ya {expected} IMEI zimeskaniwa'},
-  'recv.scanButton': {'en': 'Scan / add serial IMEI', 'sw': 'Skani / ongeza IMEI'},
+  'recv.noProducts': {
+    'en': 'No models in the catalogue yet.',
+    'sw': 'Hakuna modeli kwenye orodha bado.'
+  },
+  'recv.scanTitle': {
+    'en': 'Scan or type the IMEI',
+    'sw': 'Skani au andika IMEI'
+  },
+  'recv.scanHint': {
+    'en': '15-digit IMEI from the box',
+    'sw': 'IMEI ya tarakimu 15 kutoka kwenye boksi'
+  },
+  'recv.scanFirst': {
+    'en': 'Set the quantities before scanning serials',
+    'sw': 'Weka idadi kabla ya kuskani IMEI'
+  },
+  'recv.scanProgress': {
+    'en': '{scanned} of {expected} IMEIs scanned',
+    'sw': '{scanned} kati ya {expected} IMEI zimeskaniwa'
+  },
+  'recv.scanButton': {
+    'en': 'Scan / add serial IMEI',
+    'sw': 'Skani / ongeza IMEI'
+  },
   'recv.useImei': {'en': 'Use this IMEI', 'sw': 'Tumia IMEI hii'},
-  'recv.badImei': {'en': 'Not a valid IMEI (15 digits, GSMA check).', 'sw': 'IMEI si sahihi (tarakimu 15, hakiki ya GSMA).'},
-  'recv.alreadyScanned': {'en': 'IMEI {n} is already in this delivery', 'sw': 'IMEI {n} tayari iko kwenye mzigo huu'},
+  'recv.badImei': {
+    'en': 'Not a valid IMEI (15 digits, GSMA check).',
+    'sw': 'IMEI si sahihi (tarakimu 15, hakiki ya GSMA).'
+  },
+  'recv.alreadyScanned': {
+    'en': 'IMEI {n} is already in this delivery',
+    'sw': 'IMEI {n} tayari iko kwenye mzigo huu'
+  },
   'recv.added': {'en': 'IMEI {n} added', 'sw': 'IMEI {n} imeongezwa'},
   'recv.note': {'en': 'Note (optional)', 'sw': 'Maelezo (hiari)'},
-  'recv.confirm': {'en': 'Confirm receive & update stock', 'sw': 'Thibitisha na sasisha stoo'},
-  'recv.ok': {'en': '{n} units added at {b}', 'sw': 'Vifaa {n} vimeongezwa {b}'},
-  'recv.okLocal': {'en': '{n} units recorded in this session only — database not connected', 'sw': 'Vifaa {n} vimerekodiwa kikao hiki tu — database haijaunganishwa'},
-  'recv.failed': {'en': 'The database did not accept the delivery. Nothing changed.', 'sw': 'Database haikukubali mzigo. Hakuna kilichobadilika.'},
-  'recv.offline': {'en': 'No database connection in this build.', 'sw': 'Hakuna muunganisho wa database kwenye build hii.'},
-  'recv.serialsStored': {'en': '{n} IMEIs saved to the handset register', 'sw': 'IMEI {n} zimehifadhiwa kwenye rejista ya simu'},
-  'recv.serialsSkipped': {'en': '{n} serials were already on file and were skipped', 'sw': 'Serial {n} zilikuwa zimekwisha hifadhiwa, zimerukwa'},
-  'recv.serialsFailed': {'en': '{n} IMEIs could not be saved — the handset register did not accept them', 'sw': 'IMEI {n} hazikuweza kuhifadhiwa — rejista ya simu haikuzipokea'},
-  'recv.noSerials': {'en': 'No IMEIs scanned — the units arrived but the individual handsets are not on file', 'sw': 'Hakuna IMEI iliyopimwa — vifaa vimefika lakini simu mahususi haziko kwenye kumbukumbu'},
-  'recv.err_lines': {'en': 'Add at least one model.', 'sw': 'Ongeza modeli angalau moja.'},
-  'recv.err_quantity': {'en': 'Every line needs a quantity of at least 1.', 'sw': 'Kila bidhaa inahitaji idadi ya angalau 1.'},
-  'recv.err_supplier': {'en': 'Enter the supplier name.', 'sw': 'Weka jina la msambazaji.'},
-  'recv.err_fromBranch': {'en': 'Choose the branch the stock came from.', 'sw': 'Chagua tawi lilikotoka stoo.'},
+  'recv.confirm': {
+    'en': 'Confirm receive & update stock',
+    'sw': 'Thibitisha na sasisha stoo'
+  },
+  'recv.ok': {
+    'en': '{n} units added at {b}',
+    'sw': 'Vifaa {n} vimeongezwa {b}'
+  },
+  'recv.okLocal': {
+    'en': '{n} units recorded in this session only — database not connected',
+    'sw': 'Vifaa {n} vimerekodiwa kikao hiki tu — database haijaunganishwa'
+  },
+  'recv.failed': {
+    'en': 'The database did not accept the delivery. Nothing changed.',
+    'sw': 'Database haikukubali mzigo. Hakuna kilichobadilika.'
+  },
+  'recv.offline': {
+    'en': 'No database connection in this build.',
+    'sw': 'Hakuna muunganisho wa database kwenye build hii.'
+  },
+  'recv.serialsStored': {
+    'en': '{n} IMEIs saved to the handset register',
+    'sw': 'IMEI {n} zimehifadhiwa kwenye rejista ya simu'
+  },
+  'recv.serialsSkipped': {
+    'en': '{n} serials were already on file and were skipped',
+    'sw': 'Serial {n} zilikuwa zimekwisha hifadhiwa, zimerukwa'
+  },
+  'recv.serialsFailed': {
+    'en':
+        '{n} IMEIs could not be saved — the handset register did not accept them',
+    'sw': 'IMEI {n} hazikuweza kuhifadhiwa — rejista ya simu haikuzipokea'
+  },
+  'recv.noSerials': {
+    'en':
+        'No IMEIs scanned — the units arrived but the individual handsets are not on file',
+    'sw':
+        'Hakuna IMEI iliyopimwa — vifaa vimefika lakini simu mahususi haziko kwenye kumbukumbu'
+  },
+  'recv.err_lines': {
+    'en': 'Add at least one model.',
+    'sw': 'Ongeza modeli angalau moja.'
+  },
+  'recv.err_quantity': {
+    'en': 'Every line needs a quantity of at least 1.',
+    'sw': 'Kila bidhaa inahitaji idadi ya angalau 1.'
+  },
+  'recv.err_supplier': {
+    'en': 'Enter the supplier name.',
+    'sw': 'Weka jina la msambazaji.'
+  },
+  'recv.err_fromBranch': {
+    'en': 'Choose the branch the stock came from.',
+    'sw': 'Chagua tawi lilikotoka stoo.'
+  },
 
   // ------------------------------------------------------------------ inspector
   'insp.inStock': {'en': 'In stock (clean)', 'sw': 'Ipo Stoo (Clean)'},
@@ -690,34 +988,72 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Mkopo Unaendelea Vizuri · Rekodi ya Kisheria',
   },
   'insp.overdueBody': {
-    'en': 'Payment is late. Call the borrower ({n}) or the guarantor who signed the contract.',
-    'sw': 'Deni limechelewa. Wasiliana na mkopaji ({n}) au piga simu kwa mdhamini aliyesaini mkataba.',
+    'en':
+        'Payment is late. Call the borrower ({n}) or the guarantor who signed the contract.',
+    'sw':
+        'Deni limechelewa. Wasiliana na mkopaji ({n}) au piga simu kwa mdhamini aliyesaini mkataba.',
   },
   'insp.currentBody': {
-    'en': 'Handed over under a valid hire-purchase contract. Next instalment: {d}.',
-    'sw': 'Kifaa kimekabidhiwa kwa mkataba halali wa hire-purchase. Rejesho lijalo: {d}.',
+    'en':
+        'Handed over under a valid hire-purchase contract. Next instalment: {d}.',
+    'sw':
+        'Kifaa kimekabidhiwa kwa mkataba halali wa hire-purchase. Rejesho lijalo: {d}.',
   },
-  'insp.notFinanced': {'en': 'Not financed (in stock)', 'sw': 'Haijakopeshwa (Ipo Stoo)'},
-  'insp.imeiHint': {'en': 'Enter the 15-digit IMEI', 'sw': 'Weka namba ya IMEI (tarakimu 15)'},
+  'insp.notFinanced': {
+    'en': 'Not financed (in stock)',
+    'sw': 'Haijakopeshwa (Ipo Stoo)'
+  },
+  'insp.imeiHint': {
+    'en': 'Enter the 15-digit IMEI',
+    'sw': 'Weka namba ya IMEI (tarakimu 15)'
+  },
   'insp.branch': {'en': 'Registered branch', 'sw': 'Tawi la Usajili'},
-  'insp.loanSection': {'en': 'Customer / loan details', 'sw': 'Mteja / Taarifa za Mkopo'},
-  'insp.unknownModel': {'en': 'Not registered here', 'sw': 'Haijasajiliwa hapa'},
-  'insp.unknownStatus': {'en': 'Not in this shop', 'sw': 'Haipo kwenye duka hili'},
+  'insp.loanSection': {
+    'en': 'Customer / loan details',
+    'sw': 'Mteja / Taarifa za Mkopo'
+  },
+  'insp.unknownModel': {
+    'en': 'Not registered here',
+    'sw': 'Haijasajiliwa hapa'
+  },
+  'insp.unknownStatus': {
+    'en': 'Not in this shop',
+    'sw': 'Haipo kwenye duka hili'
+  },
   'insp.invalidStatus': {'en': 'Not a valid IMEI', 'sw': 'IMEI si sahihi'},
   'insp.reminderSms': {
-    'en': 'Hello {name}, a reminder that your instalment of TZS {amount} is due. Please pay at the shop.',
-    'sw': 'Habari {name}, tunakukumbusha rejesho lako la TZS {amount}. Tafadhali lipa dukani.',
+    'en':
+        'Hello {name}, a reminder that your instalment of TZS {amount} is due. Please pay at the shop.',
+    'sw':
+        'Habari {name}, tunakukumbusha rejesho lako la TZS {amount}. Tafadhali lipa dukani.',
   },
-  'insp.reminderOpened': {'en': 'Opening your messaging app for {phone}.', 'sw': 'Tunafungua ujumbe kwa {phone}.'},
-  'insp.reminderFailed': {'en': 'No messaging app available on this device.', 'sw': 'Hakuna app ya ujumbe kwenye kifaa hiki.'},
-  'insp.dossierMissing': {'en': 'That contract is no longer in the list.', 'sw': 'Mkataba huo haupo kwenye orodha tena.'},
-  'insp.serialsOnFile': {'en': 'Serials on file:', 'sw': 'Namba zilizosajiliwa:'},
+  'insp.reminderOpened': {
+    'en': 'Opening your messaging app for {phone}.',
+    'sw': 'Tunafungua ujumbe kwa {phone}.'
+  },
+  'insp.reminderFailed': {
+    'en': 'No messaging app available on this device.',
+    'sw': 'Hakuna app ya ujumbe kwenye kifaa hiki.'
+  },
+  'insp.dossierMissing': {
+    'en': 'That contract is no longer in the list.',
+    'sw': 'Mkataba huo haupo kwenye orodha tena.'
+  },
+  'insp.serialsOnFile': {
+    'en': 'Serials on file:',
+    'sw': 'Namba zilizosajiliwa:'
+  },
   'insp.auditTitle': {'en': 'Device audit trail', 'sw': 'Historia ya Kifaa'},
   'insp.auditEmpty': {
-    'en': 'No movement has been recorded for this handset yet: no contract, no instalments, no stock entry.',
-    'sw': 'Bado hakuna kumbukumbu ya kifaa hiki: hakuna mkataba, hakuna marejesho, hakuna kuingizwa stoo.',
+    'en':
+        'No movement has been recorded for this handset yet: no contract, no instalments, no stock entry.',
+    'sw':
+        'Bado hakuna kumbukumbu ya kifaa hiki: hakuna mkataba, hakuna marejesho, hakuna kuingizwa stoo.',
   },
-  'insp.auditInstallment': {'en': 'Instalment received', 'sw': 'Rejesho limepokelewa'},
+  'insp.auditInstallment': {
+    'en': 'Instalment received',
+    'sw': 'Rejesho limepokelewa'
+  },
   'insp.auditContract': {'en': 'Contract {id}', 'sw': 'Mkataba {id}'},
   'insp.auditContractDeposit': {
     'en': '{name} · deposit TZS {deposit}',
@@ -732,32 +1068,55 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'SKU {sku} · {branch} · {stock} on hand',
     'sw': 'SKU {sku} · {branch} · {stock} zilizopo',
   },
-  'insp.auditRemoteMatch': {'en': 'Serial found in the database', 'sw': 'Namba imepatikana kwenye hifadhidata'},
+  'insp.auditRemoteMatch': {
+    'en': 'Serial found in the database',
+    'sw': 'Namba imepatikana kwenye hifadhidata'
+  },
   'insp.auditRemoteMatchSub': {
     'en': 'Unit record for {serial}',
     'sw': 'Kumbukumbu ya kifaa {serial}',
   },
-  'insp.screenTitle': {'en': 'Hardware Verification & IMEI Inspector', 'sw': 'Ukaguzi wa Kifaa & IMEI'},
-  'insp.scanTooltip': {'en': 'Scan barcode / IMEI', 'sw': 'Skani barcode / IMEI'},
+  'insp.screenTitle': {
+    'en': 'Hardware Verification & IMEI Inspector',
+    'sw': 'Ukaguzi wa Kifaa & IMEI'
+  },
+  'insp.scanTooltip': {
+    'en': 'Scan barcode / IMEI',
+    'sw': 'Skani barcode / IMEI'
+  },
   'insp.search': {'en': 'Check', 'sw': 'Kagua'},
   'insp.serialNo': {'en': 'Serial No.', 'sw': 'Namba ya Kifaa'},
   'insp.loanValue': {'en': 'Loan value', 'sw': 'Thamani ya Mkopo'},
-  'insp.recoveryTitle': {'en': 'Hire-Purchase Recovery & Actions', 'sw': 'Ufuatiliaji wa Mkopo & Hatua'},
+  'insp.recoveryTitle': {
+    'en': 'Hire-Purchase Recovery & Actions',
+    'sw': 'Ufuatiliaji wa Mkopo & Hatua'
+  },
   'insp.overdueTag': {'en': 'Overdue', 'sw': 'Imechelewa'},
   'insp.activeTag': {'en': 'Active', 'sw': 'Inaendelea'},
   'insp.sendSms': {'en': 'Send payment SMS', 'sw': 'Tuma SMS ya malipo'},
   'insp.borrowerDossier': {'en': 'Borrower file', 'sw': 'Jalada la Mkopaji'},
   'insp.fullFile': {'en': 'Full file', 'sw': 'Faili Kamili'},
-  'insp.phoneNida': {'en': 'Phone: {phone} · NIDA: {nida}', 'sw': 'Simu: {phone} · NIDA: {nida}'},
-  'insp.remainingBalance': {'en': 'Remaining balance', 'sw': 'Salio Lililobaki'},
+  'insp.phoneNida': {
+    'en': 'Phone: {phone} · NIDA: {nida}',
+    'sw': 'Simu: {phone} · NIDA: {nida}'
+  },
+  'insp.remainingBalance': {
+    'en': 'Remaining balance',
+    'sw': 'Salio Lililobaki'
+  },
   'insp.dueDate': {'en': 'Due date', 'sw': 'Tarehe ya malipo'},
   'insp.recordPayment': {'en': 'Record a payment', 'sw': 'Rekodi malipo'},
   'insp.warrantyTitle': {'en': 'Warranty status', 'sw': 'Hali ya Waranti'},
   'insp.warrantyIncludes': {
-    'en': 'Covers the original screen, motherboard and software work under the LIMS Care Guarantee.',
-    'sw': 'Inajumuisha: Kioo cha Asili, Motherboard & Ufundi wa Mfumo chini ya LIMS Care Guarantee.',
+    'en':
+        'Covers the original screen, motherboard and software work under the LIMS Care Guarantee.',
+    'sw':
+        'Inajumuisha: Kioo cha Asili, Motherboard & Ufundi wa Mfumo chini ya LIMS Care Guarantee.',
   },
-  'insp.noActiveLoan': {'en': 'This device has no active loan.', 'sw': 'Kifaa hiki hakina mkopo unaoendelea.'},
+  'insp.noActiveLoan': {
+    'en': 'This device has no active loan.',
+    'sw': 'Kifaa hiki hakina mkopo unaoendelea.'
+  },
   'insp.noPhoneOnFile': {
     'en': 'No phone number is recorded on this contract.',
     'sw': 'Hakuna namba ya simu iliyosajiliwa kwenye mkataba huu.',
@@ -766,32 +1125,61 @@ const Map<String, Map<String, String>> _dictionary = {
   // ------------------------------------------------------------------- stock sheet
   'stock.sellCash': {'en': 'Sell for cash', 'sw': 'Uza Cash'},
   'stock.issueLoan': {'en': 'Issue loan', 'sw': 'Toa Mkopo'},
-  'stock.inventoryHistory': {'en': 'Inventory history', 'sw': 'Historia ya stoo'},
+  'stock.inventoryHistory': {
+    'en': 'Inventory history',
+    'sw': 'Historia ya stoo'
+  },
   'stock.editPhoto': {'en': 'Edit photo', 'sw': 'Hariri Picha'},
-  'stock.editPhotoTitle': {'en': 'Edit product photo', 'sw': 'Hariri Picha ya Bidhaa'},
+  'stock.editPhotoTitle': {
+    'en': 'Edit product photo',
+    'sw': 'Hariri Picha ya Bidhaa'
+  },
   'stock.noSerialOnFile': {
     'en': 'No serial number is recorded for this unit yet.',
     'sw': 'Hakuna namba ya kifaa iliyosajiliwa kwa bidhaa hii bado.',
   },
-  'stock.presets': {'en': 'Choose from existing handset images (presets):', 'sw': 'Chagua Kutoka Picha za Simu Zilizopo (Presets):'},
-  'stock.photoUrl': {'en': 'Or paste an image link / URL:', 'sw': 'Au Weka Link / URL ya Picha:'},
+  'stock.presets': {
+    'en': 'Choose from existing handset images (presets):',
+    'sw': 'Chagua Kutoka Picha za Simu Zilizopo (Presets):'
+  },
+  'stock.photoUrl': {
+    'en': 'Or paste an image link / URL:',
+    'sw': 'Au Weka Link / URL ya Picha:'
+  },
   'stock.savePhoto': {'en': 'Save new photo', 'sw': 'Hifadhi Picha Mpya'},
-  'stock.photoHint': {'en': 'Pick a real photo so the shop and the loan contract match the device.', 'sw': 'Chagua picha halisi kuonyesha dukani na kwenye mkataba wa mkopo.'},
-  'stock.compressNote': {'en': 'Photos are compressed from 4.8 MB to about 74 KB before upload. The free Supabase tier (1 GB) holds 13,900+ handsets.', 'sw': 'Picha inabanwa kutoka 4.8MB hadi 74KB kabla ya kutumwa. Hifadhi ya bure ya Supabase (1GB) inatosha simu 13,900+ bila kujaa!'},
+  'stock.photoHint': {
+    'en':
+        'Pick a real photo so the shop and the loan contract match the device.',
+    'sw': 'Chagua picha halisi kuonyesha dukani na kwenye mkataba wa mkopo.'
+  },
+  'stock.compressNote': {
+    'en':
+        'Photos are compressed from 4.8 MB to about 74 KB before upload. The free Supabase tier (1 GB) holds 13,900+ handsets.',
+    'sw':
+        'Picha inabanwa kutoka 4.8MB hadi 74KB kabla ya kutumwa. Hifadhi ya bure ya Supabase (1GB) inatosha simu 13,900+ bila kujaa!'
+  },
 
   // -------------------------------------------------------------- notifications
   'notif.title': {'en': 'Notifications', 'sw': 'Taarifa'},
   'notif.unread': {'en': '{n} unread', 'sw': '{n} hazijasomwa'},
   'notif.allRead': {'en': 'All read', 'sw': 'Zote zimesomwa'},
   'notif.markAll': {'en': 'Mark all read', 'sw': 'Soma zote'},
-  'notif.markedAll': {'en': 'All marked as read', 'sw': 'Zote zimewekwa kama zimesomwa'},
+  'notif.markedAll': {
+    'en': 'All marked as read',
+    'sw': 'Zote zimewekwa kama zimesomwa'
+  },
   'notif.empty': {
-    'en': 'Nothing needs attention. Low stock and overdue loans will appear here.',
-    'sw': 'Hakuna kinachohitaji kushughulikiwa. Stoo ndogo na mikopo iliyochelewa zitaonekana hapa.',
+    'en':
+        'Nothing needs attention. Low stock and overdue loans will appear here.',
+    'sw':
+        'Hakuna kinachohitaji kushughulikiwa. Stoo ndogo na mikopo iliyochelewa zitaonekana hapa.',
   },
   'notif.detailTitle': {'en': 'Notice', 'sw': 'Taarifa'},
   'notif.markUnread': {'en': 'Mark unread', 'sw': 'Weka kama haijasomwa'},
-  'notif.open': {'en': 'Open the relevant screen', 'sw': 'Fungua screen husika'},
+  'notif.open': {
+    'en': 'Open the relevant screen',
+    'sw': 'Fungua screen husika'
+  },
   'notif.resolved': {
     'en': 'This has been resolved since you opened the list.',
     'sw': 'Hili limeshatatuliwa tangu ufungue orodha.',
@@ -799,18 +1187,32 @@ const Map<String, Map<String, String>> _dictionary = {
 
   // -------------------------------------------------------- settings & admin
   'set.save': {'en': 'Save', 'sw': 'Hifadhi'},
-  'set.smsGuarantor': {'en': 'SMS & call the guarantor', 'sw': 'SMS & Piga Simu kwa Mdhamini'},
-  'set.negotiation': {'en': 'Settle directly with the customer', 'sw': 'Mazungumzo ya Makubaliano na Mteja'},
-  'set.smsTest': {
-    'en': 'Reminder SMS template sent (example: "Hello, your instalment of TZS ... is now due...")',
-    'sw': 'Kiolezo cha SMS ya kukumbusha rejesho kimetumwa (Mfano: "Ndugu Mteja, rejesho lako la TZS ... linatakiwa kulipwa...")',
+  'set.smsGuarantor': {
+    'en': 'SMS & call the guarantor',
+    'sw': 'SMS & Piga Simu kwa Mdhamini'
   },
-  'set.legalNotice': {'en': 'Formal demand notice', 'sw': 'Notisi Rasmi ya Madai'},
+  'set.negotiation': {
+    'en': 'Settle directly with the customer',
+    'sw': 'Mazungumzo ya Makubaliano na Mteja'
+  },
+  'set.smsTest': {
+    'en':
+        'Reminder SMS template sent (example: "Hello, your instalment of TZS ... is now due...")',
+    'sw':
+        'Kiolezo cha SMS ya kukumbusha rejesho kimetumwa (Mfano: "Ndugu Mteja, rejesho lako la TZS ... linatakiwa kulipwa...")',
+  },
+  'set.legalNotice': {
+    'en': 'Formal demand notice',
+    'sw': 'Notisi Rasmi ya Madai'
+  },
   'set.smsTestButton': {
     'en': 'Test the payment reminder SMS',
     'sw': 'Jaribu Kiolezo cha SMS ya Marejesho',
   },
-  'adm.branchActive': {'en': 'Branch is operating', 'sw': 'Tawi linafanya kazi'},
+  'adm.branchActive': {
+    'en': 'Branch is operating',
+    'sw': 'Tawi linafanya kazi'
+  },
   'adm.branchClosed': {'en': 'Branch is closed', 'sw': 'Tawi limefungwa'},
   'adm.saveChanges': {'en': 'Save changes', 'sw': 'Hifadhi Mabadiliko'},
   'adm.userSheetSubtitle': {
@@ -834,9 +1236,18 @@ const Map<String, Map<String, String>> _dictionary = {
   },
   'admin.staffTab': {'en': 'Staff & RBAC', 'sw': 'Wafanyakazi & RBAC'},
   'admin.revenueToday': {'en': 'Revenue today', 'sw': 'Mauzo ya leo'},
-  'admin.activeBranches': {'en': 'Active branches', 'sw': 'Matawi yanayofanya kazi'},
-  'admin.branchesOpen': {'en': '{n} of {total} open', 'sw': '{n} kati ya {total} wazi'},
-  'admin.loansOutstanding': {'en': 'Loans outstanding', 'sw': 'Mikopo inayodaiwa'},
+  'admin.activeBranches': {
+    'en': 'Active branches',
+    'sw': 'Matawi yanayofanya kazi'
+  },
+  'admin.branchesOpen': {
+    'en': '{n} of {total} open',
+    'sw': '{n} kati ya {total} wazi'
+  },
+  'admin.loansOutstanding': {
+    'en': 'Loans outstanding',
+    'sw': 'Mikopo inayodaiwa'
+  },
   'admin.overdue': {'en': '{n} overdue', 'sw': '{n} imechelewa'},
   'admin.alerts': {'en': 'Alerts', 'sw': 'Tahadhari'},
   'admin.nothingPending': {'en': 'Nothing pending', 'sw': 'Hakuna inayosubiri'},
@@ -873,14 +1284,23 @@ const Map<String, Map<String, String>> _dictionary = {
   },
   'admin.transactions': {'en': 'transactions', 'sw': 'miamala'},
   'admin.was': {'en': 'was', 'sw': 'ilikuwa'},
-  'admin.vsLastWeek': {'en': 'vs same day last week', 'sw': 'vs siku kama hii wiki iliyopita'},
+  'admin.vsLastWeek': {
+    'en': 'vs same day last week',
+    'sw': 'vs siku kama hii wiki iliyopita'
+  },
   'admin.noEarlierFigure': {
     'en': 'no figure for last week',
     'sw': 'hakuna kumbukumbu ya wiki iliyopita',
   },
   'admin.branches': {'en': 'Branches', 'sw': 'Matawi'},
-  'admin.lowStockModels': {'en': '{n} low-stock models', 'sw': 'bidhaa {n} chini ya kiwango'},
-  'admin.alertsTitle': {'en': 'Alerts & Escalations', 'sw': 'Tahadhari na Mambo ya Dharura'},
+  'admin.lowStockModels': {
+    'en': '{n} low-stock models',
+    'sw': 'bidhaa {n} chini ya kiwango'
+  },
+  'admin.alertsTitle': {
+    'en': 'Alerts & Escalations',
+    'sw': 'Tahadhari na Mambo ya Dharura'
+  },
   'admin.noAlerts': {
     'en': 'Nothing needs review right now.',
     'sw': 'Hakuna kinachohitaji kuangaliwa sasa.',
@@ -918,10 +1338,15 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'wafanyakazi {n} wamesajiliwa katika matawi',
   },
   'admin.addStaff': {'en': 'Add staff', 'sw': 'Ongeza staff'},
-  'admin.noAccessTitle': {'en': 'No console access', 'sw': 'Huna ruhusa ya console'},
+  'admin.noAccessTitle': {
+    'en': 'No console access',
+    'sw': 'Huna ruhusa ya console'
+  },
   'admin.noAccessBody': {
-    'en': 'Your role is {role}. The console needs Super Admin or Branch Manager. Ask your supervisor for access.',
-    'sw': 'Jukumu lako ni {role}. Kituo kinahitaji Super Admin au Branch Manager. Omba ruhusa kwa msimamizi wako.',
+    'en':
+        'Your role is {role}. The console needs Super Admin or Branch Manager. Ask your supervisor for access.',
+    'sw':
+        'Jukumu lako ni {role}. Kituo kinahitaji Super Admin au Branch Manager. Omba ruhusa kwa msimamizi wako.',
   },
   'admin.closeBranch': {'en': 'Close branch', 'sw': 'Funga tawi'},
   'admin.reopenBranch': {'en': 'Reopen branch', 'sw': 'Fungua tawi'},
@@ -934,36 +1359,52 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Litarudi kwenye orodha ya matawi yanayofanya kazi.',
   },
   'admin.roleSuperAdmin': {
-    'en': 'Full executive access: network revenue, profit margins, staff RBAC, and the device-hold policy switch.',
-    'sw': 'Uongozi kamili: mauzo ya mtandao, faida, ruhusa za wafanyakazi, na sera ya device hold.',
+    'en':
+        'Full executive access: network revenue, profit margins, staff RBAC, and the device-hold policy switch.',
+    'sw':
+        'Uongozi kamili: mauzo ya mtandao, faida, ruhusa za wafanyakazi, na sera ya device hold.',
   },
   'admin.roleBranchManager': {
-    'en': 'Branch supervision: daily register and drawer audit, supervisor discount PIN overrides, staff shift audits.',
-    'sw': 'Usimamizi wa tawi: daftari la siku na ukaguzi wa kasha, PIN ya punguzo, ukaguzi wa zamu.',
+    'en':
+        'Branch supervision: daily register and drawer audit, supervisor discount PIN overrides, staff shift audits.',
+    'sw':
+        'Usimamizi wa tawi: daftari la siku na ukaguzi wa kasha, PIN ya punguzo, ukaguzi wa zamu.',
   },
   'admin.roleCredit': {
-    'en': 'Credit and risk: customer KYC scoring, loan approval or rejection, device-hold flags for defaulters, and collections.',
-    'sw': 'Mikopo na hatari: alama za KYC, kukubali au kukataa mkopo, device hold kwa wadaiwa, na ukusanyaji.',
+    'en':
+        'Credit and risk: customer KYC scoring, loan approval or rejection, device-hold flags for defaulters, and collections.',
+    'sw':
+        'Mikopo na hatari: alama za KYC, kukubali au kukataa mkopo, device hold kwa wadaiwa, na ukusanyaji.',
   },
   'admin.roleInventory': {
-    'en': 'Logistics and warehouse: inbound shipments, serialised IMEI intake, audits, and branch transfers.',
-    'sw': 'Usafirishaji na ghala: shehena zinazoingia, IMEI, ukaguzi, na uhamishaji wa matawi.',
+    'en':
+        'Logistics and warehouse: inbound shipments, serialised IMEI intake, audits, and branch transfers.',
+    'sw':
+        'Usafirishaji na ghala: shehena zinazoingia, IMEI, ukaguzi, na uhamishaji wa matawi.',
   },
   'admin.roleStaff': {
-    'en': 'Retail POS: cash and mobile money sales, customer KYC intake, stock scan, and shift clock-in.',
-    'sw': 'Mauzo: fedha taslimu na mobile money, KYC ya mteja, skani ya stock, na kuingia zamu.',
+    'en':
+        'Retail POS: cash and mobile money sales, customer KYC intake, stock scan, and shift clock-in.',
+    'sw':
+        'Mauzo: fedha taslimu na mobile money, KYC ya mteja, skani ya stock, na kuingia zamu.',
   },
   'admin.roleAuditor': {
-    'en': 'Oversight only: read-only access to registers, loan history, stock movements and reports.',
-    'sw': 'Uangalizi tu: unaweza kusoma daftari, historia ya mikopo, mienendo ya stock na ripoti.',
+    'en':
+        'Oversight only: read-only access to registers, loan history, stock movements and reports.',
+    'sw':
+        'Uangalizi tu: unaweza kusoma daftari, historia ya mikopo, mienendo ya stock na ripoti.',
   },
   'admin.roleInvited': {
-    'en': 'Invited but not yet activated: the account exists but has no access until the invitation is accepted.',
-    'sw': 'Amealikwa lakini hajaamilishwa: akaunti ipo lakini haina ruhusa hadi aukubali mwaliko.',
+    'en':
+        'Invited but not yet activated: the account exists but has no access until the invitation is accepted.',
+    'sw':
+        'Amealikwa lakini hajaamilishwa: akaunti ipo lakini haina ruhusa hadi aukubali mwaliko.',
   },
   'admin.roleUnknown': {
-    'en': 'Unrecognised role — treated as read-only until a Super Admin assigns a valid role.',
-    'sw': 'Jukumu lisilotambulika — linahesabiwa kama kusoma tu hadi Super Admin ape jukumu halali.',
+    'en':
+        'Unrecognised role — treated as read-only until a Super Admin assigns a valid role.',
+    'sw':
+        'Jukumu lisilotambulika — linahesabiwa kama kusoma tu hadi Super Admin ape jukumu halali.',
   },
 
   // ------------------------------------------------------- role labels & scope
@@ -982,21 +1423,34 @@ const Map<String, Map<String, String>> _dictionary = {
   // ------------------------------------------------------------------ settings
   'set.title': {'en': 'Settings & Profile', 'sw': 'Mipangilio na Wasifu'},
   'set.branch': {'en': 'Branch', 'sw': 'Tawi'},
-  'set.assignedBranch': {'en': 'Your assigned branch', 'sw': 'Tawi ulilopangiwa'},
+  'set.assignedBranch': {
+    'en': 'Your assigned branch',
+    'sw': 'Tawi ulilopangiwa'
+  },
   'set.terminal': {'en': 'Active terminal', 'sw': 'Kituo kinachotumika'},
-  'set.noBranch': {'en': 'No branch on your profile', 'sw': 'Hakuna tawi kwenye wasifu wako'},
+  'set.noBranch': {
+    'en': 'No branch on your profile',
+    'sw': 'Hakuna tawi kwenye wasifu wako'
+  },
   'set.activeAt': {'en': 'Active at', 'sw': 'Anafanya kazi'},
   'set.change': {'en': 'Change', 'sw': 'Badili'},
   'set.switchHintAdmin': {
-    'en': 'As Super Admin you can look at any branch. Sales, stock and loans follow the branch you pick.',
-    'sw': 'Kama Msimamizi Mkuu unaweza kuangalia tawi lolote. Mauzo, stock na mikopo hufuata tawi unalochagua.',
+    'en':
+        'As Super Admin you can look at any branch. Sales, stock and loans follow the branch you pick.',
+    'sw':
+        'Kama Msimamizi Mkuu unaweza kuangalia tawi lolote. Mauzo, stock na mikopo hufuata tawi unalochagua.',
   },
   'set.switchHintLocked': {
-    'en': 'Your role works inside this branch only. Only a Super Admin can move the terminal.',
-    'sw': 'Jukumu lako linafanya kazi ndani ya tawi hili tu. Msimamizi Mkuu pekee anaweza kubadilisha kituo.',
+    'en':
+        'Your role works inside this branch only. Only a Super Admin can move the terminal.',
+    'sw':
+        'Jukumu lako linafanya kazi ndani ya tawi hili tu. Msimamizi Mkuu pekee anaweza kubadilisha kituo.',
   },
   'set.pickBranch': {'en': 'Choose a branch', 'sw': 'Chagua tawi'},
-  'set.switched': {'en': 'Terminal switched to {branch}', 'sw': 'Kituo kimehamia {branch}'},
+  'set.switched': {
+    'en': 'Terminal switched to {branch}',
+    'sw': 'Kituo kimehamia {branch}'
+  },
   'set.switchRefused': {
     'en': 'Only a Super Admin can switch branches.',
     'sw': 'Msimamizi Mkuu pekee anaweza kubadilisha matawi.',
@@ -1012,7 +1466,10 @@ const Map<String, Map<String, String>> _dictionary = {
   'set.uploadPhoto': {'en': 'Upload a photo', 'sw': 'Pakia picha'},
   'set.orPick': {'en': 'Or pick a portrait', 'sw': 'Au chagua picha ya mfano'},
   'set.photoSaved': {'en': 'Photo updated', 'sw': 'Picha imesasishwa'},
-  'set.photoFailed': {'en': 'Could not save the photo', 'sw': 'Imeshindikana kuhifadhi picha'},
+  'set.photoFailed': {
+    'en': 'Could not save the photo',
+    'sw': 'Imeshindikana kuhifadhi picha'
+  },
   'set.dataTitle': {'en': 'Data', 'sw': 'Data'},
   'set.dataLive': {
     'en': 'Connected · {n} sales loaded from the database',
@@ -1030,34 +1487,50 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Set by a Super Admin',
     'sw': 'Huwekwa na Msimamizi Mkuu',
   },
-  'set.signOut': {'en': 'Sign out', 'sw': 'Toka' },
-  'set.version': {'en': 'LIMS · branch terminal', 'sw': 'LIMS · kituo cha tawi'},
+  'set.signOut': {'en': 'Sign out', 'sw': 'Toka'},
+  'set.version': {
+    'en': 'LIMS · branch terminal',
+    'sw': 'LIMS · kituo cha tawi'
+  },
 
   // ------------------------------------------------------------------ account
   'account.adminConsole': {'en': 'Admin console', 'sw': 'Kituo cha msimamizi'},
   'account.branchConsole': {'en': 'Branch console', 'sw': 'Kituo cha tawi'},
-  'account.settingsProfile': {'en': 'Settings & profile', 'sw': 'Mipangilio na wasifu'},
+  'account.settingsProfile': {
+    'en': 'Settings & profile',
+    'sw': 'Mipangilio na wasifu'
+  },
 
   // ------------------------------------------------------------ shell & session
   'shell.signOutTitle': {'en': 'Sign out of LIMS?', 'sw': 'Toka LIMS?'},
   'shell.signOutBody': {
-    'en': 'This session will end and you will need your email and password to get back in.',
-    'sw': 'Utatolewa kwenye session hii na utahitaji kuingia tena kwa email na password yako.',
+    'en':
+        'This session will end and you will need your email and password to get back in.',
+    'sw':
+        'Utatolewa kwenye session hii na utahitaji kuingia tena kwa email na password yako.',
   },
   'shell.stay': {'en': 'Stay', 'sw': 'Baki hapa'},
   'shell.signOut': {'en': 'Sign out', 'sw': 'Toka'},
   'session.expiringTitle': {'en': 'Session expiring', 'sw': 'Session inaisha'},
   'session.expiringBody': {
-    'en': 'No activity for a while. This session closes in {n} seconds. If you are still here, tap Continue.',
-    'sw': 'Hakuna shughuli kwa muda. Session itafungwa baada ya sekunde {n}. Kama bado uko hapa, gusa Endelea.',
+    'en':
+        'No activity for a while. This session closes in {n} seconds. If you are still here, tap Continue.',
+    'sw':
+        'Hakuna shughuli kwa muda. Session itafungwa baada ya sekunde {n}. Kama bado uko hapa, gusa Endelea.',
   },
   'session.continue': {'en': 'Continue', 'sw': 'Endelea'},
   'session.signOutNow': {'en': 'Sign out now', 'sw': 'Toka sasa'},
 
   // ------------------------------------------------------- staff admin sheets
-  'adm.editRbacTitle': {'en': 'Edit role & permissions', 'sw': 'Hariri Majukumu & Ruhusa'},
+  'adm.editRbacTitle': {
+    'en': 'Edit role & permissions',
+    'sw': 'Hariri Majukumu & Ruhusa'
+  },
   'adm.roleLabel': {'en': 'Role', 'sw': 'Jukumu'},
-  'adm.addStaffTitle': {'en': 'Add a staff member', 'sw': 'Ongeza Mfanyakazi Mpya'},
+  'adm.addStaffTitle': {
+    'en': 'Add a staff member',
+    'sw': 'Ongeza Mfanyakazi Mpya'
+  },
   'adm.fullName': {'en': 'Full name', 'sw': 'Jina Kamili'},
   'adm.phoneNumber': {'en': 'Phone number', 'sw': 'Namba ya Simu'},
   'adm.nameRequired': {

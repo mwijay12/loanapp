@@ -17,6 +17,7 @@ import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/phone_deals_carousel.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
+import 'storekeeper_dashboard.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -57,13 +58,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Real branches, plus the terminal's own branch in case the store has not
     // loaded yet - a picker that cannot show where you already are is a lie.
     final branchNames = <String>[
-      ...ref
-          .read(branchesProvider)
-          .where((b) => b.active)
-          .map((b) => b.name),
-      if (!ref
-          .read(branchesProvider)
-          .any((b) => b.name == activeBranch))
+      ...ref.read(branchesProvider).where((b) => b.active).map((b) => b.name),
+      if (!ref.read(branchesProvider).any((b) => b.name == activeBranch))
         activeBranch,
     ];
 
@@ -670,15 +666,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Portfolio health is derived, not typed in: a rate that never moves is the
     // fastest way to lose trust in a dashboard.
     final _loanList = ref.watch(loansProvider);
-    final _overdueCount =
-        _loanList.where((l) => l.status == 'overdue').length;
+    final _overdueCount = _loanList.where((l) => l.status == 'overdue').length;
     final _onTimeRate = _loanList.isEmpty
         ? 0
-        : (((_loanList.length - _overdueCount) / _loanList.length) * 100).round();
+        : (((_loanList.length - _overdueCount) / _loanList.length) * 100)
+            .round();
     final allLowStock = ref
         .watch(inventoryProvider)
         .where((p) => p.status == 'low' || p.stock <= p.min)
         .toList();
+
+    // The storekeeper gets its own screen: the shell above already supplies the
+    // navigation, so this replaces only the body of Home for this one role. Every
+    // other role keeps the console it had.
+    if (isStorekeeper) {
+      return StorekeeperDashboard(onLowStockTap: _showAllLowStock);
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
@@ -735,7 +738,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Expanded(
                     child: _buildMetricCard(
                       icon: Icons.phone_android_rounded,
-                      label: isStorekeeper ? 'Warehouse Units' : tr(ref.watch(localeProvider), 'home.totalStock'),
+                      label: isStorekeeper
+                          ? 'Warehouse Units'
+                          : tr(ref.watch(localeProvider), 'home.totalStock'),
                       value: '$totalStock',
                       unit: tr(ref.watch(localeProvider), 'home.phones'),
                       trend: '$todayTx sold today',
@@ -750,15 +755,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Expanded(
                     child: _buildMetricCard(
                       icon: Icons.people_outline_rounded,
-                      label:
-                          isLoanOfficer ? 'Credit Portfolio' : tr(ref.watch(localeProvider), 'home.activeLoans'),
+                      label: isLoanOfficer
+                          ? 'Credit Portfolio'
+                          : tr(ref.watch(localeProvider), 'home.activeLoans'),
                       value: '$activeLoans',
                       unit: tr(ref.watch(localeProvider), 'home.accounts'),
                       trend: '$_onTimeRate% on-time',
                       trendColor: const Color(0xFF6366F1),
                       iconBg: const Color(0xFFF3E8FF),
                       iconColor: const Color(0xFF7C3AED),
-                      subText: '$_overdueCount overdue payment${_overdueCount == 1 ? '' : 's'}',
+                      subText:
+                          '$_overdueCount overdue payment${_overdueCount == 1 ? '' : 's'}',
                       onTap: () => context.go('/loans'),
                     ),
                   ),
@@ -943,7 +950,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         icon: Icons.badge_outlined,
                                         iconBg: const Color(0xFFF3E8FF),
                                         iconColor: const Color(0xFF7C3AED),
-                                        title: tr(ref.watch(localeProvider), 'home.issueLoan'),
+                                        title: tr(ref.watch(localeProvider),
+                                            'home.issueLoan'),
                                         subtitle: 'KYC & Collateral',
                                         onTap: () => context
                                             .push('/sell-loan?type=LOAN'),
@@ -1846,7 +1854,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // shop no longer has.
     final phones = ref
         .watch(inventoryProvider)
-        .where((p) => p.cat == tr(ref.watch(localeProvider), 'home.phones') && p.stock > 0 && p.status != 'out')
+        .where((p) =>
+            p.cat == tr(ref.watch(localeProvider), 'home.phones') &&
+            p.stock > 0 &&
+            p.status != 'out')
         .toList()
       ..sort((a, b) => b.stock.compareTo(a.stock));
 
@@ -3786,7 +3797,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-
 
 /// A low-stock row's picture: catalogue artwork first, then a type-aware stand-in.
 class _LowStockThumb extends StatelessWidget {
