@@ -27,11 +27,41 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   late int _selectedTab;
   RevenueRange _range = RevenueRange.week;
 
+  /// Which bar was last tapped. Null means "the latest one", so the card always
+  /// opens on today instead of an empty slot.
+  int? _selectedBar;
+
   @override
   void initState() {
     super.initState();
     _selectedTab = widget.initialTab == 'staff' ? 1 : 0;
   }
+
+  /// Today's takings against the same day-shape yesterday, or null when there is
+  /// no yesterday to compare with.
+  int? get _yesterdayDelta {
+    final ledger = ref.watch(salesLedgerProvider);
+    if (ledger.length < 2) return null;
+    final today = ledger.last;
+    final prev = ledger[ledger.length - 2];
+    if (prev.date != today.date.subtract(const Duration(days: 1))) return null;
+    if (prev.amount <= 0) return null;
+    return (((today.amount - prev.amount) / prev.amount) * 100).round();
+  }
+
+  String _yesterdayTrendText() {
+    final d = _yesterdayDelta;
+    if (d == null) {
+      return tr(ref.read(localeProvider), 'admin.noYesterday');
+    }
+    return '${d >= 0 ? '+' : ''}$d% ${tr(ref.read(localeProvider), 'admin.vsYesterday')}';
+  }
+
+  int get _activeBranchCount =>
+      ref.watch(branchesProvider).where((b) => b.active).length;
+
+  int get _overdueLoans =>
+      ref.watch(loansProvider).where((l) => l.status == 'overdue').length;
 
   @override
   Widget build(BuildContext context) {
@@ -53,17 +83,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     // Chart data comes from the ledger, so switching Wiki/Mwezi changes the
     // numbers. It used to be seven fixed heights with a fixed total.
-    final series = ref.watch(revenueSeriesProvider(_range));
-    final peak =
-        series.points.fold<int>(0, (m, p) => p.value > m ? p.value : m);
-    final bars = series.points
-        .map((p) => <String, dynamic>{
-              'day': p.label,
-              'height': peak == 0 ? 0.02 : (p.value / peak).clamp(0.05, 1.0),
-              'today': p.isCurrent,
-            })
-        .toList();
-
     // Branch rows come from the branch store, not from four map literals, so a
     // branch can be opened, renamed or closed without touching code. A closed
     // branch stays in the list as a record rather than disappearing, because
@@ -84,36 +103,43 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             })
         .toList();
 
-    final alerts = [
-      {
-        'title': 'Overdue loan — Amina Komba',
-        'sub': 'TZS 1.85M · 2 days overdue',
+    // Alerts are the shop's own counts, not a scripted list. The previous
+    // version printed "Overdue loan — Amina Komba", "Galaxy A55 below minimum",
+    // "Zanzibar Branch sync delayed" and "Daily close completed" every time,
+    // whether or not any of it was true. A notice that cannot be wrong is not a
+    // notice.
+    final locale0 = ref.watch(localeProvider);
+    final alertList = <Map<String, dynamic>>[];
+    if (_overdueLoans > 0) {
+      alertList.add({
+        'title': trf(locale0, 'admin.alertOverdue', {'n': _overdueLoans}),
+        'sub': trf(locale0, 'admin.overdue', {'n': _overdueLoans}),
         'icon': Icons.warning_amber_rounded,
         'color': const Color(0xFFF43F5E),
         'bg': const Color(0xFFFFEDF1),
-      },
-      {
-        'title': 'Galaxy A55 below minimum',
-        'sub': '4 left at Mbezi Branch',
+        'kind': 'overdue',
+      });
+    }
+    if (lowStockCount > 0) {
+      alertList.add({
+        'title': trf(locale0, 'admin.alertLowStock', {'n': lowStockCount}),
+        'sub': trf(locale0, 'admin.lowStockModels', {'n': lowStockCount}),
         'icon': Icons.inventory_2_outlined,
         'color': const Color(0xFFF79009),
         'bg': const Color(0xFFFEF3E4),
-      },
-      {
-        'title': 'Zanzibar Branch sync delayed',
-        'sub': 'Last sync 12 minutes ago',
-        'icon': Icons.sync_problem_rounded,
+        'kind': 'lowStock',
+      });
+    }
+    if (todaySales == 0) {
+      alertList.add({
+        'title': tr(locale0, 'admin.alertNoSalesToday'),
+        'sub': tr(locale0, 'admin.alertNoSalesTodaySub'),
+        'icon': Icons.point_of_sale_rounded,
         'color': AppTheme.brand600,
         'bg': AppTheme.brand100,
-      },
-      {
-        'title': 'Daily close completed',
-        'sub': 'Arusha Branch · TZS 2.1M',
-        'icon': Icons.check_circle_outline_rounded,
-        'color': const Color(0xFF12B76A),
-        'bg': const Color(0xFFE7F8F0),
-      },
-    ];
+        'kind': 'noSales',
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.canvas,
@@ -126,8 +152,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           onPressed: () => context.go('/home'),
         ),
         title: Text(
-          canAdminister ? 'Admin Console' : 'Branch Console',
-          style: TextStyle(
+          tr(ref.watch(localeProvider),
+              canAdminister ? 'admin.titleAdmin' : 'admin.titleBranch'),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             color: AppTheme.ink900,
@@ -198,7 +225,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              'Branch Network & Hubs',
+                              tr(ref.watch(localeProvider),
+                                  'admin.tabNetwork'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -238,7 +268,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                 const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    'Wafanyakazi & RBAC',
+                                    tr(ref.watch(localeProvider),
+                                        'admin.staffTab'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -264,7 +295,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       body: SafeArea(
         child: (_selectedTab == 0 || !canAdminister)
             ? _buildNetworkOverviewTab(todaySales, activeLoansTotal,
-                lowStockCount, bars, branches, alerts)
+                lowStockCount, branches, alertList)
             : _buildStaffRbacTab(),
       ),
     );
@@ -284,9 +315,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
           onPressed: () => context.go('/home'),
         ),
-        title: const Text(
-          'Console',
-          style: TextStyle(
+        title: Text(
+          tr(ref.watch(localeProvider), 'admin.console'),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             color: AppTheme.ink900,
@@ -309,10 +340,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     size: 34, color: AppTheme.brand600),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Huna ruhusa ya console',
+              Text(
+                tr(ref.watch(localeProvider), 'admin.noAccessTitle'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.ink900,
@@ -320,8 +351,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Role yako ni ${UserRoles.label(UserRoles.normalize(currentRole) ?? '')}. Console inahitaji '
-                'Super Admin au Branch Manager. Omba ruhusa kwa msimamizi wako.',
+                trf(ref.watch(localeProvider), 'admin.noAccessBody', {
+                  'role': UserRoles.label(
+                      UserRoles.normalize(currentRole) ?? ''),
+                }),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
@@ -340,7 +373,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     int todaySales,
     int activeLoansTotal,
     int lowStockCount,
-    List<Map<String, dynamic>> bars,
     List<Map<String, dynamic>> branches,
     List<Map<String, dynamic>> alerts,
   ) {
@@ -351,16 +383,21 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        // 4 KPI Cards
+        // KPI row. Every figure here is counted; the previous version printed a
+        // hardcoded '12' branches, added 2 to the alert count, and fell back to
+        // TZS 96M of loan book when the real total was zero.
         Row(
           children: [
             Expanded(
               child: _buildKpiCard(
-                label: 'Revenue today',
-                // Was `todaySales * 4` with a fabricated 18.2M fallback, which
-                // invented revenue whenever the day had not started.
+                label: tr(ref.watch(localeProvider), 'admin.revenueToday'),
                 value: formatTzsCompact(todaySales),
-                trend: '+9% vs yesterday',
+                trend: _yesterdayTrendText(),
+                trendColor: _yesterdayDelta == null
+                    ? AppTheme.ink500
+                    : (_yesterdayDelta! >= 0
+                        ? const Color(0xFF12B76A)
+                        : const Color(0xFFE11D48)),
                 icon: Icons.trending_up_rounded,
                 color: const Color(0xFF12B76A),
                 bg: const Color(0xFFE7F8F0),
@@ -369,9 +406,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildKpiCard(
-                label: 'Active Branches',
-                value: '12',
-                trend: 'All synced',
+                label: tr(ref.watch(localeProvider), 'admin.activeBranches'),
+                value: '$_activeBranchCount',
+                trend: tr(ref.watch(localeProvider), 'admin.branchesOpen'),
                 icon: Icons.storefront_rounded,
                 color: AppTheme.brand600,
                 bg: AppTheme.brand100,
@@ -384,10 +421,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           children: [
             Expanded(
               child: _buildKpiCard(
-                label: 'Loans Outstanding',
-                value: LimsFormatters.currencyCompact(
-                    activeLoansTotal > 0 ? activeLoansTotal : 96000000),
-                trend: '21 overdue',
+                label: tr(ref.watch(localeProvider), 'admin.loansOutstanding'),
+                value: LimsFormatters.currencyCompact(activeLoansTotal),
+                trend: '$_overdueLoans ${tr(ref.watch(localeProvider), 'admin.overdue')}',
+                trendColor: _overdueLoans > 0
+                    ? const Color(0xFFE11D48)
+                    : AppTheme.ink500,
                 icon: Icons.handshake_rounded,
                 color: const Color(0xFFF43F5E),
                 bg: const Color(0xFFFFEDF1),
@@ -396,9 +435,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildKpiCard(
-                label: 'Alerts',
-                value: '${lowStockCount + 2}',
-                trend: 'Needs review',
+                label: tr(ref.watch(localeProvider), 'admin.alerts'),
+                value: '${lowStockCount + _overdueLoans}',
+                trend: lowStockCount + _overdueLoans == 0
+                    ? tr(ref.watch(localeProvider), 'admin.nothingPending')
+                    : tr(ref.watch(localeProvider), 'admin.needsReview'),
+                trendColor: lowStockCount + _overdueLoans == 0
+                    ? const Color(0xFF12B76A)
+                    : const Color(0xFFF79009),
                 icon: Icons.warning_amber_rounded,
                 color: const Color(0xFFF79009),
                 bg: const Color(0xFFFEF3E4),
@@ -430,9 +474,19 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      canAdminister
-                          ? 'Network revenue · ${_range.caption}'
-                          : 'Branch revenue · ${_range.caption}',
+                      trf(
+                        ref.watch(localeProvider),
+                        canAdminister
+                            ? 'admin.networkRevenue'
+                            : 'admin.branchRevenue',
+                        {
+                          'period': tr(
+                              ref.watch(localeProvider),
+                              _range == RevenueRange.week
+                                  ? 'admin.periodWeek'
+                                  : 'admin.periodMonth'),
+                        },
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -473,7 +527,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(9),
-                        onTap: () => setState(() => _range = r),
+                        onTap: () => setState(() {
+                          _range = r;
+                          _selectedBar = null;
+                        }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 160),
                           padding: const EdgeInsets.symmetric(
@@ -485,7 +542,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                             borderRadius: BorderRadius.circular(9),
                           ),
                           child: Text(
-                            r.label,
+                            tr(ref.watch(localeProvider),
+                                r == RevenueRange.week
+                                    ? 'admin.rangeWeek'
+                                    : 'admin.rangeMonth'),
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
@@ -499,7 +559,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   const Spacer(),
                   Flexible(
                     child: Text(
-                      '${series.changePercent >= 0 ? '+' : ''}${series.changePercent}% vs prev',
+                      trf(ref.watch(localeProvider), 'admin.vsPrev', {
+                        'n':
+                            '${series.changePercent >= 0 ? '+' : ''}${series.changePercent}',
+                      }),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
@@ -514,56 +577,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              SizedBox(
-                height: 84,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: bars.map((b) {
-                    final isToday = b['today'] as bool;
-                    final h = b['height'] as double;
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              height: 60 * h,
-                              decoration: BoxDecoration(
-                                gradient:
-                                    isToday ? AppTheme.brandGradient : null,
-                                color: isToday ? null : const Color(0xFFE2EAF8),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              b['day'] as String,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight:
-                                    isToday ? FontWeight.w800 : FontWeight.w600,
-                                color: isToday
-                                    ? AppTheme.brand600
-                                    : const Color(0xFF9AA8BF),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
+              const SizedBox(height: 16),
+              _buildRevenueChart(series),
             ],
           ),
         ),
         const SizedBox(height: 20),
 
-        const Text(
-          'Branches',
-          style: TextStyle(
+        Text(
+          tr(ref.watch(localeProvider), 'admin.branches'),
+          style: const TextStyle(
             fontSize: 13.5,
             fontWeight: FontWeight.w800,
             color: AppTheme.ink900,
@@ -626,7 +649,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                               ),
                             ),
                             Text(
-                              '${b['low']} low-stock models',
+                              trf(ref.watch(localeProvider),
+                                  'admin.lowStockModels', {'n': b['low']}),
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -656,9 +680,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         ),
         const SizedBox(height: 20),
 
-        const Text(
-          'Alerts & Escalations',
-          style: TextStyle(
+        Text(
+          tr(ref.watch(localeProvider), 'admin.alertsTitle'),
+          style: const TextStyle(
             fontSize: 13.5,
             fontWeight: FontWeight.w800,
             color: AppTheme.ink900,
@@ -679,7 +703,28 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               ),
             ],
           ),
-          child: Column(
+          child: alerts.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 18),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline_rounded,
+                          size: 16, color: Color(0xFF12B76A)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          tr(ref.watch(localeProvider), 'admin.noAlerts'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.ink600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
             children: alerts.asMap().entries.map((entry) {
               final idx = entry.key;
               final a = entry.value;
@@ -739,7 +784,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
               );
             }).toList(),
-          ),
+                ),
         ),
       ],
     );
@@ -795,11 +840,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 isActive ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
                 color: AppTheme.brand600,
               ),
-              title: Text(isActive ? 'Funga tawi' : 'Fungua tawi'),
+              title: Text(tr(ref.read(localeProvider),
+                  isActive ? 'admin.closeBranch' : 'admin.reopenBranch')),
               subtitle: Text(
-                isActive
-                    ? 'Halitaonekana kwenye uchaguzi, lakini rekodi zake zinabaki.'
-                    : 'Litarudi kwenye orodha ya matawi yanayofanya kazi.',
+                tr(
+                    ref.read(localeProvider),
+                    isActive
+                        ? 'admin.closeBranchHint'
+                        : 'admin.reopenBranchHint'),
                 style: const TextStyle(fontSize: 11.5),
               ),
               onTap: () {
@@ -862,16 +910,18 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Active Role (server-assigned)',
-                          style: TextStyle(
+                        Text(
+                          tr(ref.watch(localeProvider),
+                              'admin.activeRoleTitle'),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.ink900,
                           ),
                         ),
                         Text(
-                          'Signed in as $currentRole. Role changes happen server-side.',
+                          trf(ref.watch(localeProvider), 'admin.signedInAs',
+                              {'role': currentRole}),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -930,18 +980,19 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Staff Directory & Credentials',
+                  Text(
+                    tr(ref.watch(localeProvider), 'admin.staffDirectory'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       color: AppTheme.ink900,
                     ),
                   ),
                   Text(
-                    '${staffList.length} staff registered across branches',
+                    trf(ref.watch(localeProvider), 'admin.staffCount',
+                        {'n': staffList.length}),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -957,8 +1008,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ElevatedButton.icon(
               onPressed: _showAddStaffModal,
               icon: const Icon(Icons.person_add_rounded, size: 16),
-              label: const Text('Ongeza Staff',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+              label: Text(tr(ref.watch(localeProvider), 'admin.addStaff'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 12)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.brand600,
                 foregroundColor: Colors.white,
@@ -984,24 +1036,18 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   String _getRolePrivilegeDescription(String role) {
     // Normalise first so a legacy row ('Inventory Officer', 'Staff') still
     // resolves to its canonical role instead of falling through to default.
-    switch (UserRoles.normalize(role)) {
-      case UserRoles.superAdmin:
-        return 'Full Executive Access: network revenue, P&L profit margins, staff RBAC permissions, and the device-hold policy switch.';
-      case UserRoles.branchManager:
-        return 'Branch Supervision: Daily register & drawer audit, supervisor discount PIN overrides, staff shift audits.';
-      case UserRoles.loanOfficer:
-        return 'Credit & Risk: customer KYC scoring, loan approval or rejection, device-hold flags for defaulters, and collections.';
-      case UserRoles.storekeeper:
-        return 'Logistics & Warehouse: Inbound PO shipments intake, serialized IMEI barcode intake, audits, and branch transfers.';
-      case UserRoles.counterCashier:
-        return 'Retail POS: Fast cash & mobile money sales, customer loan KYC intake, stock scan, and shift clock-in.';
-      case UserRoles.auditor:
-        return 'Oversight Only: Read-only access to registers, loan history, stock movements and reports. Cannot create, approve, edit or disburse.';
-      case UserRoles.pending:
-        return 'Invited but not yet activated: the account exists but has no access until the invitation is accepted and a password is set.';
-      default:
-        return 'Unrecognised role — treated as read-only until a Super Admin assigns a valid role.';
-    }
+    final locale = ref.read(localeProvider);
+    final key = switch (UserRoles.normalize(role)) {
+      UserRoles.superAdmin => 'admin.roleSuperAdmin',
+      UserRoles.branchManager => 'admin.roleBranchManager',
+      UserRoles.loanOfficer => 'admin.roleCredit',
+      UserRoles.storekeeper => 'admin.roleInventory',
+      UserRoles.counterCashier => 'admin.roleStaff',
+      UserRoles.auditor => 'admin.roleAuditor',
+      UserRoles.pending => 'admin.roleInvited',
+      _ => 'admin.roleUnknown',
+    };
+    return tr(locale, key);
   }
 
   Widget _buildStaffCard(StaffMember s) {
@@ -1439,7 +1485,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
                     label: Text(tr(ref.read(localeProvider), 'adm.saveChanges'),
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontWeight: FontWeight.w800, fontSize: 13.5)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
@@ -1681,6 +1727,223 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
+
+  /// The bar chart. Each bar is a real day (or week, in month view) and tapping it
+  /// opens that period's figures underneath. Before this, the bars were seven
+  /// fixed heights: pressing Monday could not show Monday, because there was no
+  /// Monday behind the pixels.
+  Widget _buildRevenueChart(RevenueSeries series) {
+    if (series.points.isEmpty) {
+      return Container(
+        height: 84,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          tr(ref.watch(localeProvider), 'admin.noSalesYet'),
+          style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+        ),
+      );
+    }
+
+    final peak = series.points
+        .map((p) => p.value)
+        .fold<int>(0, (a, b) => a > b ? a : b);
+    final selected = (_selectedBar != null &&
+            _selectedBar! >= 0 &&
+            _selectedBar! < series.points.length)
+        ? series.points[_selectedBar!]
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 96,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < series.points.length; i++)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: _bar(series.points[i], i, peak,
+                        isSelected: _selectedBar == i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (var i = 0; i < series.points.length; i++)
+              Expanded(
+                child: Text(
+                  series.points[i].label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: _selectedBar == i
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                    color: _selectedBar == i
+                        ? AppTheme.brand600
+                        : AppTheme.ink500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildBarDetail(selected),
+      ],
+    );
+  }
+
+  Widget _bar(RevenuePoint p, int index, int peak, {required bool isSelected}) {
+    final double frac = peak <= 0 ? 0.06 : (p.value / peak).clamp(0.06, 1.0);
+    // A zero-sales day still draws a stub, so a gap is visible as a gap rather
+    // than as a missing bar the eye reads as "no data collected".
+    final color = isSelected
+        ? AppTheme.brand600
+        : (p.value == 0
+            ? const Color(0xFFE2E8F0)
+            : (p.isPeak ? AppTheme.brand400 : AppTheme.brand200));
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${p.label} ${formatTzsCompact(p.value)}',
+      child: GestureDetector(
+        key: ValueKey<String>('revbar-$index'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _selectedBar = isSelected ? null : index),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            tween: Tween(begin: 0, end: frac),
+            builder: (_, h, __) => Container(
+              height: (96 * h).clamp(4.0, 96.0),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(7),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBarDetail(RevenuePoint? p) {
+    final locale = ref.watch(localeProvider);
+    if (p == null) {
+      final isReal = ref.watch(ledgerIsRealProvider);
+      final days = ref.watch(salesLedgerProvider).length;
+      return Row(
+        children: [
+          const Icon(Icons.touch_app_rounded, size: 13, color: AppTheme.ink400),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              isReal && days < _range.days
+                  ? '${tr(locale, 'admin.tapBar')} · '
+                      '${tr(locale, 'admin.onlyDays').replaceAll('{n}', '$days')}'
+                  : tr(locale, 'admin.tapBar'),
+              style: const TextStyle(fontSize: 10.5, color: AppTheme.ink500),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final delta = p.deltaPercent;
+    final deltaText = delta == null
+        ? tr(locale, 'admin.noEarlierFigure')
+        : '${delta >= 0 ? '+' : ''}$delta% ${tr(locale, 'admin.vsLastWeek')}';
+    final deltaColor = delta == null
+        ? AppTheme.ink500
+        : (delta >= 0 ? const Color(0xFF12B76A) : const Color(0xFFE11D48));
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE9EFF7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  p.date == null ? p.label : _longDate(p.date!),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.ink900,
+                  ),
+                ),
+              ),
+              Text(
+                formatTzsCompact(p.value),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.brand600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              Text(
+                '${p.transactions} ${tr(locale, 'admin.transactions')}',
+                style: const TextStyle(fontSize: 10.5, color: AppTheme.ink600),
+              ),
+              if (p.previousLabel.isNotEmpty)
+                Text(
+                  '${tr(locale, 'admin.was')} ${formatTzsCompact(p.previousValue)}'
+                  ' · ${p.previousLabel}',
+                  style: const TextStyle(fontSize: 10.5, color: AppTheme.ink500),
+                ),
+              Text(
+                deltaText,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: deltaColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _longDate(DateTime d) {
+    const days = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday',
+    ];
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${days[d.weekday - 1]}, ${d.day} ${months[d.month]}';
+  }
+
   Widget _buildKpiCard({
     required String label,
     required String value,
@@ -1688,6 +1951,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     required IconData icon,
     required Color color,
     required Color bg,
+    Color? trendColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1735,10 +1999,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           const SizedBox(height: 4),
           Text(
             trend,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: color,
+              color: trendColor ?? color,
             ),
           ),
         ],
@@ -1895,7 +2161,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   void _showAlertActionModal(BuildContext context, Map<String, dynamic> a) {
     final title = a['title'] as String;
-    final isLoan = title.contains('loan') || title.contains('Komba');
+    // The sheet used to branch on the alert's English wording ('loan' in the
+    // title), which broke the moment the text was translated. The alert now
+    // carries a stable kind.
+    final isLoan = a['kind'] == 'overdue';
 
     LimsBottomSheet.show(
       context: context,
@@ -1943,7 +2212,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   },
                   icon: const Icon(Icons.lock_person_rounded, size: 18),
                   label: Text(tr(ref.read(localeProvider), 'adm.deviceHold'),
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
