@@ -3,8 +3,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/services/onboarding_prefs.dart';
 import '../../../core/services/app_permissions_service.dart';
-import '../../../core/theme/app_theme.dart';
 
+/// First run: three screens that explain the product to an adult shopkeeper.
+///
+/// The first version dressed the app as a toy: a cartoon phone mascot waving
+/// inside a pastel circle, on a light-blue canvas. A shopkeeper deciding whether
+/// to trust the system with their stock does not read that as software.
+///
+/// This version uses flat, printed-illustration artwork on warm paper stock, in
+/// the register of a trade catalogue rather than a nursery. The colour is ink and
+/// oxblood, not primary blue.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -16,22 +24,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // Warm paper, ink and oxblood. Kept local to onboarding so the rest of the app
+  // keeps its blue identity.
+  static const _paper = Color(0xFFF7F3EA);
+  static const _paperEdge = Color(0xFFE3DACB);
+  static const _ink = Color(0xFF17130F);
+  static const _inkSoft = Color(0xFF5C554B);
+  static const _oxblood = Color(0xFF7C2D33);
+
   final List<Map<String, dynamic>> _slides = [
     {
       'title': 'Every device, accounted for',
-      'subtitle': 'Live stock across all your branches, down to the last IMEI number with zero discrepancy.',
+      'subtitle':
+          'Live stock across all your branches, down to the last IMEI number with zero discrepancy.',
       'image': 'assets/images/mascot_stock.png',
       'badge': '100% AUDITABLE',
     },
     {
       'title': 'Scan IMEI in seconds',
-      'subtitle': 'Verify devices, receive stock, and disburse customer loans — all straight from the counter.',
+      'subtitle':
+          'Verify devices, receive stock, and disburse customer loans — all straight from the counter.',
       'image': 'assets/images/mascot_scan.png',
       'badge': 'INSTANT LOOKUP',
     },
     {
       'title': 'Loans without the chaos',
-      'subtitle': 'Follow every instalment, send reminders before a due date passes, and close the day with a balanced collection sheet.',
+      'subtitle':
+          'Follow every instalment, send reminders before a due date passes, and close the day with a balanced collection sheet.',
       'image': 'assets/images/mascot_loans.png',
       'badge': 'SMART FINANCING',
     },
@@ -50,13 +69,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOutCubic,
       );
     } else {
-      // Omba ruhusa za Android MAPEEMA (kamera, GPS, arifa, simu/SMS,
-      // files) kabla ya kuingia — na maelezo mafupi kwa mtumiaji.
+      // Omba ruhusa za Android (kamera, GPS, arifa, simu/SMS, files) kabla ya
+      // kuingia — na maelezo mafupi kwa mtumiaji.
       await AppPermissionsService.requestEarlyPermissions(
         context,
         showRationale: true,
       );
-      if (!mounted) return;
       await OnboardingPrefs.markSeen();
       if (!mounted) return;
       context.go('/login');
@@ -66,57 +84,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.canvas,
+      backgroundColor: _paper,
       body: SafeArea(
         child: Column(
           children: [
-            // Top Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      // The mascot replaces the generic phone glyph so the
-                      // brand mark matches the onboarding artwork.
-                      Image.asset(
-                        'assets/images/mascot.png',
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'LIMS',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      await OnboardingPrefs.markSeen();
-                      if (context.mounted) context.go('/login');
-                    },
-                    child: const Text(
-                      'Skip',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildTopBar(context),
 
-            // Carousel Slides
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -124,66 +97,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPageChanged: (idx) => setState(() => _currentPage = idx),
                 itemBuilder: (context, index) {
                   final slide = _slides[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Illustration Circle
-                        Container(
-                          width: 160,
-                          height: 160,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.brand50,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              slide['image'] as String,
-                              width: 150,
-                              height: 150,
-                              fit: BoxFit.contain,
-                            ),
+                        const SizedBox(height: 8),
+                        _buildPlate(slide['image'] as String),
+                        const SizedBox(height: 26),
+                        Text(
+                          slide['badge'] as String,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.6,
+                            color: _oxblood,
                           ),
                         ),
-                        const SizedBox(height: 28),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppTheme.brand100,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            slide['badge'] as String,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                              color: AppTheme.brand700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         Text(
                           slide['title'] as String,
-                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 24,
+                            fontSize: 27,
+                            height: 1.18,
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                            letterSpacing: -0.5,
+                            letterSpacing: -0.7,
+                            color: _ink,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           slide['subtitle'] as String,
-                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 14.5,
-                            height: 1.5,
-                            color: AppTheme.textSecondary,
+                            height: 1.58,
+                            color: _inkSoft,
                           ),
                         ),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   );
@@ -191,33 +142,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Pagination Dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_slides.length, (i) {
-                final isSelected = i == _currentPage;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: isSelected ? 24 : 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.brand600 : const Color(0xFFD3E0F4),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 28),
-
-            // Navigation Buttons
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+              child: Row(
+                children: [
+                  for (var i = 0; i < _slides.length; i++)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 260),
+                      margin: const EdgeInsets.only(right: 6),
+                      width: i == _currentPage ? 22 : 6,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: i == _currentPage ? _ink : _paperEdge,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  24, 0, 24, 20 + MediaQuery.of(context).padding.bottom),
               child: Row(
                 children: [
                   if (_currentPage > 0) ...[
                     Expanded(
-                      flex: 1,
                       child: OutlinedButton(
                         onPressed: () {
                           _pageController.previousPage(
@@ -226,28 +177,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           );
                         },
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 52),
+                          minimumSize: const Size(0, 54),
+                          side: const BorderSide(color: _paperEdge, width: 1.2),
+                          foregroundColor: _ink,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.rMd),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('Back'),
+                        child: const Text(
+                          'Back',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                   ],
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: _next,
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(0, 52),
+                        backgroundColor: _ink,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size(0, 54),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.rMd),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       child: Text(
-                        _currentPage == _slides.length - 1 ? 'Get Started' : 'Next',
+                        _currentPage == _slides.length - 1
+                            ? 'Get started'
+                            : 'Next',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -256,6 +221,68 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// A printed plate rather than a bubble: the artwork is a scene, so it gets a
+  /// frame with a hairline border and a caption rule, not a pastel circle.
+  Widget _buildPlate(String asset) {
+    return AspectRatio(
+      aspectRatio: 3 / 2,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFCFAF4),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _paperEdge),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset(asset, fit: BoxFit.cover),
+      ),
+    );
+  }
+
+  Widget _buildTopBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 14, 16, 10),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: _ink,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.phone_iphone_rounded,
+                size: 17, color: Color(0xFFF7F3EA)),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'LIMS',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2.2,
+              color: _ink,
+            ),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: () async {
+              await OnboardingPrefs.markSeen();
+              if (context.mounted) context.go('/login');
+            },
+            child: const Text(
+              'Skip',
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: _inkSoft,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
