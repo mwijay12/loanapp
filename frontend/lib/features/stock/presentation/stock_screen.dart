@@ -1168,12 +1168,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                        color: AppTheme.ink900,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.6,
+                          color: AppTheme.ink900,
+                        ),
                       ),
-                    ),
                     ],
                   ),
                 ),
@@ -1183,20 +1183,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     onPressed: _showAddPhoneModal,
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: const Text('Add Phone',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 38),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
 
             // Search Bar
             Container(
@@ -1328,12 +1328,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.7,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 0.78,
                 ),
                 itemCount: products.length,
                 itemBuilder: (_, i) => _buildProductTile(products[i]),
@@ -1522,19 +1522,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0x0F0F3478),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: () {
             Haptics.tap();
             _showProductDetail(p);
@@ -1545,30 +1546,29 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. IMAGE SECTION (top ~60%)
+              // 1. IMAGE SECTION
               Expanded(
-                flex: 12,
+                flex: 13,
                 child: ClipRRect(
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
+                      const BorderRadius.vertical(top: Radius.circular(20)),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       _buildHeroImage(p),
 
-                      // ON OFFER Badge (if applicable)
+                      // ON OFFER Badge (Premium floating style)
                       if (p.onOffer)
                         Positioned(
                           top: 10,
                           left: 10,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                                horizontal: 9, vertical: 5),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFFF9900), Color(0xFFFF4D00)],
+                                colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -1576,9 +1576,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               boxShadow: [
                                 BoxShadow(
                                   color:
-                                      const Color(0xFFFF4D00).withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
+                                      const Color(0xFFD97706).withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -1591,10 +1591,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 Text(
                                   tr(locale, 'deals.onOffer').toUpperCase(),
                                   style: const TextStyle(
-                                    fontSize: 9,
+                                    fontSize: 9.5,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
-                                    letterSpacing: 0.5,
+                                    letterSpacing: 0.6,
                                   ),
                                 ),
                               ],
@@ -1605,15 +1605,28 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       // Quick Stock Buttons for Managers
                       if (UserRoles.canManageStock(userRole))
                         Positioned(
-                          bottom: 10,
-                          right: 10,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildQuickStockBtn(p, false),
-                              const SizedBox(width: 8),
-                              _buildQuickStockBtn(p, true),
-                            ],
+                          bottom: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildQuickStockBtn(p, false),
+                                const SizedBox(width: 6),
+                                _buildQuickStockBtn(p, true),
+                              ],
+                            ),
                           ),
                         ),
                     ],
@@ -1621,42 +1634,46 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 ),
               ),
 
-              // 2. INFO SECTION (Padding 12)
+              // 2. INFO SECTION
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       p.name,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink900,
+                        letterSpacing: -0.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
-                      '${p.sku} · ${p.stock} in stock',
-                      style: TextStyle(
+                      '${p.sku} · ${p.stock} units',
+                      style: const TextStyle(
                         fontSize: 11,
-                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.ink500,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           p.shortPrice,
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.brand600,
                           ),
                         ),
-                        const Spacer(),
                         _buildStatusBadge(p.status),
                       ],
                     ),
@@ -1671,24 +1688,22 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   Widget _buildHeroImage(ProductItem p) {
-    final isTransparent = p.imageAsset != null ||
-        (p.imageUrl != null && p.imageUrl!.toLowerCase().contains('.png'));
-
+    // Premium e-commerce feel: Prefer filling the area, unless it's a transparent product asset
+    final isTransparentAsset = p.imageAsset != null && p.imageAsset!.isNotEmpty;
+    
     return Container(
-      color: const Color(0xFFF8F9FB),
+      color: const Color(0xFFF8FAFC),
+      padding: isTransparentAsset ? const EdgeInsets.all(12) : EdgeInsets.zero,
       child: p.imageUrl != null && p.imageUrl!.isNotEmpty
           ? CachedNetworkImage(
               imageUrl: p.imageUrl!,
-              fit: isTransparent ? BoxFit.contain : BoxFit.cover,
+              fit: BoxFit.cover,
               placeholder: (context, url) =>
-                  Container(color: const Color(0xFFF0F1F5)),
+                  Container(color: const Color(0xFFF1F5F9)),
               errorWidget: (context, url, error) => _buildImageErrorFallback(),
             )
           : (p.imageAsset != null && p.imageAsset!.isNotEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Image.asset(p.imageAsset!, fit: BoxFit.contain),
-                )
+              ? Image.asset(p.imageAsset!, fit: BoxFit.contain)
               : _buildImageErrorFallback()),
     );
   }

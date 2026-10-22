@@ -13,6 +13,7 @@ import 'ui_kit.dart';
 /// Keeping it in one place stops the page view from clipping the card when the
 /// card is retuned.
 const double kDealCardHeight = 186;
+const double kCarouselHeight = 226; // Added extra space for shadows and scaling transform
 
 /// Model representing a high-impact featured smartphone promotion / loan offer.
 class FeaturedPhoneDeal {
@@ -625,7 +626,7 @@ class _PhoneDealsCarouselState extends State<PhoneDealsCarousel> {
       children: [
         // Carousel Slider
         SizedBox(
-          height: kDealCardHeight,
+          height: kCarouselHeight,
           child: Listener(
             onPointerDown: (_) {
               _isInteracting = true;
@@ -656,11 +657,13 @@ class _PhoneDealsCarouselState extends State<PhoneDealsCarousel> {
                       scale = (idx == _currentPage) ? 1.0 : 0.90;
                     }
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: FeaturedPhoneDealCard(
-                        deal: deal,
-                        scale: scale,
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: FeaturedPhoneDealCard(
+                          deal: deal,
+                          scale: scale,
+                        ),
                       ),
                     );
                   },
@@ -669,7 +672,7 @@ class _PhoneDealsCarouselState extends State<PhoneDealsCarousel> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
 
         // Animated Capsule Indicators
         Row(

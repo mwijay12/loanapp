@@ -1,48 +1,9 @@
-# Flutter/Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-build/
-*.iml
-.idea/
-.vscode/
-
-# Android
-android/.gradle/
-android/local.properties
-# P0: the pattern above misses frontend/android/local.properties —
-# glob must match at any depth.
-**/android/local.properties
-android/key.properties
-*.apk
-*.aab
-*.dSYM/
-
-# iOS
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/.generated/
-ios/Runner/GeneratedPluginRegistrant.*
-
-# macOS
-macos/Flutter/GeneratedPluginRegistrant.swift
-
-# Windows
-windows/flutter/ephemeral/
-
-# Linux
-linux/flutter/ephemeral/
-
-# Secrets
-*.jks
-*.keystore
-.env
-*.env
-# CI writes build-time dart-defines here; it must never be committed.
-dart_defines.json
-**/dart_defines.json
-backend/.env
-frontend/.env
-**/.env.local
+.tools/
+*.tar.xz
+*.json
+*.py
+tunnel.log
+server.log
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
