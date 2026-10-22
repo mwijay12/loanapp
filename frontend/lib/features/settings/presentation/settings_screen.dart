@@ -14,6 +14,7 @@ import '../../../core/services/live_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../home/presentation/dashboard_kit.dart';
 
 /// Settings, built from the session instead of from a script.
 ///
@@ -41,123 +42,212 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final locale = ref.watch(localeProvider);
     final me = ref.watch(activeStaffMemberProvider);
     final branch = ref.watch(activeBranchProvider);
-    final canSwitch =
-        UserRoles.canSwitchBranch(ref.watch(userRoleProvider));
+    final canSwitch = UserRoles.canSwitchBranch(ref.watch(userRoleProvider));
     final live = ref.watch(dataSourceProvider);
     final salesLoaded = ref.watch(salesProvider).length;
 
     return Scaffold(
-      backgroundColor: AppTheme.canvas,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          tr(locale, 'set.title'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.ink900,
+      backgroundColor: DashPalette.page,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: DashPalette.pageGradient,
+            stops: DashPalette.pageStops,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
-        ),
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(18),
-          children: [
-            _profileCard(locale, me),
-            const SizedBox(height: 22),
-
-            _sectionTitle(tr(locale, 'set.branch')),
-            const SizedBox(height: 10),
-            _branchCard(locale, me, branch, canSwitch),
-            const SizedBox(height: 22),
-
-            _sectionTitle(tr(locale, 'set.language')),
-            const SizedBox(height: 10),
-            _languageCard(locale),
-            const SizedBox(height: 22),
-
-            _sectionTitle(tr(locale, 'set.dataTitle')),
-            const SizedBox(height: 10),
-            _dataCard(locale, live.kind, salesLoaded),
-            const SizedBox(height: 22),
-
-            _sectionTitle(tr(locale, 'set.sessionTitle')),
-            const SizedBox(height: 10),
-            _sessionCard(locale),
-            const SizedBox(height: 20),
-
-            OutlinedButton.icon(
-              onPressed: () {
-                ref.read(userRoleProvider.notifier).clearSession();
-                ref.read(signedInNameProvider.notifier).state = null;
-                ref.read(signedInBranchProvider.notifier).state = null;
-                ref.read(signedInAvatarProvider.notifier).state = null;
-                context.go('/login');
-              },
-              icon: const Icon(Icons.logout_rounded,
-                  color: Color(0xFFF43F5E), size: 18),
-              label: Text(
-                tr(locale, 'set.signOut'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFF43F5E),
+        child: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+            children: [
+              _header(locale),
+              const SizedBox(height: 18),
+              _profileCard(locale, me),
+              const SizedBox(height: 22),
+              _sectionTitle(tr(locale, 'set.branch')),
+              const SizedBox(height: 10),
+              _branchCard(locale, me, branch, canSwitch),
+              const SizedBox(height: 22),
+              _sectionTitle(tr(locale, 'set.language')),
+              const SizedBox(height: 10),
+              _languageCard(locale),
+              const SizedBox(height: 22),
+              _sectionTitle(tr(locale, 'set.dataTitle')),
+              const SizedBox(height: 10),
+              _dataCard(locale, live.kind, salesLoaded),
+              const SizedBox(height: 22),
+              _sectionTitle(tr(locale, 'set.sessionTitle')),
+              const SizedBox(height: 10),
+              _sessionCard(locale),
+              const SizedBox(height: 20),
+              _signOutCard(locale),
+              const SizedBox(height: 16),
+              Center(
+                child: Text(
+                  tr(locale, 'set.version'),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: DashPalette.faint,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFFFD2DC)),
-                backgroundColor: const Color(0xFFFFEDF1),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                tr(locale, 'set.version'),
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF9AA8BF),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  /// The same back affordance the dashboards use: a white circle on the
+  /// gradient, not a flat app bar. Settings is a page of the app, not a
+  /// different app.
+  Widget _header(Locale locale) {
+    return Row(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x142F6BD6),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => context.pop(),
+              child: const SizedBox(
+                width: 42,
+                height: 42,
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  size: 20,
+                  color: DashPalette.ink,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            tr(locale, 'set.title'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              color: DashPalette.ink,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Sign out is an action, so it is a row you press — not a red outline that
+  /// reads like a broken button.
+  Widget _signOutCard(Locale locale) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFFFD9E0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F2F6BD6),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: _signOut,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEDF1),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    size: 20,
+                    color: Color(0xFFE5484D),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    tr(locale, 'set.signOut'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.1,
+                      color: Color(0xFFE5484D),
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 19,
+                  color: DashPalette.faint,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _signOut() {
+    ref.read(userRoleProvider.notifier).clearSession();
+    ref.read(signedInNameProvider.notifier).state = null;
+    ref.read(signedInBranchProvider.notifier).state = null;
+    ref.read(signedInAvatarProvider.notifier).state = null;
+    context.go('/login');
+  }
+
   Widget _sectionTitle(String text) => Text(
         text,
         style: const TextStyle(
-          fontSize: 13.5,
+          fontSize: 13,
+          letterSpacing: -0.1,
           fontWeight: FontWeight.w800,
-          color: AppTheme.ink900,
+          color: DashPalette.ink,
         ),
       );
 
   Widget _card({required Widget child}) => Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: DashPalette.hairline),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0C0F3478),
-              blurRadius: 20,
-              offset: Offset(0, 4),
+              color: Color(0x0F2F6BD6),
+              blurRadius: 18,
+              offset: Offset(0, 8),
             ),
           ],
         ),
@@ -165,10 +255,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
 
   Widget _profileCard(Locale locale, StaffMember me) {
-    final roleLabel = tr(locale, UserRoles.labelKey(ref.watch(userRoleProvider)));
-    final branchLabel = me.branch.trim().isEmpty
-        ? tr(locale, 'set.noBranch')
-        : me.branch;
+    final roleLabel =
+        tr(locale, UserRoles.labelKey(ref.watch(userRoleProvider)));
+    final branchLabel =
+        me.branch.trim().isEmpty ? tr(locale, 'set.noBranch') : me.branch;
     final hasSession = ref.watch(userRoleProvider) != UserRoles.noSession;
 
     return _card(
@@ -291,10 +381,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _branchCard(
       Locale locale, StaffMember me, String branch, bool canSwitch) {
-    final branches = ref
-        .watch(branchesProvider)
-        .where((b) => b.active)
-        .toList();
+    final branches =
+        ref.watch(branchesProvider).where((b) => b.active).toList();
 
     return _card(
       child: Padding(
@@ -362,7 +450,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Row(
               children: [
                 Icon(
-                  canSwitch ? Icons.swap_horiz_rounded : Icons.lock_outline_rounded,
+                  canSwitch
+                      ? Icons.swap_horiz_rounded
+                      : Icons.lock_outline_rounded,
                   size: 13,
                   color: AppTheme.ink400,
                 ),
@@ -472,7 +562,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return _card(
       child: Column(
         children: [
-          _row(locale, 'set.staffCode', me.staffCode.isEmpty ? '—' : me.staffCode),
+          _row(locale, 'set.staffCode',
+              me.staffCode.isEmpty ? '—' : me.staffCode),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
           _row(locale, 'set.loginEmail',
               me.email.trim().isEmpty ? '—' : me.email),
