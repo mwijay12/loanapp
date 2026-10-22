@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/ui_kit.dart';
+
+import '../../../core/constants/app_constants.dart';
+import '../../../core/data/branch_provider.dart';
+import '../../../core/data/mock_lims_data.dart';
+import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/sales_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
+import '../../../core/services/avatar_service.dart';
+import '../../../core/services/live_data.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/person_avatar.dart';
+import '../../../core/widgets/ui_kit.dart';
 
+/// Settings, built from the session instead of from a script.
+///
+/// The previous screen was a mock-up: a fixed \"David Julius / Store Manager\"
+/// header, a hardcoded branch starting at Kariakoo, a six-item branch list that
+/// belonged to nobody, and a dropdown that let any role move the terminal. A
+/// Mbagala Branch Manager therefore opened Settings and read that they were
+/// posted to Kariakoo, with permission to switch.
+///
+/// Everything below comes from the signed-in person: their own row, their own
+/// branch, their own role, and the branches that exist in the database. The only
+/// choice offered is one their role can actually make.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -14,30 +34,17 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _selectedBranch = 'Kariakoo Branch';
-  bool _biometricsEnabled = true;
-  bool _smsAlerts = true;
-  bool _autoReceipts = true;
-  bool _offlineCache = true;
-  String _loanDownPayment = '25%';
-  String _mpesaTillNumber = '552219';
-  final String _tigoPesaNumber = '884102';
-  final String _supportHotline = '0754 892 314';
-  String _paymentGracePeriod = 'Siku 3 (Grace Period)';
-  String _escalationPolicy = 'sms_guarantor';
-
-  final List<String> _branches = [
-    'Kariakoo Branch',
-    'Mbezi Branch',
-    'Mwanza Branch',
-    'Arusha Branch',
-    'Dodoma Branch',
-    'Zanzibar Branch',
-  ];
+  bool _savingPhoto = false;
 
   @override
   Widget build(BuildContext context) {
-    final currentLocale = ref.watch(localeProvider);
+    final locale = ref.watch(localeProvider);
+    final me = ref.watch(activeStaffMemberProvider);
+    final branch = ref.watch(activeBranchProvider);
+    final canSwitch =
+        UserRoles.canSwitchBranch(ref.watch(userRoleProvider));
+    final live = ref.watch(dataSourceProvider);
+    final salesLoaded = ref.watch(salesProvider).length;
 
     return Scaffold(
       backgroundColor: AppTheme.canvas,
@@ -49,9 +56,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Settings & Profile',
-          style: TextStyle(
+        title: Text(
+          tr(locale, 'set.title'),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             color: AppTheme.ink900,
@@ -66,684 +73,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
-            // Profile Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.brand600.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'DJ',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'David Julius',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.ink900,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          'Store Manager · ID: LIMS-EMP-042',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.ink500,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE7F8F0),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Active · Kariakoo',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF12B76A),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _profileCard(locale, me),
+            const SizedBox(height: 22),
+
+            _sectionTitle(tr(locale, 'set.branch')),
+            const SizedBox(height: 10),
+            _branchCard(locale, me, branch, canSwitch),
+            const SizedBox(height: 22),
+
+            _sectionTitle(tr(locale, 'set.language')),
+            const SizedBox(height: 10),
+            _languageCard(locale),
+            const SizedBox(height: 22),
+
+            _sectionTitle(tr(locale, 'set.dataTitle')),
+            const SizedBox(height: 10),
+            _dataCard(locale, live.kind, salesLoaded),
+            const SizedBox(height: 22),
+
+            _sectionTitle(tr(locale, 'set.sessionTitle')),
+            const SizedBox(height: 10),
+            _sessionCard(locale),
             const SizedBox(height: 20),
 
-            // Branch Assignment
-            const Text(
-              'Branch Assignment',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0A0F3478),
-                    blurRadius: 16,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedBranch,
-                  isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.brand600),
-                  items: _branches.map((b) {
-                    return DropdownMenuItem(
-                      value: b,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.brand600),
-                          const SizedBox(width: 10),
-                          Text(
-                            b,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.ink900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedBranch = val);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text('Switched active branch to $val'),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Language & Localization
-            const Text(
-              'Language / Lugha',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0A0F3478),
-                    blurRadius: 16,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(localeProvider.notifier).state = const Locale('en');
-                        LocaleStore.save(const Locale('en'));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            behavior: SnackBarBehavior.floating,
-                            content: Text('Language set to English'),
-                          ),
-                        );
-                      },
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: currentLocale.languageCode == 'en'
-                              ? AppTheme.brand600
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Text(
-                          'English (EN)',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: currentLocale.languageCode == 'en'
-                                ? Colors.white
-                                : AppTheme.ink700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(localeProvider.notifier).state = const Locale('sw');
-                        LocaleStore.save(const Locale('sw'));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            behavior: SnackBarBehavior.floating,
-                            content: Text('Lugha imebadilishwa kuwa Kiswahili'),
-                          ),
-                        );
-                      },
-                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: currentLocale.languageCode == 'sw'
-                              ? AppTheme.brand600
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Text(
-                          'Kiswahili (SW)',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: currentLocale.languageCode == 'sw'
-                                ? Colors.white
-                                : AppTheme.ink700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Store Operations & Loan Configuration
-            const Text(
-              'Loan & Store Defaults',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildToggleTile(
-                    title: 'Auto-Generate Digital Receipts',
-                    subtitle: 'Create instant SMS receipt on cash and loan deals',
-                    value: _autoReceipts,
-                    onChanged: (v) => setState(() => _autoReceipts = v),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  _buildToggleTile(
-                    title: 'Offline Sync Cache',
-                    subtitle: 'Store counter transactions locally when offline',
-                    value: _offlineCache,
-                    onChanged: (v) => setState(() => _offlineCache = v),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Default Down-Payment',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.ink900,
-                                ),
-                              ),
-                              Text(
-                                'Standard customer deposit for phone financing',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.ink500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        DropdownButton<String>(
-                          value: _loanDownPayment,
-                          underline: const SizedBox(),
-                          items: ['20%', '25%', '30%'].map((val) {
-                            return DropdownMenuItem(
-                              value: val,
-                              child: Text(
-                                val,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.brand600,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) setState(() => _loanDownPayment = val);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Payment Channels & Collections Policy Configuration
-            const Text(
-              'Payment Channels & Collections Policy',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEDF1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.point_of_sale_rounded, color: Color(0xFFE11900), size: 20),
-                    ),
-                    title: const Text(
-                      'Default Lipa Namba (Vodacom M-Pesa)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                    ),
-                    subtitle: Text(
-                      'Till: $_mpesaTillNumber · Namba kuu ya makusanyo ya marejesho',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
-                    ),
-                    trailing: TextButton(
-                      onPressed: () {
-                        final ctrl = TextEditingController(text: _mpesaTillNumber);
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Badili M-Pesa Till', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                            content: TextField(
-                              controller: ctrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'M-Pesa Till Number', border: OutlineInputBorder()),
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Ghairi')),
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() => _mpesaTillNumber = ctrl.text);
-                                  Navigator.pop(ctx);
-                                  LimsToast.show(context, 'Lipa Namba ya duka imesasishwa kwa mafanikio!');
-                                },
-                                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.brand600, foregroundColor: Colors.white),
-                                child: const Text('Hifadhi'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: const Text('Badili', style: TextStyle(fontWeight: FontWeight.w700)),
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.sim_card_rounded, color: Color(0xFF0033A0), size: 20),
-                    ),
-                    title: const Text(
-                      'Lipa Namba ya Pili (Tigo Pesa)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                    ),
-                    subtitle: Text(
-                      'Till: $_tigoPesaNumber · Namba mbadala ya malipo',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEBF3FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.support_agent_rounded, color: AppTheme.brand600, size: 20),
-                    ),
-                    title: const Text(
-                      'Namba ya Msaada ya Duka (Hotline)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                    ),
-                    subtitle: Text(
-                      '$_supportHotline · Mawasiliano rasmi ya mikopo na marejesho',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Payment Grace Period',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                              ),
-                              Text(
-                                'Muda wa msamaha kabla ya hatua za madai kuanza',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 11, color: AppTheme.ink500),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButton<String>(
-                            value: _paymentGracePeriod,
-                            isExpanded: true,
-                            underline: const SizedBox(),
-                            items: ['Siku 1', 'Siku 3 (Grace Period)', 'Siku 5', 'Siku 7'].map((val) {
-                              return DropdownMenuItem(
-                                value: val,
-                                child: Text(
-                                  val,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _paymentGracePeriod = val);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Arrears Escalation Policy',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                              ),
-                              Text(
-                                'Hatua za kisheria kwa mujibu wa PDPA & Mkopo',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 11, color: AppTheme.ink500),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButton<String>(
-                            value: _escalationPolicy,
-                            isExpanded: true,
-                            underline: const SizedBox(),
-                            items: [
-                              'sms_guarantor',
-                              'legal_notice',
-                              'negotiation',
-                            ].map((val) {
-                              final label = switch (val) {
-                                'sms_guarantor' =>
-                                  tr(ref.read(localeProvider), 'set.smsGuarantor'),
-                                'negotiation' =>
-                                  tr(ref.read(localeProvider), 'set.negotiation'),
-                                _ => tr(ref.read(localeProvider), 'set.legalNotice'),
-                              };
-                              return DropdownMenuItem(
-                                value: val,
-                                child: Text(
-                                  label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.brand600, fontSize: 12),
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _escalationPolicy = val);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          LimsToast.show(
-                            context,
-                            tr(ref.read(localeProvider), 'set.smsTest'),
-                            isSuccess: true,
-                          );
-                        },
-                        icon: const Icon(Icons.sms_outlined, size: 16),
-                        label: Text(
-                          tr(ref.read(localeProvider), 'set.smsTestButton'),
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF0F172A),
-                          backgroundColor: const Color(0xFFF8FAFC),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Hardware & Security
-            const Text(
-              'Security & Hardware',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C0F3478),
-                    blurRadius: 20,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildToggleTile(
-                    title: 'Face ID / Biometric Lock',
-                    subtitle: 'Require biometric authentication on counter startup',
-                    value: _biometricsEnabled,
-                    onChanged: (v) => setState(() => _biometricsEnabled = v),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  _buildToggleTile(
-                    title: 'SMS Overdue Alerts',
-                    subtitle: 'Notify manager daily at 09:00 AM on delayed loans',
-                    value: _smsAlerts,
-                    onChanged: (v) => setState(() => _smsAlerts = v),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  ListTile(
-                    leading: const Icon(Icons.print_rounded, color: AppTheme.brand600),
-                    title: const Text(
-                      'Bluetooth Thermal Printer',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink900),
-                    ),
-                    subtitle: const Text(
-                      'Sunmi V2 Pro 58mm · Paired & Ready',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF12B76A), fontWeight: FontWeight.w600),
-                    ),
-                    trailing: const Icon(Icons.check_circle_rounded, color: Color(0xFF12B76A), size: 20),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text('Printer test: Connection verified with Sunmi 58mm'),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Sign out button
             OutlinedButton.icon(
-              onPressed: () => context.go('/login'),
-              icon: const Icon(Icons.logout_rounded, color: Color(0xFFF43F5E), size: 18),
-              label: const Text(
-                'Sign Out from Terminal',
-                style: TextStyle(
+              onPressed: () {
+                ref.read(userRoleProvider.notifier).clearSession();
+                ref.read(signedInNameProvider.notifier).state = null;
+                ref.read(signedInBranchProvider.notifier).state = null;
+                ref.read(signedInAvatarProvider.notifier).state = null;
+                context.go('/login');
+              },
+              icon: const Icon(Icons.logout_rounded,
+                  color: Color(0xFFF43F5E), size: 18),
+              label: Text(
+                tr(locale, 'set.signOut'),
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFFF43F5E),
@@ -753,14 +118,169 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 side: const BorderSide(color: Color(0xFFFFD2DC)),
                 backgroundColor: const Color(0xFFFFEDF1),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
             const SizedBox(height: 12),
-            const Center(
+            Center(
               child: Text(
-                'LIMS Build 2.4 · Branch Terminal v2026.10',
-                style: TextStyle(fontSize: 11, color: Color(0xFF9AA8BF), fontWeight: FontWeight.w600),
+                tr(locale, 'set.version'),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF9AA8BF),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w800,
+          color: AppTheme.ink900,
+        ),
+      );
+
+  Widget _card({required Widget child}) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0C0F3478),
+              blurRadius: 20,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: child,
+      );
+
+  Widget _profileCard(Locale locale, StaffMember me) {
+    final roleLabel = tr(locale, UserRoles.labelKey(ref.watch(userRoleProvider)));
+    final branchLabel = me.branch.trim().isEmpty
+        ? tr(locale, 'set.noBranch')
+        : me.branch;
+    final hasSession = ref.watch(userRoleProvider) != UserRoles.noSession;
+
+    return _card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Stack(
+                  children: [
+                    PersonAvatar(
+                      name: me.name,
+                      grad: me.grad,
+                      asset: me.avatarAsset,
+                      size: 58,
+                    ),
+                    if (hasSession)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.brand600,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(Icons.camera_alt_rounded,
+                              size: 11, color: Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        me.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.ink900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        roleLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.ink600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE7F8F0),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${tr(locale, 'set.activeAt')} · $branchLabel',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF12B76A),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _savingPhoto || !hasSession
+                    ? null
+                    : () => _showPhotoSheet(locale, me),
+                icon: _savingPhoto
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.photo_camera_outlined, size: 16),
+                label: Text(
+                  tr(locale, 'set.changePhoto'),
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w800),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.brand600,
+                  side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  backgroundColor: const Color(0xFFF5F9FF),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
           ],
@@ -769,47 +289,459 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildToggleTile({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _branchCard(
+      Locale locale, StaffMember me, String branch, bool canSwitch) {
+    final branches = ref
+        .watch(branchesProvider)
+        .where((b) => b.active)
+        .toList();
+
+    return _card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.ink900,
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: AppTheme.brand100,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(Icons.storefront_rounded,
+                      size: 18, color: AppTheme.brand600),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        // The terminal is either the branch you are posted to,
+                        // or one a Super Admin is inspecting. The wording says
+                        // which, because those are different situations.
+                        canSwitch
+                            ? tr(locale, 'set.terminal')
+                            : tr(locale, 'set.assignedBranch'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.ink900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        branch,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.brand600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.ink500,
+                if (canSwitch)
+                  TextButton(
+                    onPressed: branches.isEmpty
+                        ? null
+                        : () => _showBranchPicker(locale, branch, branches),
+                    child: Text(
+                      tr(locale, 'set.change'),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  canSwitch ? Icons.swap_horiz_rounded : Icons.lock_outline_rounded,
+                  size: 13,
+                  color: AppTheme.ink400,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    canSwitch
+                        ? tr(locale, 'set.switchHintAdmin')
+                        : tr(locale, 'set.switchHintLocked'),
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      height: 1.35,
+                      color: AppTheme.ink500,
+                    ),
                   ),
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _languageCard(Locale locale) {
+    return _card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            for (final code in const ['en', 'sw'])
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      final next = Locale(code);
+                      ref.read(localeProvider.notifier).state = next;
+                      LocaleStore.save(next);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: locale.languageCode == code
+                            ? AppTheme.brand600
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        tr(locale, 'set.lang.$code'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: locale.languageCode == code
+                              ? Colors.white
+                              : AppTheme.ink700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dataCard(Locale locale, DataSourceKind kind, int salesLoaded) {
+    final live = kind == DataSourceKind.live;
+    return _card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Row(
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: live ? const Color(0xFF12B76A) : const Color(0xFFF79009),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                live
+                    ? trf(locale, 'set.dataLive', {'n': salesLoaded})
+                    : tr(locale, 'set.dataDemo'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.ink700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sessionCard(Locale locale) {
+    final me = ref.watch(activeStaffMemberProvider);
+    return _card(
+      child: Column(
+        children: [
+          _row(locale, 'set.staffCode', me.staffCode.isEmpty ? '—' : me.staffCode),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          _row(locale, 'set.loginEmail',
+              me.email.trim().isEmpty ? '—' : me.email),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          _row(locale, 'set.rbacOwner', tr(locale, 'set.rbacOwnerValue')),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(Locale locale, String key, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              tr(locale, key),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.ink600,
+              ),
+            ),
           ),
-          Switch(
-            value: value,
-            activeThumbColor: AppTheme.brand600,
-            onChanged: onChanged,
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.ink900,
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showBranchPicker(
+      Locale locale, String current, List<BranchRecord> branches) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              tr(locale, 'set.pickBranch'),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.ink900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...branches.map((b) {
+              final selected = b.name == current;
+              return ListTile(
+                leading: Icon(
+                  selected
+                      ? Icons.check_circle_rounded
+                      : Icons.storefront_outlined,
+                  color: selected ? AppTheme.brand600 : AppTheme.ink500,
+                ),
+                title: Text(
+                  b.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    color: selected ? AppTheme.brand600 : AppTheme.ink900,
+                  ),
+                ),
+                subtitle: Text(
+                  b.city,
+                  style: const TextStyle(fontSize: 11, color: AppTheme.ink500),
+                ),
+                onTap: () {
+                  final moved =
+                      ref.read(activeBranchProvider.notifier).setBranch(b.name);
+                  Navigator.pop(ctx);
+                  LimsToast.show(
+                    context,
+                    moved
+                        ? trf(locale, 'set.switched', {'branch': b.name})
+                        : tr(locale, 'set.switchRefused'),
+                    isSuccess: moved,
+                    isError: !moved,
+                  );
+                },
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPhotoSheet(Locale locale, StaffMember me) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                tr(locale, 'set.changePhoto'),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tr(locale, 'set.photoHint'),
+                style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _uploadOwnPhoto(locale);
+                  },
+                  icon: const Icon(Icons.upload_rounded, size: 17),
+                  label: Text(tr(locale, 'set.uploadPhoto'),
+                      style: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w800)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.brand600,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                tr(locale, 'set.orPick'),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.ink500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 72,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: AvatarService.presets.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (_, i) {
+                    final asset = AvatarService.presets[i];
+                    final selected = me.avatarAsset == asset;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(40),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _applyAvatar(locale, asset);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selected
+                                ? AppTheme.brand600
+                                : const Color(0xFFE2E8F0),
+                            width: selected ? 2.5 : 1,
+                          ),
+                        ),
+                        child: PersonAvatar(
+                          name: me.name,
+                          grad: me.grad,
+                          asset: asset,
+                          size: 60,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadOwnPhoto(Locale locale) async {
+    setState(() => _savingPhoto = true);
+    final service = AvatarService();
+    final url = await service.pickAndUpload();
+    if (!mounted) return;
+
+    if (url == null) {
+      setState(() => _savingPhoto = false);
+      final reason = service.lastError;
+      if (reason == null) return; // the person closed the picker
+      LimsToast.show(context, tr(locale, 'set.photoFailed'), isError: true);
+      return;
+    }
+    await _commit(locale, url, service);
+  }
+
+  Future<void> _applyAvatar(Locale locale, String value) async {
+    setState(() => _savingPhoto = true);
+    await _commit(locale, value, AvatarService());
+  }
+
+  Future<void> _commit(
+      Locale locale, String value, AvatarService service) async {
+    final ok = await service.save(value);
+    if (!mounted) return;
+    setState(() => _savingPhoto = false);
+
+    if (!ok) {
+      LimsToast.show(
+        context,
+        service.lastError ?? tr(locale, 'set.photoFailed'),
+        isError: true,
+      );
+      return;
+    }
+    // Show it immediately: the session overlay wins over the staff row.
+    ref.read(signedInAvatarProvider.notifier).state = value;
+    LimsToast.show(context, tr(locale, 'set.photoSaved'), isSuccess: true);
   }
 }

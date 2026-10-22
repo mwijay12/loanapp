@@ -911,6 +911,109 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Jukumu lisilotambulika — linahesabiwa kama kusoma tu hadi Super Admin ape jukumu halali.',
   },
 
+  // ------------------------------------------------------- role labels & scope
+  // Role names were rendered as "Super Admin (Mamlaka Kamili)" everywhere, so an
+  // English screen always carried a Swahili gloss.
+  'role.superAdmin': {'en': 'Super Admin', 'sw': 'Msimamizi Mkuu'},
+  'role.branchManager': {'en': 'Branch Manager', 'sw': 'Meneja wa Tawi'},
+  'role.loanOfficer': {'en': 'Loan Officer', 'sw': 'Afisa Mkopo'},
+  'role.storekeeper': {'en': 'Storekeeper', 'sw': 'Afisa Stoo'},
+  'role.counterCashier': {'en': 'Counter Cashier', 'sw': 'Mweka Hazina'},
+  'role.auditor': {'en': 'Auditor', 'sw': 'Mkaguzi'},
+  'role.pending': {'en': 'Pending invitation', 'sw': 'Mwaliko unasubiri'},
+  'role.unknown': {'en': 'No role assigned', 'sw': 'Hana jukumu'},
+  'role.notSignedIn': {'en': 'Not signed in', 'sw': 'Hujaingia'},
+
+  // ------------------------------------------------------------------ settings
+  'set.title': {'en': 'Settings & Profile', 'sw': 'Mipangilio na Wasifu'},
+  'set.branch': {'en': 'Branch', 'sw': 'Tawi'},
+  'set.assignedBranch': {'en': 'Your assigned branch', 'sw': 'Tawi ulilopangiwa'},
+  'set.terminal': {'en': 'Active terminal', 'sw': 'Kituo kinachotumika'},
+  'set.noBranch': {'en': 'No branch on your profile', 'sw': 'Hakuna tawi kwenye wasifu wako'},
+  'set.activeAt': {'en': 'Active at', 'sw': 'Anafanya kazi'},
+  'set.change': {'en': 'Change', 'sw': 'Badili'},
+  'set.switchHintAdmin': {
+    'en': 'As Super Admin you can look at any branch. Sales, stock and loans follow the branch you pick.',
+    'sw': 'Kama Msimamizi Mkuu unaweza kuangalia tawi lolote. Mauzo, stock na mikopo hufuata tawi unalochagua.',
+  },
+  'set.switchHintLocked': {
+    'en': 'Your role works inside this branch only. Only a Super Admin can move the terminal.',
+    'sw': 'Jukumu lako linafanya kazi ndani ya tawi hili tu. Msimamizi Mkuu pekee anaweza kubadilisha kituo.',
+  },
+  'set.pickBranch': {'en': 'Choose a branch', 'sw': 'Chagua tawi'},
+  'set.switched': {'en': 'Terminal switched to {branch}', 'sw': 'Kituo kimehamia {branch}'},
+  'set.switchRefused': {
+    'en': 'Only a Super Admin can switch branches.',
+    'sw': 'Msimamizi Mkuu pekee anaweza kubadilisha matawi.',
+  },
+  'set.language': {'en': 'Language', 'sw': 'Lugha'},
+  'set.lang.en': {'en': 'English', 'sw': 'Kiingereza'},
+  'set.lang.sw': {'en': 'Kiswahili', 'sw': 'Kiswahili'},
+  'set.changePhoto': {'en': 'Change photo', 'sw': 'Badili picha'},
+  'set.photoHint': {
+    'en': 'Your own photo appears on the header, receipts and loan forms.',
+    'sw': 'Picha yako inaonekana kwenye kichwa, risiti na fomu za mikopo.',
+  },
+  'set.uploadPhoto': {'en': 'Upload a photo', 'sw': 'Pakia picha'},
+  'set.orPick': {'en': 'Or pick a portrait', 'sw': 'Au chagua picha ya mfano'},
+  'set.photoSaved': {'en': 'Photo updated', 'sw': 'Picha imesasishwa'},
+  'set.photoFailed': {'en': 'Could not save the photo', 'sw': 'Imeshindikana kuhifadhi picha'},
+  'set.dataTitle': {'en': 'Data', 'sw': 'Data'},
+  'set.dataLive': {
+    'en': 'Connected · {n} sales loaded from the database',
+    'sw': 'Imeunganishwa · mauzo {n} yamepakiwa kutoka database',
+  },
+  'set.dataDemo': {
+    'en': 'Demo data · this build has no database behind it',
+    'sw': 'Data ya majaribio · build hii haina database',
+  },
+  'set.sessionTitle': {'en': 'Session', 'sw': 'Kipindi'},
+  'set.staffCode': {'en': 'Staff number', 'sw': 'Namba ya mfanyakazi'},
+  'set.loginEmail': {'en': 'Login email', 'sw': 'Barua pepe ya kuingia'},
+  'set.rbacOwner': {'en': 'Roles & permissions', 'sw': 'Majukumu na ruhusa'},
+  'set.rbacOwnerValue': {
+    'en': 'Set by a Super Admin',
+    'sw': 'Huwekwa na Msimamizi Mkuu',
+  },
+  'set.signOut': {'en': 'Sign out', 'sw': 'Toka' },
+  'set.version': {'en': 'LIMS · branch terminal', 'sw': 'LIMS · kituo cha tawi'},
+
+  // ------------------------------------------------------------------ account
+  'account.adminConsole': {'en': 'Admin console', 'sw': 'Kituo cha msimamizi'},
+  'account.branchConsole': {'en': 'Branch console', 'sw': 'Kituo cha tawi'},
+  'account.settingsProfile': {'en': 'Settings & profile', 'sw': 'Mipangilio na wasifu'},
+
+  // ------------------------------------------------------------ shell & session
+  'shell.signOutTitle': {'en': 'Sign out of LIMS?', 'sw': 'Toka LIMS?'},
+  'shell.signOutBody': {
+    'en': 'This session will end and you will need your email and password to get back in.',
+    'sw': 'Utatolewa kwenye session hii na utahitaji kuingia tena kwa email na password yako.',
+  },
+  'shell.stay': {'en': 'Stay', 'sw': 'Baki hapa'},
+  'shell.signOut': {'en': 'Sign out', 'sw': 'Toka'},
+  'session.expiringTitle': {'en': 'Session expiring', 'sw': 'Session inaisha'},
+  'session.expiringBody': {
+    'en': 'No activity for a while. This session closes in {n} seconds. If you are still here, tap Continue.',
+    'sw': 'Hakuna shughuli kwa muda. Session itafungwa baada ya sekunde {n}. Kama bado uko hapa, gusa Endelea.',
+  },
+  'session.continue': {'en': 'Continue', 'sw': 'Endelea'},
+  'session.signOutNow': {'en': 'Sign out now', 'sw': 'Toka sasa'},
+
+  // ------------------------------------------------------- staff admin sheets
+  'adm.editRbacTitle': {'en': 'Edit role & permissions', 'sw': 'Hariri Majukumu & Ruhusa'},
+  'adm.roleLabel': {'en': 'Role', 'sw': 'Jukumu'},
+  'adm.addStaffTitle': {'en': 'Add a staff member', 'sw': 'Ongeza Mfanyakazi Mpya'},
+  'adm.fullName': {'en': 'Full name', 'sw': 'Jina Kamili'},
+  'adm.phoneNumber': {'en': 'Phone number', 'sw': 'Namba ya Simu'},
+  'adm.nameRequired': {
+    'en': 'Enter the staff member name first',
+    'sw': 'Tafadhali ingiza jina la mfanyakazi',
+  },
+  'adm.staffUpdated': {
+    'en': '{name} has been updated',
+    'sw': 'Taarifa za {name} zimesasishwa',
+  },
+
   // ------------------------------------------------------------------- generic
   'common.save': {'en': 'Save', 'sw': 'Hifadhi'},
   'common.cancel': {'en': 'Cancel', 'sw': 'Ghairi'},

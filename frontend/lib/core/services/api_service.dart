@@ -165,6 +165,7 @@ class ApiService {
         'phone': '',
         'role': account['role'],
         'branch': AppConstants.launchBranch,
+        'avatar': null,
       };
     }
 
@@ -261,6 +262,9 @@ class ApiService {
       'branch':
           (res == null ? null : res['branch_name'] as String?) ??
               AppConstants.launchBranch,
+      // The person's chosen portrait, so the header draws them and not a
+      // role placeholder.
+      'avatar': res == null ? null : res['avatar_asset'] as String?,
     };
   }
 

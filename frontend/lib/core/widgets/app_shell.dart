@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/locale_provider.dart';
+import '../l10n/strings.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
-import '../l10n/locale_provider.dart';
-import '../l10n/strings.dart';
 import '../services/live_data.dart';
 import 'session_guard.dart';
 
@@ -377,7 +377,13 @@ class _AppShellState extends ConsumerState<AppShell> {
                         const SizedBox(height: 8),
 
                         // Workspace list rows
-                        if (isSuperAdmin || isBranchManager) ...[
+                        // The console, scoped by role. "Staff Roles &
+                        // Credentials" used to be shown to a Branch Manager and
+                        // pushed /admin?tab=staff, which dumped them on the
+                        // network console under a menu label promising staff
+                        // administration. Role and permission changes stay with
+                        // the Super Admin, so the row is only rendered for one.
+                        if (isSuperAdmin) ...[
                           _buildWorkspaceRow(
                             icon: Icons.admin_panel_settings_outlined,
                             iconColor: AppTheme.brand600,
@@ -396,7 +402,16 @@ class _AppShellState extends ConsumerState<AppShell> {
                               context.push('/admin?tab=staff');
                             },
                           ),
-                        ],
+                        ] else if (isBranchManager)
+                          _buildWorkspaceRow(
+                            icon: Icons.admin_panel_settings_outlined,
+                            iconColor: AppTheme.brand600,
+                            title: 'Branch Console',
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              context.push('/admin');
+                            },
+                          ),
                         _buildWorkspaceRow(
                           icon: Icons.verified_outlined,
                           iconColor: const Color(0xFF0EA5E9),
@@ -570,20 +585,19 @@ class _AppShellState extends ConsumerState<AppShell> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.rLg),
         ),
-        title: const Text('Toka LIMS?'),
-        content: const Text(
-          'Utatolewa kwenye session hii na utahitaji kuingia tena kwa email na '
-          'password yako.',
-          style: TextStyle(height: 1.5),
+        title: Text(tr(ref.read(localeProvider), 'shell.signOutTitle')),
+        content: Text(
+          tr(ref.read(localeProvider), 'shell.signOutBody'),
+          style: const TextStyle(height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Baki hapa'),
+            child: Text(tr(ref.read(localeProvider), 'shell.stay')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Toka'),
+            child: Text(tr(ref.read(localeProvider), 'shell.signOut')),
           ),
         ],
       ),

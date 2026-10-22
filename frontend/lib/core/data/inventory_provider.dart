@@ -47,42 +47,79 @@ final userRoleProvider = StateNotifierProvider<UserRoleNotifier, String>((ref) {
 /// is a permission level, not an identity.
 final signedInNameProvider = StateProvider<String?>((ref) => null);
 
+/// The branch this person is assigned to, from `profiles.branch_name`.
+///
+/// The app used to set the terminal to [AppConstants.launchBranch] at start-up
+/// and leave it there, so a Mbagala manager was shown whatever the launch
+/// branch happened to be. Assignment is a server fact; the active terminal is
+/// only allowed to differ from it for a Super Admin.
+final signedInBranchProvider = StateProvider<String?>((ref) => null);
+
+/// The signed-in person's own portrait, from `profiles.avatar_asset`.
+///
+/// It is overlaid on their staff row rather than written into `staff`, so a
+/// person can change their own photo without being granted write access to the
+/// staff directory.
+final signedInAvatarProvider = StateProvider<String?>((ref) => null);
+
 final activeStaffMemberProvider = Provider<StaffMember>((ref) {
   final currentRole = ref.watch(userRoleProvider);
   final allStaff = ref.watch(staffProvider);
   final signedInName = ref.watch(signedInNameProvider);
+  final signedInBranch = ref.watch(signedInBranchProvider);
+  final signedInAvatar = ref.watch(signedInAvatarProvider);
   final normalizedRole = UserRoles.normalize(currentRole);
+
+  StaffMember? resolved;
 
   if (signedInName != null && signedInName.trim().isNotEmpty) {
     final wanted = signedInName.trim().toLowerCase();
     for (final member in allStaff) {
-      if (member.name.trim().toLowerCase() == wanted) return member;
+      if (member.name.trim().toLowerCase() == wanted) {
+        resolved = member;
+        break;
+      }
     }
   }
 
-  if (normalizedRole != null) {
+  if (resolved == null && normalizedRole != null) {
     for (final member in allStaff) {
-      if (UserRoles.normalize(member.role) == normalizedRole) return member;
+      if (UserRoles.normalize(member.role) == normalizedRole) {
+        resolved = member;
+        break;
+      }
     }
   }
 
-  return StaffMember(
-    id: 'noSession',
-    name: 'Signed out',
-    role: normalizedRole ?? UserRoles.pending,
-    email: '',
-    phone: '',
-    branch: ref.watch(activeBranchProvider),
-    staffCode: '—',
-    supervisorPin: '',
-    status: 'Inactive',
-    canDisburseLoans: false,
-    canKnoxLock: false,
-    canViewMargins: false,
-    canEditStock: false,
-    canApproveOverrides: false,
-    lastActive: '—',
-    grad: const [Color(0xFF94A3B8), Color(0xFF64748B)],
+  final member = resolved ??
+      StaffMember(
+        id: 'noSession',
+        name: signedInName ?? 'Signed out',
+        role: normalizedRole ?? UserRoles.pending,
+        email: '',
+        phone: '',
+        branch: signedInBranch ?? ref.watch(activeBranchProvider),
+        staffCode: '—',
+        supervisorPin: '',
+        status: 'Inactive',
+        canDisburseLoans: false,
+        canKnoxLock: false,
+        canViewMargins: false,
+        canEditStock: false,
+        canApproveOverrides: false,
+        lastActive: '—',
+        grad: const [Color(0xFF94A3B8), Color(0xFF64748B)],
+      );
+
+  // The session's own facts win over the row. A staff row can be missing (a
+  // profile with no matching `staff` record) or stale, but the branch on the
+  // profile and the photo the person just chose are what this person is.
+  final branch = (signedInBranch ?? '').trim();
+  return member.copyWith(
+    branch: branch.isEmpty ? member.branch : branch,
+    avatarAsset: (signedInAvatar ?? '').trim().isEmpty
+        ? member.avatarAsset
+        : signedInAvatar,
   );
 });
 
@@ -154,14 +191,36 @@ final staffProvider = StateNotifierProvider<StaffNotifier, List<StaffMember>>((r
 });
 
 /// Active Branch State (default: the launch branch, Mbagala).
+///
+/// The guard lives here rather than only in the widget that opens a picker: the
+/// branch drives stock, loans, reports and receipts, so "who may move the
+/// terminal" is a rule of the state, not of one button. A Branch Manager can
+/// call `setBranch` as often as they like and the value stays on their own
+/// branch.
 class ActiveBranchNotifier extends StateNotifier<String> {
-  ActiveBranchNotifier() : super(AppConstants.launchBranch);
+  ActiveBranchNotifier(this._ref) : super(AppConstants.launchBranch);
 
-  void setBranch(String branch) => state = branch;
+  final Ref _ref;
+
+  /// Move the terminal. Returns false when the caller's role is not allowed to,
+  /// so the screen can say so instead of showing a switch that did not happen.
+  bool setBranch(String branch) {
+    if (!UserRoles.canSwitchBranch(_ref.read(userRoleProvider))) return false;
+    state = branch;
+    return true;
+  }
+
+  /// Adopt the branch the person is assigned to. Allowed for every role,
+  /// because this is not a choice - it is the session telling the app who it is.
+  void adoptAssignedBranch(String? branch) {
+    final name = (branch ?? '').trim();
+    state = name.isEmpty ? AppConstants.launchBranch : name;
+  }
 }
 
-final activeBranchProvider = StateNotifierProvider<ActiveBranchNotifier, String>((ref) {
-  return ActiveBranchNotifier();
+final activeBranchProvider =
+    StateNotifierProvider<ActiveBranchNotifier, String>((ref) {
+  return ActiveBranchNotifier(ref);
 });
 
 /// Reactive Inventory State

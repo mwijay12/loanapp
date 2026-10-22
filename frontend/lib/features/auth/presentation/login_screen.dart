@@ -65,6 +65,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.read(userRoleProvider.notifier).hydrateFromSession(role);
       // Identity, not just permission: the header greets this person.
       ref.read(signedInNameProvider.notifier).state = name;
+      // The branch on the profile is the terminal this person works at. It used
+      // to be ignored, so everybody started on the launch branch (Mbagala) no
+      // matter where they were posted - and a manager could then "switch" to a
+      // branch they do not run.
+      final branchValue = user['branch'];
+      final branch = branchValue is String ? branchValue.trim() : '';
+      ref.read(signedInBranchProvider.notifier).state =
+          branch.isEmpty ? null : branch;
+      ref.read(activeBranchProvider.notifier).adoptAssignedBranch(branch);
+      final avatarValue = user['avatar'];
+      ref.read(signedInAvatarProvider.notifier).state =
+          avatarValue is String && avatarValue.trim().isNotEmpty ? avatarValue : null;
       // Routing is on the canonical role, not on a substring of the label.
       // The old `role.toLowerCase().contains('admin')` test sent a Branch
       // Manager to /home and would have sent an 'Auditor' anywhere it liked.

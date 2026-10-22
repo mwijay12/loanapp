@@ -67,6 +67,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a Branch Manager cannot deep-link into the staff console',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userRoleProvider.overrideWith(
+            (ref) =>
+                UserRoleNotifier()..hydrateFromSession(UserRoles.branchManager),
+          ),
+        ],
+        child: const MaterialApp(
+          // The menu row that used to carry this link was shown to managers and
+          // pushed /admin?tab=staff. The tab is now refused by role as well.
+          home: AdminDashboardScreen(initialTab: 'staff'),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Staff directory & credentials'), findsNothing);
+    expect(find.text('Branch Console'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a cashier is refused the console', (tester) async {
     await pumpAs(tester, UserRoles.counterCashier);
 

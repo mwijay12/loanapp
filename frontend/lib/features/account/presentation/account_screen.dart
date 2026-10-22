@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/strings.dart';
+import '../../../core/widgets/person_avatar.dart';
 import '../../../core/theme/app_localizations.dart';
 
 class AccountScreen extends ConsumerWidget {
@@ -54,26 +56,39 @@ class AccountScreen extends ConsumerWidget {
     final rawRole = ref.watch(userRoleProvider);
     final role = UserRoles.normalize(rawRole);
     final hasSession = role != null && role != UserRoles.noSession;
-    final roleLabel = hasSession ? UserRoles.label(role) : 'Not signed in';
+    final locale = ref.watch(localeProvider);
+    // One language: the label used to be "Super Admin (Mamlaka Kamili)" even in
+    // an English session.
+    final roleLabel = hasSession
+        ? tr(locale, UserRoles.labelKey(rawRole))
+        : tr(locale, 'role.notSignedIn');
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                hasSession ? Icons.person_rounded : Icons.person_off_rounded,
-                color: AppTheme.primaryColor,
-                size: 32,
-              ),
-            ),
+            hasSession
+                ? PersonAvatar(
+                    name: staff.name,
+                    grad: staff.grad,
+                    asset: staff.avatarAsset,
+                    size: 64,
+                    radius: 16,
+                  )
+                : Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryLight,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.person_off_rounded,
+                      color: AppTheme.primaryColor,
+                      size: 32,
+                    ),
+                  ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -205,10 +220,14 @@ class AccountScreen extends ConsumerWidget {
 
   Widget _buildMenuSection(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     final role = UserRoles.normalize(ref.watch(userRoleProvider));
-    // Only roles that actually administer people see the admin entry point.
+    final locale = ref.watch(localeProvider);
+    // Only roles that actually administer people see the console entry point.
     // Hiding it is presentation only — the route guard and RLS are the real
-    // enforcement — but showing an admin door to a cashier is misleading.
-    final showAdmin = role == UserRoles.superAdmin || role == UserRoles.branchManager;
+    // enforcement — but showing an admin door to a cashier is misleading, and
+    // labelling a branch console "admin" is misleading in the other direction.
+    final showConsole =
+        role == UserRoles.superAdmin || role == UserRoles.branchManager;
+    final isSuperAdmin = role == UserRoles.superAdmin;
 
     return Card(
       child: Column(
@@ -224,14 +243,21 @@ class AccountScreen extends ConsumerWidget {
             label: l10n.notifications,
             onTap: () => context.push('/notifications'),
           ),
-          if (showAdmin) ...[
+          if (showConsole) ...[
             const Divider(height: 1),
             _MenuItem(
               icon: Icons.admin_panel_settings_rounded,
-              label: l10n.admin_dashboard,
+              label: tr(locale,
+                  isSuperAdmin ? 'account.adminConsole' : 'account.branchConsole'),
               onTap: () => context.push('/admin'),
             ),
           ],
+          const Divider(height: 1),
+          _MenuItem(
+            icon: Icons.settings_outlined,
+            label: tr(locale, 'account.settingsProfile'),
+            onTap: () => context.push('/settings'),
+          ),
           const Divider(height: 1),
           _MenuItem(
             icon: Icons.store_rounded,

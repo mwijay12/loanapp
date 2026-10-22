@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../data/inventory_provider.dart';
 import '../theme/app_theme.dart';
+import '../l10n/strings.dart';
+import '../l10n/locale_provider.dart';
 
 /// Idle handling for the signed-in shell.
 ///
@@ -87,16 +89,16 @@ class _SessionGuardState extends ConsumerState<SessionGuard> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.rLg),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.lock_clock_rounded, color: AppTheme.brand600),
-            SizedBox(width: 10),
-            Text('Session inaisha'),
+            const Icon(Icons.lock_clock_rounded, color: AppTheme.brand600),
+            const SizedBox(width: 10),
+            Text(tr(ref.read(localeProvider), 'session.expiringTitle')),
           ],
         ),
         content: Text(
-          'Hakuna shughuli kwa muda. Session itafungwa baada ya sekunde '
-          '$_secondsLeft. Kama bado uko hapa, gusa "Endelea".',
+          trf(ref.read(localeProvider), 'session.expiringBody',
+              {'n': _secondsLeft}),
           style: const TextStyle(height: 1.5),
         ),
         actions: [
@@ -105,11 +107,11 @@ class _SessionGuardState extends ConsumerState<SessionGuard> {
               Navigator.of(ctx).pop();
               _resume();
             },
-            child: const Text('Endelea'),
+            child: Text(tr(ref.read(localeProvider), 'session.continue')),
           ),
           FilledButton(
             onPressed: _signOut,
-            child: const Text('Toka sasa'),
+            child: Text(tr(ref.read(localeProvider), 'session.signOutNow')),
           ),
         ],
       ),
