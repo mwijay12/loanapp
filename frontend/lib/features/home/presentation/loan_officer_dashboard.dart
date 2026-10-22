@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
-import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/notifications_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
@@ -15,7 +14,11 @@ import 'dashboard_kit.dart';
 ///
 /// The headline is the money still to collect, summed from `loansProvider` as
 /// `amount × (100 − paid) ÷ 100` per open account. Nothing is smoothed: an empty
-/// book reads TZS 0 and the overdue list says there is nothing to chase.
+/// book reads TZS 0 and the arrears line says every account is on schedule.
+///
+/// Arrears are one tappable line, not a list. The list belongs in the loan book,
+/// which is where the row goes — five borrower cards on the home screen only
+/// pushed the credit actions below the fold.
 class LoanOfficerDashboard extends ConsumerWidget {
   const LoanOfficerDashboard({super.key});
 
@@ -35,6 +38,10 @@ class LoanOfficerDashboard extends ConsumerWidget {
     final onTime = loans.isEmpty
         ? 0
         : (((loans.length - overdue.length) / loans.length) * 100).round();
+    final overdueDue = overdue.fold<int>(
+      0,
+      (sum, l) => sum + ((l.amount * (100 - l.paid)) / 100).round(),
+    );
 
     return DashPage(
       children: [
@@ -127,33 +134,26 @@ class LoanOfficerDashboard extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 22),
-        DashSectionHeader(
+        const SizedBox(height: 18),
+        DashAlertRow(
+          icon:
+              overdue.isEmpty ? Icons.verified_rounded : Icons.schedule_rounded,
+          tint: overdue.isEmpty
+              ? const Color(0xFFE7F9EF)
+              : const Color(0xFFFFEDEE),
+          iconColor: overdue.isEmpty
+              ? const Color(0xFF15A34A)
+              : const Color(0xFFE5484D),
           title: tr(locale, 'dash.dueBook'),
-          pill: '${overdue.length}',
-        ),
-        const SizedBox(height: 12),
-        DashListCard(
-          emptyIcon: Icons.check_circle_outline_rounded,
-          emptyText: tr(locale, 'dash.dueEmpty'),
-          children: [
-            for (final LoanItem l in overdue.take(5))
-              DashListRow(
-                icon: Icons.schedule_rounded,
-                tint: const Color(0xFFFFEDEE),
-                iconColor: const Color(0xFFE5484D),
-                title: l.name,
-                sub: trf(locale, 'dash.dueItem', {
-                  'item': l.item,
-                  'paid': l.paid,
+          sub: overdue.isEmpty
+              ? tr(locale, 'dash.dueClearSub')
+              : trf(locale, 'dash.dueAlertSub', {
+                  'amount': LimsFormatters.currency(overdueDue),
                 }),
-                trailing: LimsFormatters.currency(
-                  ((l.amount * (100 - l.paid)) / 100).round(),
-                ),
-                onTap: () => context.go('/loans'),
-              ),
-          ],
+          count: overdue.isEmpty ? null : '${overdue.length}',
+          onTap: () => context.go('/loans'),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }

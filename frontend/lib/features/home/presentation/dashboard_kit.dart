@@ -278,9 +278,7 @@ class DashPillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = onGradient
-        ? Colors.white
-        : null;
+    final bg = onGradient ? Colors.white : null;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -889,8 +887,8 @@ class DashListRow extends StatelessWidget {
                   color: tint ?? const Color(0xFFEAF2FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 18,
-                    color: iconColor ?? const Color(0xFF347FF5)),
+                child: Icon(icon,
+                    size: 18, color: iconColor ?? const Color(0xFF347FF5)),
               ),
               const SizedBox(width: 11),
             ],
@@ -986,8 +984,8 @@ class DashListCard extends StatelessWidget {
                     color: const Color(0xFFEFF5FF),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(emptyIcon,
-                      size: 19, color: const Color(0xFF7A93B8)),
+                  child:
+                      Icon(emptyIcon, size: 19, color: const Color(0xFF7A93B8)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1004,6 +1002,131 @@ class DashListCard extends StatelessWidget {
               ],
             )
           : Column(children: children),
+    );
+  }
+}
+
+/// One compact, tappable line: an icon, a headline figure and a reason to tap.
+///
+/// This exists because a dashboard is a launch pad, not a report. Five borrower
+/// rows on the loan officer's home pushed the actions a screen and a half down,
+/// so the officer scrolled past the thing they were hired to do in order to read
+/// a list they could already open. The same figure in one row keeps the fact and
+/// gives the screen its scroll back.
+class DashAlertRow extends StatelessWidget {
+  const DashAlertRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.tint,
+    required this.iconColor,
+    required this.onTap,
+    this.count,
+  });
+
+  final IconData icon;
+  final String title;
+  final String sub;
+  final Color tint;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  /// Optional tally shown before the chevron. Omitted when there is nothing to
+  /// count, so an empty state does not read "0".
+  final String? count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: DashPalette.hairline),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F2F6BD6),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: tint,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, size: 20, color: iconColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                          color: DashPalette.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        sub,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: DashPalette.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (count != null && count!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: tint,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      count!,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: iconColor,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 19, color: DashPalette.faint),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

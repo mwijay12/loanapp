@@ -173,21 +173,55 @@ void main() {
       expect(find.text('2 active · 1 overdue'), findsOneWidget);
     });
 
-    testWidgets('the overdue book lists the account', (tester) async {
+    testWidgets('arrears are one line with the money, not a borrower list',
+        (tester) async {
       await _pump(
         tester,
         const LoanOfficerDashboard(),
-        loans: [_loan(name: 'Neema', amount: 500000, paid: 0, status: 'overdue')],
+        loans: [
+          _loan(name: 'Neema', amount: 500000, paid: 0, status: 'overdue')
+        ],
       );
       await _scroll(tester, -800);
-      expect(find.text('Neema'), findsOneWidget);
-      expect(find.text('Samsung A15 · 0% paid'), findsOneWidget);
+
+      // The officer still learns how much is out and how many accounts.
+      expect(find.text('Overdue Accounts'), findsOneWidget);
+      expect(find.text('TZS 500,000 still to recover'), findsOneWidget);
+
+      // But the home no longer spends five rows naming borrowers; that list
+      // lives in the loan book the row opens.
+      expect(find.text('Neema'), findsNothing);
+      expect(find.text('Samsung A15 · 0% paid'), findsNothing);
     });
 
-    testWidgets('an empty book says there is nothing to chase', (tester) async {
+    testWidgets('the credit actions stay above the arrears line',
+        (tester) async {
+      await _pump(
+        tester,
+        const LoanOfficerDashboard(),
+        loans: [
+          for (var i = 0; i < 6; i++)
+            _loan(
+                name: 'Borrower $i',
+                amount: 500000,
+                paid: 0,
+                status: 'overdue'),
+        ],
+      );
+      await _scroll(tester, -400);
+
+      // Six overdue accounts must not push the actions off the screen.
+      expect(find.text('Issue Loan'), findsOneWidget);
+      expect(find.text('Borrower 5'), findsNothing);
+    });
+
+    testWidgets('an empty book says every account is on schedule',
+        (tester) async {
       await _pump(tester, const LoanOfficerDashboard());
       await _scroll(tester, -800);
-      expect(find.textContaining('No loan is past due'), findsOneWidget);
+      expect(find.text('Every account is on schedule'), findsOneWidget);
+      // A quiet book shows the reassuring line and no count badge.
+      expect(find.text('Overdue Accounts'), findsOneWidget);
     });
   });
 
@@ -224,7 +258,8 @@ void main() {
   });
 
   group('auditor home', () {
-    testWidgets('inspection only: no selling action is offered', (tester) async {
+    testWidgets('inspection only: no selling action is offered',
+        (tester) async {
       await _pump(tester, const AuditorDashboard());
 
       expect(find.text('Read-only'), findsOneWidget);
@@ -264,7 +299,9 @@ void main() {
         tester,
         screen,
         products: [_phone(id: 1, stock: 4, min: 6)],
-        loans: [_loan(name: 'Juma', amount: 900000, paid: 25, status: 'overdue')],
+        loans: [
+          _loan(name: 'Juma', amount: 900000, paid: 25, status: 'overdue')
+        ],
         sales: [_sale(receipt: 'RCP-1', paid: 900000)],
         size: const Size(360, 640),
       );

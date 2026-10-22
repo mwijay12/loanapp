@@ -133,6 +133,16 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'Hakuna mkopo uliochelewa. Hakuna wa kufuatilia leo.',
   },
   'dash.dueItem': {'en': '{item} · {paid}% paid', 'sw': '{item} · {paid}% imelipwa'},
+  // The home shows one line about arrears and sends the officer to the loan
+  // book. Listing borrowers on the dashboard pushed the actions off-screen.
+  'dash.dueAlertSub': {
+    'en': '{amount} still to recover',
+    'sw': '{amount} bado kurejeshwa',
+  },
+  'dash.dueClearSub': {
+    'en': 'Every account is on schedule',
+    'sw': 'Kila akaunti iko kwenye ratiba',
+  },
 
   'dash.branchToday': {'en': 'Branch Today', 'sw': 'Tawi Leo'},
   'dash.branchCaption': {
