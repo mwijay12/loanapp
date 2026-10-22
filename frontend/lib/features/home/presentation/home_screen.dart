@@ -17,6 +17,10 @@ import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/phone_deals_carousel.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
+import 'auditor_dashboard.dart';
+import 'branch_manager_dashboard.dart';
+import 'cashier_dashboard.dart';
+import 'loan_officer_dashboard.dart';
 import 'storekeeper_dashboard.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -676,11 +680,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .where((p) => p.status == 'low' || p.stock <= p.min)
         .toList();
 
-    // The storekeeper gets its own screen: the shell above already supplies the
-    // navigation, so this replaces only the body of Home for this one role. Every
-    // other role keeps the console it had.
+    // Each operational role now has a home built on the same vocabulary as the
+    // storekeeper screen. The shell above already supplies navigation, so these
+    // replace only the body. Super Admin keeps the HQ layout below — that
+    // console is a different job and is left as it was.
     if (isStorekeeper) {
       return StorekeeperDashboard(onLowStockTap: _showAllLowStock);
+    }
+    if (currentRole == UserRoles.counterCashier) {
+      return const CashierDashboard();
+    }
+    if (isLoanOfficer) {
+      return const LoanOfficerDashboard();
+    }
+    if (isBranchManager) {
+      return BranchManagerDashboard(
+        onLowStockTap: _showAllLowStock,
+        onSupervisorPin: () => _showSupervisorPinDialog(context),
+      );
+    }
+    if (isAuditor) {
+      return const AuditorDashboard();
     }
 
     return Scaffold(
