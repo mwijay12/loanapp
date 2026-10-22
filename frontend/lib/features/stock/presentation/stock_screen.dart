@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/product_art.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/widgets/ui_kit.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
@@ -462,6 +464,51 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         category: p.cat,
       );
 
+  /// Take or choose a real product photo and upload it.
+  ///
+  /// Both buttons used to point at a bundled asset or a stock Unsplash link and
+  /// then claim a photo had been taken or uploaded. Nothing was captured, nothing
+  /// was uploaded, and every product ended up sharing one of two pictures. This
+  /// picks a file, uploads it, and returns the URL - or null when the person
+  /// cancelled or the upload failed, so the caller can say so instead of
+  /// pretending.
+  Future<String?> _pickAndUploadProductPhoto(ImageSource source) async {
+    final XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1400,
+        imageQuality: 85,
+      );
+    } catch (e) {
+      if (mounted) {
+        LimsToast.show(context, 'Could not open the camera or gallery: $e',
+            isError: true);
+      }
+      return null;
+    }
+    if (picked == null) return null;
+
+    try {
+      final bytes = await picked.readAsBytes();
+      final url = await CloudinaryService().uploadImageBytes(
+        bytes: bytes,
+        fileName: picked.name,
+        folder: 'products',
+      );
+      if (url == null && mounted) {
+        LimsToast.show(context, 'Photo upload failed. Check the connection.',
+            isError: true);
+      }
+      return url;
+    } catch (e) {
+      if (mounted) {
+        LimsToast.show(context, 'Photo upload failed: $e', isError: true);
+      }
+      return null;
+    }
+  }
+
   Widget _buildFallbackIcon(ProductItem p, double size) {
     return Container(
       decoration: BoxDecoration(
@@ -615,16 +662,22 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          final url = await _pickAndUploadProductPhoto(
+                              ImageSource.camera);
+                          if (url == null) return;
                           setModalState(() {
-                            selectedAsset = 'assets/images/blue_iphones_duo.png';
-                            selectedUrl = null;
-                            urlCtrl.clear();
+                            selectedAsset = null;
+                            selectedUrl = url;
+                            urlCtrl.text = url;
                           });
-                          LimsToast.show(context, 'Picha ya kamera imepigwa na kubanwa kwa WebP (74 KB)!');
+                          if (mounted) {
+                            LimsToast.show(context, 'Product photo uploaded.',
+                                isSuccess: true);
+                          }
                         },
                         icon: const Icon(Icons.camera_alt_rounded, size: 16, color: AppTheme.brand600),
-                        label: const Text('Piga na Kamera', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
+                        label: const Text('Take photo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFCEE1FE)),
                           padding: const EdgeInsets.symmetric(vertical: 11),
@@ -635,13 +688,19 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          final url = await _pickAndUploadProductPhoto(
+                              ImageSource.gallery);
+                          if (url == null) return;
                           setModalState(() {
                             selectedAsset = null;
-                            selectedUrl = 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80';
-                            urlCtrl.text = selectedUrl!;
+                            selectedUrl = url;
+                            urlCtrl.text = url;
                           });
-                          LimsToast.show(context, 'Product photo set.');
+                          if (mounted) {
+                            LimsToast.show(context, 'Product photo uploaded.',
+                                isSuccess: true);
+                          }
                         },
                         icon: const Icon(Icons.photo_library_rounded, size: 16, color: AppTheme.brand600),
                         label: const Text('Upload photo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
@@ -1492,12 +1551,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                           children: [
                                             Expanded(
                                               child: InkWell(
-                                                onTap: () {
+                                                onTap: () async {
+                                                  final url = await _pickAndUploadProductPhoto(
+                                                      ImageSource.camera);
+                                                  if (url == null) return;
                                                   setModalState(() {
-                                                    selectedAsset = 'assets/images/blue_iphones_duo.png';
-                                                    selectedImageUrl = null;
+                                                    selectedAsset = null;
+                                                    selectedImageUrl = url;
                                                   });
-                                                  LimsToast.show(context, 'Picha ya kamera imepigwa na kubanwa kwa WebP (74 KB)!');
                                                 },
                                                 borderRadius: BorderRadius.circular(8),
                                                 child: Container(
@@ -1513,7 +1574,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                                       Icon(Icons.camera_alt_rounded, size: 13, color: AppTheme.brand600),
                                                       SizedBox(width: 4),
                                                       Text(
-                                                        'Piga Kamera',
+                                                        'Take photo',
                                                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
                                                       ),
                                                     ],
@@ -1524,12 +1585,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: InkWell(
-                                                onTap: () {
+                                                onTap: () async {
+                                                  final url = await _pickAndUploadProductPhoto(
+                                                      ImageSource.gallery);
+                                                  if (url == null) return;
                                                   setModalState(() {
                                                     selectedAsset = null;
-                                                    selectedImageUrl = 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80';
+                                                    selectedImageUrl = url;
                                                   });
-                                                  LimsToast.show(context, 'Picha ya Galari imechaguliwa na kubanwa (74 KB)!');
                                                 },
                                                 borderRadius: BorderRadius.circular(8),
                                                 child: Container(
