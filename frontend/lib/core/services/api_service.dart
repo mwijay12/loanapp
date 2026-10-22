@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_constants.dart';
+import '../data/store_movement.dart';
 
 /// Supabase Backend Configuration for LIMS
 /// Organization: hvqssaxwrrmewmvqujus
@@ -11,7 +12,8 @@ class SupabaseConfig {
   // Injected at build time: flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
   // Never hardcode JWTs in source - use CI secrets / local --dart-define.
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String supabaseAnonKey =
+      String.fromEnvironment('SUPABASE_ANON_KEY');
 
   /// True when a build was given both halves of the client configuration.
   ///
@@ -43,7 +45,8 @@ class ApiService {
   /// P0: fails loud when --dart-define values are missing so a misbuilt
   /// APK can never silently run against no backend.
   Future<void> init() async {
-    if (SupabaseConfig.supabaseUrl.isEmpty || SupabaseConfig.supabaseAnonKey.isEmpty) {
+    if (SupabaseConfig.supabaseUrl.isEmpty ||
+        SupabaseConfig.supabaseAnonKey.isEmpty) {
       throw StateError(
         'Missing SUPABASE_URL / SUPABASE_ANON_KEY. '
         'Build with --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...',
@@ -65,7 +68,8 @@ class ApiService {
         _client = Supabase.instance.client;
         _isInitialized = true;
       } catch (e) {
-      _report('backend call', e);}
+        _report('backend call', e);
+      }
     }
   }
 
@@ -107,7 +111,8 @@ class ApiService {
     try {
       await client.rpc('heartbeat_probe');
     } catch (e) {
-      _report('backend call', e);}
+      _report('backend call', e);
+    }
   }
 
   // ------------------------------------------------------------- Authentication & Staff Profiles
@@ -222,7 +227,7 @@ class ApiService {
             .eq('id', user.id)
             .maybeSingle();
       } catch (e) {
-      _report('backend call', e);
+        _report('backend call', e);
         // id is not an auth id on every schema — fall through.
       }
     }
@@ -235,7 +240,7 @@ class ApiService {
             .eq('email', user.email ?? email)
             .maybeSingle();
       } catch (e) {
-      _report('backend call', e);
+        _report('backend call', e);
         // Leave res null; the fail-closed branch below reports it.
       }
     }
@@ -259,9 +264,8 @@ class ApiService {
       'email': user.email ?? email,
       'phone': (res == null ? null : res['phone'] as String?) ?? '',
       'role': role,
-      'branch':
-          (res == null ? null : res['branch_name'] as String?) ??
-              AppConstants.launchBranch,
+      'branch': (res == null ? null : res['branch_name'] as String?) ??
+          AppConstants.launchBranch,
       // The person's chosen portrait, so the header draws them and not a
       // role placeholder.
       'avatar': res == null ? null : res['avatar_asset'] as String?,
@@ -325,11 +329,8 @@ class ApiService {
         return ImeiLookup(imei: imei, status: 'in_stock', row: product);
       }
 
-      final loan = await client
-          .from('loans')
-          .select()
-          .eq('imei', imei)
-          .maybeSingle();
+      final loan =
+          await client.from('loans').select().eq('imei', imei).maybeSingle();
 
       if (loan != null) {
         final overdue = (loan['status'] as String?) == 'overdue';
@@ -349,7 +350,8 @@ class ApiService {
 
   Future<Map<String, dynamic>?> getProductBySku(String sku) async {
     try {
-      final response = await client.from('products').select().eq('sku', sku).maybeSingle();
+      final response =
+          await client.from('products').select().eq('sku', sku).maybeSingle();
       return response != null ? Map<String, dynamic>.from(response) : null;
     } catch (e) {
       _report('backend call', e);
@@ -370,7 +372,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> createLoan(Map<String, dynamic> data) async {
     try {
-      final response = await client.from('loans').insert(data).select().single();
+      final response =
+          await client.from('loans').insert(data).select().single();
       return Map<String, dynamic>.from(response);
     } catch (e) {
       _report('backend call', e);
@@ -396,6 +399,101 @@ class ApiService {
     } catch (e) {
       _report('list stock units', e);
       return [];
+    }
+  }
+
+  /// What arrived at one branch since [since], counted from the delivery and
+  /// serial ledgers.
+  ///
+  /// The dashboard used to print "14 IMEIs added · 2 POs" because the design
+  /// said so. A shop that received nothing today must read zero, and a build
+  /// with no database must say so instead of implying an empty day.
+  Future<StoreDayCounts> getStoreDayCounts({
+    required String branch,
+    required DateTime since,
+  }) async {
+    if (!isConfigured) return const StoreDayCounts.unavailable();
+    final iso = since.toUtc().toIso8601String();
+    try {
+      final receipts = await client
+          .from('stock_receipts')
+          .select('id, source')
+          .eq('branch', branch)
+          .gte('received_at', iso);
+      final units = await client
+          .from('product_units')
+          .select('id')
+          .eq('branch', branch)
+          .gte('received_at', iso);
+
+      final receiptRows = List<Map<String, dynamic>>.from(receipts);
+      return StoreDayCounts(
+        serialsAdded: List<Map<String, dynamic>>.from(units).length,
+        deliveries: receiptRows.length,
+        purchaseOrders:
+            receiptRows.where((r) => r['source'] == 'supplier').length,
+        available: true,
+      );
+    } catch (e) {
+      _report('store day counts', e);
+      return const StoreDayCounts.unavailable();
+    }
+  }
+
+  /// The latest deliveries at one branch, newest first, with their lines.
+  ///
+  /// Lines are fetched separately rather than through an embedded select so a
+  /// branch with no lines still reads as an empty day instead of an error.
+  Future<List<StockMovement>> getRecentStoreMovements({
+    required String branch,
+    int limit = 6,
+  }) async {
+    if (!isConfigured) return const [];
+    try {
+      final rows = await client
+          .from('stock_receipts')
+          .select(
+              'id, branch, source, units, supplier_name, invoice_no, from_branch, received_at')
+          .eq('branch', branch)
+          .order('received_at', ascending: false)
+          .limit(limit);
+      final receipts = List<Map<String, dynamic>>.from(rows);
+      if (receipts.isEmpty) return const [];
+
+      final ids = receipts.map((r) => r['id']).toList();
+      final lineRows = await client
+          .from('stock_receipt_lines')
+          .select('receipt_id, sku, name, qty')
+          .inFilter('receipt_id', ids);
+
+      final byReceipt = <dynamic, List<StockMovementLine>>{};
+      for (final l in List<Map<String, dynamic>>.from(lineRows)) {
+        final key = l['receipt_id'];
+        byReceipt.putIfAbsent(key, () => []).add(StockMovementLine(
+              name: (l['name'] ?? '').toString(),
+              qty: (l['qty'] as num?)?.toInt() ?? 0,
+              sku: l['sku']?.toString(),
+            ));
+      }
+
+      return [
+        for (final r in receipts)
+          StockMovement(
+            id: (r['id'] as num?)?.toInt() ?? 0,
+            branch: (r['branch'] ?? '').toString(),
+            source: (r['source'] ?? '').toString(),
+            units: (r['units'] as num?)?.toInt() ?? 0,
+            receivedAt: DateTime.tryParse((r['received_at'] ?? '').toString())
+                ?.toLocal(),
+            supplierName: r['supplier_name']?.toString(),
+            fromBranch: r['from_branch']?.toString(),
+            invoiceNo: r['invoice_no']?.toString(),
+            lines: byReceipt[r['id']] ?? const [],
+          ),
+      ];
+    } catch (e) {
+      _report('recent stock movements', e);
+      rethrow;
     }
   }
 
@@ -448,7 +546,8 @@ class ApiService {
       final byModel = <String, int>{};
       for (final r in rows) {
         final model = (r['model'] as String?)?.trim();
-        final key = (model == null || model.isEmpty) ? 'Unspecified handset' : model;
+        final key =
+            (model == null || model.isEmpty) ? 'Unspecified handset' : model;
         byModel[key] = (byModel[key] ?? 0) + 1;
       }
       await client.from('stock_receipt_lines').insert([
@@ -597,7 +696,11 @@ class ApiService {
   // ------------------------------------------------------------- Activities Feed
   Future<List<Map<String, dynamic>>> getActivities() async {
     try {
-      final response = await client.from('activities').select().order('created_at', ascending: false).limit(20);
+      final response = await client
+          .from('activities')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(20);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       _report('backend call', e);
@@ -608,7 +711,8 @@ class ApiService {
   // ------------------------------------------------------------- Attendance
   Future<Map<String, dynamic>> checkIn(Map<String, dynamic> data) async {
     try {
-      final response = await client.from('attendance').insert(data).select().single();
+      final response =
+          await client.from('attendance').insert(data).select().single();
       return Map<String, dynamic>.from(response);
     } catch (e) {
       _report('backend call', e);
