@@ -570,7 +570,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -587,7 +587,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: Colors.white.withOpacity(0.8),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -597,9 +597,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: Colors.white.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
                       child: Column(
                         children: [
@@ -618,7 +618,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                           Text(
                             'Super Admin is exempt from daily retail till clock-in. You have global oversight across all branches.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11),
+                            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
                           ),
                           const SizedBox(height: 10),
                           SizedBox(
@@ -704,7 +704,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.75),
+                      color: Colors.white.withOpacity(0.75),
                     ),
                   ),
                 ],

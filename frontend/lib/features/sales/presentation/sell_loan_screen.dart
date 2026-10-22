@@ -593,7 +593,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppTheme.brand600.withValues(alpha: 0.12),
+                            color: AppTheme.brand600.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -1299,7 +1299,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<int>(
-                  initialValue: _installmentWeeks,
+                  value: _installmentWeeks,
                   decoration: InputDecoration(
                     labelText: tr(_locale, 'sell.term'),
                     border: OutlineInputBorder(),

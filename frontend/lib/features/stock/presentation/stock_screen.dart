@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/l10n/locale_provider.dart';
-import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/services/haptics.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/widgets/ui_kit.dart';
+import '../../../core/l10n/strings.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/services/cloudinary_service.dart';
-import '../../../core/services/haptics.dart';
 import '../../../core/data/supabase_source.dart';
-import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/view_toggle.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
@@ -575,41 +577,37 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   Widget _buildStatusBadge(String status) {
+    Color bgColor;
+    Color textColor;
+    String label;
+
     if (status == 'in') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE7F8F0),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: const Text(
-          'In Stock',
-          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF12B76A)),
-        ),
-      );
+      bgColor = const Color(0xFFE8F9F0);
+      textColor = const Color(0xFF12B76A);
+      label = 'In Stock';
+    } else if (status == 'low') {
+      bgColor = const Color(0xFFFFFBEB);
+      textColor = const Color(0xFFD97706);
+      label = 'Low Stock';
+    } else {
+      bgColor = const Color(0xFFFFF1F2);
+      textColor = const Color(0xFFF43F5E);
+      label = 'Out of Stock';
     }
-    if (status == 'low') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFEDF1),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: const Text(
-          'Low Stock',
-          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFFF43F5E)),
-        ),
-      );
-    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(6),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'Out of Stock',
-        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
       ),
     );
   }
@@ -617,7 +615,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Widget _buildQuickStockBtn(ProductItem p, bool isAdd) {
     return InkWell(
       onTap: () {
-        Haptics.light();
+        Haptics.tap();
         _showAdjustStockModal(p, isAdd);
       },
       borderRadius: BorderRadius.circular(8),
@@ -1330,12 +1328,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.78,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.7,
                 ),
                 itemCount: products.length,
                 itemBuilder: (_, i) => _buildProductTile(products[i]),
@@ -1369,125 +1367,120 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             Haptics.tap();
             _showProductDetail(p);
           },
-          // Long press is the owner's shortcut: the same three things the detail
-          // sheet offers, without walking into it.
           onLongPress: () {
             Haptics.longPress();
             _showQuickActions(p);
           },
           borderRadius: BorderRadius.circular(18),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      // Thumbnail / Real Phone Photo
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0A0F3478),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: _buildProductThumbnail(p, iconSize: 24),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Name & SKU
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.name,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.ink900,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${p.sku} · ${p.stock} in stock',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.ink500,
-                              ),
-                            ),
-                            if (p.onOffer) ...[
-                              const SizedBox(height: 3),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF7E6),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border:
-                                      Border.all(color: const Color(0xFFFDE68A)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.local_fire_department_rounded,
-                                        size: 11, color: Color(0xFFD97706)),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      tr(ref.read(localeProvider), 'deals.onOffer'),
-                                      style: const TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFFB45309),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      // Stock Management Quick Buttons (Storekeeper / Manager)
-                      if (UserRoles.canManageStock(ref.read(userRoleProvider)))
-                        Row(
-                          children: [
-                            _buildQuickStockBtn(p, false),
-                            const SizedBox(width: 4),
-                            _buildQuickStockBtn(p, true),
-                          ],
-                        ),
-
-                      const SizedBox(width: 8),
-
-                      // Price & Status Badge
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            p.shortPrice,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.ink900,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _buildStatusBadge(p.status),
-                        ],
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Thumbnail / Real Phone Photo
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A0F3478),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _buildProductThumbnail(p, iconSize: 24),
+                ),
+                const SizedBox(width: 12),
+
+                // Name & SKU
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.name,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.ink900,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${p.sku} · ${p.stock} in stock',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.ink500,
+                        ),
+                      ),
+                      if (p.onOffer) ...[
+                        const SizedBox(height: 3),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7E6),
+                            borderRadius: BorderRadius.circular(6),
+                            border:
+                                Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.local_fire_department_rounded,
+                                  size: 11, color: Color(0xFFD97706)),
+                              const SizedBox(width: 3),
+                              Text(
+                                tr(ref.read(localeProvider), 'deals.onOffer'),
+                                style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Stock Management Quick Buttons (Storekeeper / Manager)
+                if (UserRoles.canManageStock(ref.read(userRoleProvider)))
+                  Row(
+                    children: [
+                      _buildQuickStockBtn(p, false),
+                      const SizedBox(width: 4),
+                      _buildQuickStockBtn(p, true),
+                    ],
+                  ),
+
+                const SizedBox(width: 8),
+
+                // Price & Status Badge
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      p.shortPrice,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildStatusBadge(p.status),
+                  ],
                 ),
                 const SizedBox(width: 8),
 
@@ -1522,29 +1515,26 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   /// One card in the two-column grid.
-  ///
-  /// The same product, the same actions, a different shape: at a glance the
-  /// counter sees more of the shelf, which is what the grid is for. The price and
-  /// the status stay, because a card that does not say "in stock" is decoration.
   Widget _buildProductTile(ProductItem p) {
     final locale = ref.read(localeProvider);
+    final userRole = ref.watch(userRoleProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE9EFF7)),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0C0F3478),
-            blurRadius: 18,
-            offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             Haptics.tap();
             _showProductDetail(p);
@@ -1555,25 +1545,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Product Hero Image Area
+              // 1. IMAGE SECTION (top ~60%)
               Expanded(
                 flex: 12,
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(21)),
-                  ),
-                  clipBehavior: Clip.antiAlias,
+                child: ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                   child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: _buildProductThumbnail(p, iconSize: 84),
-                        ),
-                      ),
+                      _buildHeroImage(p),
+
+                      // ON OFFER Badge (if applicable)
                       if (p.onOffer)
                         Positioned(
                           top: 10,
@@ -1590,7 +1575,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFFF4D00).withOpacity(0.3),
+                                  color:
+                                      const Color(0xFFFF4D00).withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -1615,9 +1601,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             ),
                           ),
                         ),
-                      
+
                       // Quick Stock Buttons for Managers
-                      if (UserRoles.canManageStock(ref.read(userRoleProvider)))
+                      if (UserRoles.canManageStock(userRole))
                         Positioned(
                           bottom: 10,
                           right: 10,
@@ -1635,61 +1621,86 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 ),
               ),
 
-              // Product Info Area
-              Expanded(
-                flex: 8,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.ink900,
-                        ),
+              // 2. INFO SECTION (Padding 12)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${p.sku} · ${p.stock} units',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.ink500,
-                        ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${p.sku} · ${p.stock} in stock',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[500],
                       ),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              p.shortPrice,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                                color: AppTheme.brand600,
-                              ),
-                            ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          p.shortPrice,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(width: 4),
-                          _buildStatusBadge(p.status),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        const Spacer(),
+                        _buildStatusBadge(p.status),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroImage(ProductItem p) {
+    final isTransparent = p.imageAsset != null ||
+        (p.imageUrl != null && p.imageUrl!.toLowerCase().contains('.png'));
+
+    return Container(
+      color: const Color(0xFFF8F9FB),
+      child: p.imageUrl != null && p.imageUrl!.isNotEmpty
+          ? CachedNetworkImage(
+              imageUrl: p.imageUrl!,
+              fit: isTransparent ? BoxFit.contain : BoxFit.cover,
+              placeholder: (context, url) =>
+                  Container(color: const Color(0xFFF0F1F5)),
+              errorWidget: (context, url, error) => _buildImageErrorFallback(),
+            )
+          : (p.imageAsset != null && p.imageAsset!.isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Image.asset(p.imageAsset!, fit: BoxFit.contain),
+                )
+              : _buildImageErrorFallback()),
+    );
+  }
+
+  Widget _buildImageErrorFallback() {
+    return Container(
+      color: const Color(0xFFF5F6FA),
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          size: 40,
+          color: Colors.grey,
         ),
       ),
     );

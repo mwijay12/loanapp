@@ -503,7 +503,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
           ],
           if (_source == StockSource.transfer) ...[
             DropdownButtonFormField<String>(
-              initialValue: _fromBranch,
+              value: _fromBranch,
               isExpanded: true,
               style: const TextStyle(fontSize: 13, color: AppTheme.ink900),
               decoration: InputDecoration(

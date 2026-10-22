@@ -374,7 +374,7 @@ class SupabaseSource {
       return ActivityItem(
         icon: iconFor(r['icon_name']?.toString()),
         iconColor: color,
-        bgColor: color.withValues(alpha: 0.12),
+        bgColor: color.withOpacity(0.12),
         title: (r['title'] ?? '').toString(),
         description: (r['detail'] ?? '').toString(),
         time: (r['time_label'] ?? '').toString(),

@@ -213,7 +213,7 @@ class _NotificationCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: read ? const Color(0xFFE8EEF7) : tint.withValues(alpha: 0.35),
+          color: read ? const Color(0xFFE8EEF7) : tint.withOpacity(0.35),
           width: read ? 1 : 1.4,
         ),
       ),
@@ -231,7 +231,7 @@ class _NotificationCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: tint.withValues(alpha: 0.10),
+                    color: tint.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -388,7 +388,7 @@ class NotificationDetailScreen extends ConsumerWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: tint.withValues(alpha: 0.10),
+                    color: tint.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(

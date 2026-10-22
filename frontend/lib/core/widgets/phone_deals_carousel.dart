@@ -5,6 +5,8 @@ import '../theme/app_theme.dart';
 import '../data/inventory_provider.dart';
 import '../data/mock_lims_data.dart';
 import '../services/haptics.dart';
+import '../constants/app_constants.dart';
+import '../data/inventory_provider.dart';
 import 'ui_kit.dart';
 
 /// The card and the carousel viewport that holds it are the same height.
@@ -361,7 +363,7 @@ class FeaturedPhoneDealCard extends ConsumerWidget {
   Widget _buildStockBtn(BuildContext context, WidgetRef ref, ProductItem p, bool isAdd) {
     return GestureDetector(
       onTap: () {
-        Haptics.light();
+        Haptics.tap();
         _showAdjustStock(context, ref, p, isAdd);
       },
       child: Container(

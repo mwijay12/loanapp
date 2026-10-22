@@ -189,7 +189,7 @@ class _AiAssistantCardState extends ConsumerState<AiAssistantCard>
         border: Border.all(color: const Color(0xFFE8E6F0), width: 1),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF14213D).withValues(alpha: 0.04),
+            color: const Color(0xFF14213D).withOpacity(0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -336,7 +336,7 @@ class _AiAssistantCardState extends ConsumerState<AiAssistantCard>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                  color: AppTheme.primaryColor.withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -423,7 +423,7 @@ class _RobotFacePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     final headPaint = Paint()
-      ..color = AppTheme.primaryColor.withValues(alpha: 0.9)
+      ..color = AppTheme.primaryColor.withOpacity(0.9)
       ..style = PaintingStyle.fill;
 
     final headRect = RRect.fromRectAndRadius(
@@ -519,7 +519,7 @@ class _RobotFacePainter extends CustomPainter {
 
     if (state == AiState.happy && !isReducedMotion) {
       final sparklePaint = Paint()
-        ..color = AppTheme.warningColor.withValues(alpha: 0.6)
+        ..color = AppTheme.warningColor.withOpacity(0.6)
         ..style = PaintingStyle.fill;
       _drawSparkle(canvas, Offset(center.dx + 18, center.dy - 18), 4, sparklePaint);
       _drawSparkle(canvas, Offset(center.dx - 18, center.dy - 14), 3, sparklePaint);

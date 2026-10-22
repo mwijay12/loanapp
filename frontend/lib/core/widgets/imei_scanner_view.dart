@@ -129,7 +129,7 @@ class ImeiScannerViewState extends State<ImeiScannerView> {
             MobileScanner(
               controller: controller,
               onDetect: _onDetect,
-              errorBuilder: (context, error) {
+              errorBuilder: (context, error, child) {
                 // A browser without a camera, or a denied permission, lands here.
                 return _cameraUnavailable(error.errorCode.name);
               },
@@ -141,7 +141,7 @@ class ImeiScannerViewState extends State<ImeiScannerView> {
               bottom: 0,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                color: Colors.black.withValues(alpha: 0.55),
+                color: Colors.black.withOpacity(0.55),
                 child: Text(
                   _hint ?? tr(_locale, 'scan.looking'),
                   textAlign: TextAlign.center,

@@ -612,15 +612,15 @@ class _ViewInventoryButton extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          border: Border.all(color: Colors.white.withOpacity(0.18)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF246BFD).withValues(alpha: 0.34),
+              color: const Color(0xFF246BFD).withOpacity(0.34),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withOpacity(0.55),
               blurRadius: 1,
               offset: const Offset(0, -1),
             ),
@@ -680,7 +680,7 @@ class _AiAssistantCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7757F8).withValues(alpha: 0.30),
+              color: const Color(0xFF7757F8).withOpacity(0.30),
               blurRadius: 22,
               offset: const Offset(0, 12),
             ),
@@ -731,7 +731,7 @@ class _AiAssistantCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.78),
+                              color: Colors.white.withOpacity(0.78),
                             ),
                           ),
                         ],
@@ -747,10 +747,10 @@ class _AiAssistantCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.20),
+                    color: Colors.white.withOpacity(0.20),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.38),
+                      color: Colors.white.withOpacity(0.38),
                     ),
                   ),
                   child: const Icon(Icons.arrow_forward_rounded,

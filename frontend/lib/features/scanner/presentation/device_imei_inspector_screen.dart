@@ -1109,7 +1109,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
               child: Icon(icon, size: 14, color: color),
             ),
             if (!isLast) Container(width: 2, height: 26, color: const Color(0xFFE2E8F0)),

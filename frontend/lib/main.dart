@@ -139,12 +139,12 @@ class _LoanInventoryAppState extends ConsumerState<LoanInventoryApp> {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0D1B34).withValues(alpha: 0.16),
+                        color: const Color(0xFF0D1B34).withOpacity(0.16),
                         blurRadius: 40,
                         offset: const Offset(0, 16),
                       ),
                       BoxShadow(
-                        color: const Color(0xFF1B6EF3).withValues(alpha: 0.08),
+                        color: const Color(0xFF1B6EF3).withOpacity(0.08),
                         blurRadius: 18,
                         offset: const Offset(0, 4),
                       ),

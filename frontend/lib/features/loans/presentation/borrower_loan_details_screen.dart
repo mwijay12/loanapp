@@ -1422,7 +1422,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           padding: const EdgeInsets.all(32),
           child: Column(
             children: [
-              Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.ink500.withValues(alpha: 0.5)),
+              Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.ink500.withOpacity(0.5)),
               const SizedBox(height: 12),
               Text(
                 tr(_locale, 'borrower.noPayments'),

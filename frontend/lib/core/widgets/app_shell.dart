@@ -542,7 +542,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
+                color: iconColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, size: 18, color: iconColor),
@@ -680,7 +680,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1B6EF3).withValues(alpha: 0.38),
+                        color: const Color(0xFF1B6EF3).withOpacity(0.38),
                         blurRadius: 14,
                         offset: const Offset(0, 5),
                       ),

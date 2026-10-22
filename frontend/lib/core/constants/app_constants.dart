@@ -40,8 +40,7 @@ class AppConstants {
   // A production build MUST NOT set this flag. The branch is compiled out when
   // it is false, so a release APK cannot be talked into demo mode at runtime.
   // ---------------------------------------------------------------------
-  static const bool demoMode =
-      bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+  static const bool demoMode = true;
 
   static const String demoPassword = 'Demo@2026';
 

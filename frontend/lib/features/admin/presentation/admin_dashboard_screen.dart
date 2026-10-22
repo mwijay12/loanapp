@@ -1405,7 +1405,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         color: AppTheme.ink900)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  initialValue: currentRole,
+                  value: currentRole,
                   // Built from the canonical role list so the dropdown can
                   // never drift from what the database accepts.
                   items: [
@@ -1535,7 +1535,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppTheme.brand600,
+            thumbColor: WidgetStatePropertyAll( AppTheme.brand600),
           ),
         ],
       ),
@@ -1623,7 +1623,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  initialValue: selectedRole,
+                  value: selectedRole,
                   items: [
                     for (final role in UserRoles.assignable)
                       DropdownMenuItem(value: role, child: Text(role)),
@@ -1642,7 +1642,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  initialValue: selectedBranch,
+                  value: selectedBranch,
                   // Driven by AppConstants.branches. The old hand-written list
                   // omitted Mbagala entirely, so a Mbagala staff member could
                   // not be assigned to their own branch.
