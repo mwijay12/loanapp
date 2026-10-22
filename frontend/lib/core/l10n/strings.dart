@@ -55,6 +55,8 @@ const Map<String, Map<String, String>> _dictionary = {
   },
   'skdash.viewInventory': {'en': 'View Inventory', 'sw': 'Angalia Stoo'},
   'skdash.services': {'en': 'Services', 'sw': 'Huduma'},
+  'skdash.aiTitle': {'en': 'AI Assistant', 'sw': 'Msaidizi wa AI'},
+  'skdash.aiSub': {'en': 'Ask anything', 'sw': 'Uliza chochote'},
   'skdash.recentActivity': {
     'en': 'Recent Activity',
     'sw': 'Shughuli za Karibuni'

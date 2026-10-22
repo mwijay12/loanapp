@@ -80,6 +80,8 @@ void main() {
     expect(find.text('Storekeeper'), findsOneWidget);
     expect(find.text('Search IMEI, model, serial...'), findsOneWidget);
     expect(find.text("Today's Stock Activity"), findsOneWidget);
+    expect(find.text('AI Assistant'), findsOneWidget);
+    expect(find.text('Ask anything'), findsOneWidget);
 
     await _scrollDown(tester);
     expect(find.text('Services'), findsOneWidget);
@@ -102,6 +104,41 @@ void main() {
 
     // Tecno (1/6), Redmi (2/6) and itel (0/6) are below their minimum.
     expect(find.text('3 low stock alerts'), findsOneWidget);
+  });
+
+  testWidgets('the AI card is a real shortcut, not decoration', (tester) async {
+    await _pump(tester, products: products);
+
+    // The card paints the 3D orb artwork and sits above the service row.
+    final ai = find.text('AI Assistant');
+    expect(ai, findsOneWidget);
+    expect(find.text('Ask anything'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) =>
+          w is Image &&
+          w.image is AssetImage &&
+          (w.image as AssetImage).assetName == 'assets/images/ai_orb_card.jpg'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the service shortcuts paint the 3D renders', (tester) async {
+    await _pump(tester, products: products);
+    await _scrollDown(tester);
+
+    Finder art(String asset) => find.byWidgetPredicate((w) =>
+        w is Image &&
+        w.image is AssetImage &&
+        (w.image as AssetImage).assetName == asset);
+
+    // The row scrolls, so only the tiles on screen are built at first.
+    expect(art('assets/images/icon_box_3d.png'), findsOneWidget);
+    expect(art('assets/images/icon_truck_3d.png'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView).at(1), const Offset(-320, 0));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(art('assets/images/icon_chart_3d.png'), findsOneWidget);
   });
 
   testWidgets('an empty ledger reads zero and says nothing was recorded',
