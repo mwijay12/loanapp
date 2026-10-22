@@ -7,7 +7,9 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/services/haptics.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/view_toggle.dart';
 import 'borrower_loan_details_screen.dart';
 
 class LoansScreen extends ConsumerStatefulWidget {
@@ -20,6 +22,11 @@ class LoansScreen extends ConsumerStatefulWidget {
 class _LoansScreenState extends ConsumerState<LoansScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'all'; // 'all', 'overdue', 'current', 'locked'
+
+  /// Rows or cards. A loan officer scanning forty borrowers wants names in a
+  /// column; an owner looking for who is behind wants the cards. Both are one
+  /// tap apart, and the choice is not remembered across visits.
+  CollectionView _view = CollectionView.list;
 
   /// Opening a loan goes to the counters' real flow.
   ///
@@ -235,6 +242,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.ink500),
                   ),
                 ),
+                const SizedBox(width: 8),
+                ViewToggle(
+                  view: _view,
+                  locale: locale,
+                  onChanged: (v) => setState(() => _view = v),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -265,11 +278,370 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                   ),
                 ),
               )
+            else if (_view == CollectionView.grid)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.84,
+                ),
+                itemCount: filteredLoans.length,
+                itemBuilder: (_, i) => _buildLoanTile(filteredLoans[i], locale),
+              )
             else
               ...filteredLoans.map((l) => _buildLoanCard(l, locale)),
           ],
         ),
       ),
+    );
+  }
+
+  void _openLoan(LoanItem l) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => BorrowerLoanDetailsScreen(loanId: l.id, initialLoan: l),
+      ),
+    );
+  }
+
+  /// One card in the two-column loan grid: who, what they hold, how far paid.
+  Widget _buildLoanTile(LoanItem l, Locale locale) {
+    final isOverdue = l.status == 'overdue';
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isOverdue ? const Color(0xFFFECDD3) : const Color(0xFFE9EFF7),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0C0F3478),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            Haptics.tap();
+            _openLoan(l);
+          },
+          onLongPress: () {
+            Haptics.longPress();
+            _showLoanPeek(l, locale);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: l.grad,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          l.initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (isOverdue)
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEDF1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'OVERDUE',
+                          style: TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.errorColor,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 9),
+                Text(
+                  l.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                    color: AppTheme.ink900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l.item,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.ink500,
+                  ),
+                ),
+                const Spacer(),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    value: l.paidPercent / 100.0,
+                    minHeight: 5,
+                    backgroundColor: const Color(0xFFE9F2FF),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isOverdue ? AppTheme.errorColor : AppTheme.brand600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${l.paidPercent}% · Salio ${l.formattedRemainingAmount}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: l.remainingAmount > 0
+                        ? AppTheme.errorColor
+                        : AppTheme.successColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// What a long press on a loan row opens: the same facts the row carries, in
+  /// one panel, plus the way into the file.
+  void _showLoanPeek(LoanItem l, Locale locale) {
+    final isOverdue = l.status == 'overdue';
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                tr(locale, 'loans.peekTitle'),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF9AA8BF),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: l.grad),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Center(
+                      child: Text(
+                        l.initials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.ink900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l.phone.isEmpty ? l.item : '${l.item} · ${l.phone}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.ink500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isOverdue
+                          ? const Color(0xFFFFEDF1)
+                          : const Color(0xFFE7F8F0),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      isOverdue ? 'Overdue' : 'Current',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: isOverdue
+                            ? AppTheme.errorColor
+                            : AppTheme.successColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _peekStat(
+                      label: 'Imelipwa',
+                      value: '${l.paidPercent}%',
+                    ),
+                  ),
+                  Expanded(
+                    child: _peekStat(
+                      label: 'Salio',
+                      value: l.formattedRemainingAmount,
+                      color: l.remainingAmount > 0
+                          ? AppTheme.errorColor
+                          : AppTheme.successColor,
+                    ),
+                  ),
+                  Expanded(
+                    child: _peekStat(label: 'Due', value: l.due),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _openLoan(l);
+                  },
+                  icon: const Icon(Icons.folder_open_rounded, size: 17),
+                  label: Text(
+                    tr(locale, 'loans.viewDossier'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.brand600,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(tr(locale, 'common.close')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _peekStat({required String label, required String value, Color? color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF9AA8BF),
+          ),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: color ?? AppTheme.ink900,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -377,12 +749,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (ctx) => BorrowerLoanDetailsScreen(loanId: l.id, initialLoan: l),
-              ),
-            );
+            Haptics.tap();
+            _openLoan(l);
+          },
+          onLongPress: () {
+            Haptics.longPress();
+            _showLoanPeek(l, locale);
           },
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -466,7 +838,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(99),
                             child: LinearProgressIndicator(
-                              value: l.paid / 100.0,
+                              value: l.paidPercent / 100.0,
                               minHeight: 5,
                               backgroundColor: const Color(0xFFE9F2FF),
                               valueColor: AlwaysStoppedAnimation<Color>(
@@ -480,7 +852,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  '${l.paid}% imelipwa',
+                                  '${l.paidPercent}% imelipwa',
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 10.5,
@@ -554,9 +926,17 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text(
-                      tr(locale, 'loans.viewDossier'),
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+                    // The label can be long (EN "View borrower dossier & schedule",
+                    // SW "Fungua wasifu na ratiba"), so it must be allowed to
+                    // shrink instead of pushing the arrow out of the card.
+                    Flexible(
+                      child: Text(
+                        tr(locale, 'loans.viewDossier'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+                      ),
                     ),
                     const SizedBox(width: 4),
                     const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppTheme.brand600),

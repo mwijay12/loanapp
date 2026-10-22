@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import '../constants/app_constants.dart';
 import '../data/lims_repository.dart';
 import '../data/mock_lims_data.dart';
+import '../data/loan_balance.dart';
 
 class PdfReportService {
   PdfReportService._();
@@ -422,12 +423,20 @@ class PdfReportService {
   // ------------------------------------------------------------ POS receipt
   /// Counter receipt for a completed sale, printed while the customer is still
   /// at the till. Cash and loan sales both land here.
-  static Future<void> generateAndDownloadSaleReceipt({
+  ///
+  /// A receipt is the shop's written claim that it holds this sale, so this
+  /// refuses any sale the ledger has not confirmed — including a demo sale that
+  /// completed without a database. The rule lives here as well as in the till
+  /// so that no future caller can print a paper trail for a row that does not
+  /// exist. Returns true only when a receipt was actually handed to the printer.
+  static Future<bool> generateAndDownloadSaleReceipt({
     PdfLang lang = PdfLang.en,
     required POSSaleResult sale,
     required String branchName,
     required String servedBy,
   }) async {
+    if (!sale.isSaved) return false;
+
     final l = PdfLabels(lang);
     final pdf = pw.Document();
 
@@ -514,6 +523,7 @@ class PdfReportService {
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: 'LIMS_${l.receiptFilePrefix}_${sale.receiptId}.pdf',
     );
+    return true;
   }
 
   // ------------------------------------------------------- Customer statement
@@ -528,12 +538,18 @@ class PdfReportService {
     final l = PdfLabels(lang);
     final pdf = pw.Document();
     final now = DateTime.now();
-    final deposit = loan.totalDeposit;
-    final financed = loan.amount - deposit;
-    final paidAmount = (financed * loan.paid / 100).round();
-    final balance = financed - paidAmount;
-    final paidWeeks =
-        (loan.installmentWeeks * loan.paid / 100).floor().clamp(0, loan.installmentWeeks);
+    // One definition, shared with the loan screens (see LoanBalance).
+    //
+    // This block used to take the deposit off the price and then apply the paid
+    // percentage to what was left — the deposit was subtracted twice. A borrower
+    // at 25% was printed at 18.75% paid and with a balance one whole deposit too
+    // high, while the same loan on screen read 25% and the correct balance.
+    final figures = LoanBalance.of(loan);
+    final deposit = figures.deposit;
+    final financed = figures.financed;
+    final paidAmount = figures.paid;
+    final balance = figures.remaining;
+    final paidWeeks = figures.paidWeeks;
 
     pdf.addPage(
       pw.MultiPage(

@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:loan_inventory_app/core/data/inventory_provider.dart';
 import 'package:loan_inventory_app/core/data/mock_lims_data.dart';
 import 'package:loan_inventory_app/core/data/sales_provider.dart';
+import 'package:loan_inventory_app/core/l10n/greetings.dart';
 import 'package:loan_inventory_app/core/l10n/locale_provider.dart';
+import 'package:loan_inventory_app/core/l10n/strings.dart';
 import 'package:loan_inventory_app/features/home/presentation/auditor_dashboard.dart';
 import 'package:loan_inventory_app/features/home/presentation/branch_manager_dashboard.dart';
 import 'package:loan_inventory_app/features/home/presentation/cashier_dashboard.dart';
@@ -93,10 +95,24 @@ Future<void> _pump(
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+/// The role homes scroll inside the shared [DashPage] shell, which is a
+/// [CustomScrollView] because of the pinned greeting bar. Screens that have not
+/// moved onto that shell yet still use a plain [ListView], so the helper picks
+/// whichever scrollable this screen actually has.
 Future<void> _scroll(WidgetTester tester, [double dy = -600]) async {
-  await tester.drag(find.byType(ListView).first, Offset(0, dy));
+  final custom = find.byType(CustomScrollView);
+  final target =
+      custom.evaluate().isNotEmpty ? custom.first : find.byType(ListView).first;
+  await tester.drag(target, Offset(0, dy));
   await tester.pump(const Duration(milliseconds: 300));
 }
+
+/// The greeting the screen is allowed to show at this moment.
+///
+/// The copy is no longer a fixed "Welcome Back," — the East Africa clock picks
+/// morning, afternoon or evening — so the test asks the same pure function the
+/// header uses instead of pinning the old line back into the screen.
+String _greeting(Locale locale) => tr(locale, salutationKeyAt(DateTime.now()));
 
 void main() {
   group('cashier home', () {
@@ -104,7 +120,8 @@ void main() {
         (tester) async {
       await _pump(tester, const CashierDashboard());
 
-      expect(find.text('Welcome Back,'), findsOneWidget);
+      expect(find.text(_greeting(const Locale('en'))), findsWidgets);
+      expect(find.text('Welcome Back,'), findsNothing);
       expect(find.text('Counter Cashier'), findsWidgets);
       expect(find.text('TZS 0'), findsOneWidget);
       expect(find.text('0 receipts today'), findsOneWidget);
@@ -149,9 +166,9 @@ void main() {
         locale: const Locale('sw'),
       );
 
-      expect(find.text('Karibu Tena,'), findsOneWidget);
+      expect(find.text(_greeting(const Locale('sw'))), findsWidgets);
       expect(find.text('Mweka Hazina'), findsWidgets);
-      expect(find.text('Welcome Back,'), findsNothing);
+      expect(find.text('Karibu Tena,'), findsNothing);
       expect(find.text('Counter Cashier'), findsNothing);
     });
   });

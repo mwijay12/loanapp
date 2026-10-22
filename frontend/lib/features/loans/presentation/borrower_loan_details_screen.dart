@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/loan_balance.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/pdf_labels.dart';
 import '../../../core/services/pdf_report_service.dart';
@@ -142,9 +143,23 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
                 child: ElevatedButton.icon(
                   onPressed: () {
                     final rawAmount = int.tryParse(amountCtrl.text.replaceAll(',', '').trim()) ?? 0;
-                    if (rawAmount <= 0) {
-                      LimsToast.show(context, 'Tafadhali weka kiasi halali cha malipo', isError: true);
-                      return;
+                    // One rule, shared with the tests: positive whole shillings,
+                    // never more than what is still owed. An overpayment used to
+                    // be clamped to "fully paid", which deleted the excess from
+                    // the balance with nothing recorded anywhere.
+                    switch (checkRepayment(rawAmount, loan)) {
+                      case RepaymentProblem.notPositive:
+                        LimsToast.show(context, 'Tafadhali weka kiasi halali cha malipo', isError: true);
+                        return;
+                      case RepaymentProblem.aboveBalance:
+                        LimsToast.show(
+                          context,
+                          'Kiasi kinazidi salio la deni (TZS ${LimsFormatters.formatNumber(loan.remainingAmount)})',
+                          isError: true,
+                        );
+                        return;
+                      case RepaymentProblem.none:
+                        break;
                     }
 
                     final newRecord = LoanPaymentRecord(
@@ -847,7 +862,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  '${loan.paid}% Repaid',
+                  '${loan.paidPercent}% Repaid',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
@@ -864,7 +879,7 @@ class _BorrowerLoanDetailsScreenState extends ConsumerState<BorrowerLoanDetailsS
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
-              value: loan.paid / 100.0,
+              value: loan.paidPercent / 100.0,
               minHeight: 8,
               backgroundColor: const Color(0xFFE9F2FF),
               valueColor: AlwaysStoppedAnimation<Color>(

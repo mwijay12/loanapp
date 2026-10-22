@@ -2,6 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+/// The card and the carousel viewport that holds it are the same height.
+/// Keeping it in one place stops the page view from clipping the card when the
+/// card is retuned.
+const double kDealCardHeight = 158;
+
 /// Model representing a high-impact featured smartphone promotion / loan offer.
 class FeaturedPhoneDeal {
   final String id;
@@ -14,8 +19,11 @@ class FeaturedPhoneDeal {
   final Color glowColor;
   final String? imageAsset;
   final String? imageUrl;
-  final String tag1;
-  final String tag2;
+  /// ROM and colour as one string, e.g. `256GB · Stardust Silver`.
+  final String spec;
+
+  /// How many pieces are on the shelf, e.g. `27 units`.
+  final String units;
   final String cashPrice;
   final String monthlyDue;
   final String actionLabel;
@@ -32,13 +40,23 @@ class FeaturedPhoneDeal {
     required this.glowColor,
     this.imageAsset,
     this.imageUrl,
-    required this.tag1,
-    required this.tag2,
+    required this.spec,
+    required this.units,
     required this.cashPrice,
     required this.monthlyDue,
     this.actionLabel = 'Issue Loan',
     required this.onTap,
   });
+
+  /// The single line under the handset: spec first, then the unit count.
+  ///
+  /// Either half may be empty — a model with no variant on file still has to
+  /// read cleanly — so the separator is only drawn when both sides exist.
+  String get specLine {
+    if (spec.isEmpty) return units;
+    if (units.isEmpty) return spec;
+    return '$spec · $units';
+  }
 }
 
 /// Ultra-modern 3D-feel gradient card with rich lighting, floating device imagery, and glassmorphic badges.
@@ -59,7 +77,11 @@ class FeaturedPhoneDealCard extends StatelessWidget {
       child: GestureDetector(
         onTap: deal.onTap,
         child: Container(
-          height: 195,
+          // 158, down from 168 and from 190 before that. The two stacked spec
+          // chips are gone, and the line they became now sits under the handset
+          // instead of in the text column, which let the whole card lose another
+          // 10px without dropping the ROM, the colour or the piece count.
+          height: kDealCardHeight,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             gradient: LinearGradient(
@@ -120,169 +142,210 @@ class FeaturedPhoneDealCard extends StatelessWidget {
                 ),
               ),
 
-              // Main Card Content (Split Layout: Left Text & CTA, Right Device Photo)
+              // Main Card Content: name and deposit on the left, handset on the
+              // right, and one foot line that carries the ROM, the colour and how
+              // many pieces are on the shelf.
+              //
+              // The foot line sits under the handset, at the right edge, which is
+              // the corner that used to be empty. It owns the whole right half
+              // rather than sharing it with the action, so "256GB · Stardust
+              // Silver · 27 units" fits on one line at 360 px instead of
+              // ellipsizing the colour away. The action pill takes the left end
+              // of the same strip, under the title it belongs to.
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
-                child: Row(
+                padding: const EdgeInsets.fromLTRB(15, 11, 13, 9),
+                child: Column(
                   children: [
-                    // Left info section
                     Expanded(
-                      flex: 13,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          // Top Promotion Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                            decoration: BoxDecoration(
-                              color: deal.badgeBg,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                width: 1,
+                          // Left info section
+                          Expanded(
+                            flex: 13,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Top Promotion Badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3.5),
+                                  decoration: BoxDecoration(
+                                    color: deal.badgeBg,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: deal.badgeTextColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        deal.badge,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.3,
+                                          color: deal.badgeTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+
+                                // Device Title
+                                Text(
+                                  deal.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.3,
+                                    color: Colors.white,
+                                    height: 1.14,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+
+                                // Subtitle (deposit and weekly figure)
+                                Text(
+                                  deal.subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          // Product art is transparent, so it sits straight on
+                          // the card. It used to be wrapped in a white tile,
+                          // which read as a photo pasted onto the gradient.
+                          Expanded(
+                            flex: 9,
+                            child: Center(
+                              child: SizedBox(
+                                height: 98,
+                                width: 92,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 86,
+                                      height: 86,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            deal.glowColor
+                                                .withValues(alpha: 0.45),
+                                            deal.glowColor
+                                                .withValues(alpha: 0.0),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    deal.imageAsset != null &&
+                                            deal.imageAsset!.isNotEmpty
+                                        ? Image.asset(
+                                            deal.imageAsset!,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, __, ___) =>
+                                                _buildFramedDevice(deal),
+                                          )
+                                        : _buildFramedDevice(deal),
+                                  ],
+                                ),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: deal.badgeTextColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  deal.badge,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.3,
-                                    color: deal.badgeTextColor,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
-                          const SizedBox(height: 6),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
 
-                          // Device Title
-                          Text(
-                            deal.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
-                              color: Colors.white,
-                              height: 1.15,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-
-                          // Subtitle (Deposit & Monthly info)
-                          Text(
-                            deal.subtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-
-                          // Feature tags row
-                          Wrap(
-                            spacing: 5,
-                            runSpacing: 4,
-                            children: [
-                              _buildGlassTag(deal.tag1),
-                              _buildGlassTag(deal.tag2),
+                    // Foot strip: action at the left end, spec under the handset.
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 11, vertical: 5.5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x1F000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
                             ],
                           ),
-                          const Spacer(),
-
-                          // Quick Action CTA Button
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x1F000000),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Flexible + ellipsis: the label used to size
+                              // itself and pushed this row past the card edge
+                              // on a narrow phone.
+                              Flexible(
+                                child: Text(
                                   deal.actionLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w800,
                                     color: AppTheme.ink900,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 13,
-                                  color: AppTheme.ink900,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Product art is transparent, so it sits straight on the
-                    // card. It used to be wrapped in a white tile, which read as
-                    // a photo pasted onto the gradient.
-                    Expanded(
-                      flex: 8,
-                      child: Center(
-                        child: SizedBox(
-                          height: 150,
-                          width: 132,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: 108,
-                                height: 108,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      deal.glowColor.withValues(alpha: 0.45),
-                                      deal.glowColor.withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
                               ),
-                              deal.imageAsset != null &&
-                                      deal.imageAsset!.isNotEmpty
-                                  ? Image.asset(
-                                      deal.imageAsset!,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) =>
-                                          _buildFramedDevice(deal),
-                                    )
-                                  : _buildFramedDevice(deal),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 13,
+                                color: AppTheme.ink900,
+                              ),
                             ],
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        // One line: ROM, colour and piece count. Right aligned so
+                        // it hangs directly under the picture.
+                        Expanded(
+                          child: Text(
+                            deal.specLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                              color: Colors.white.withValues(alpha: 0.86),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -296,8 +359,8 @@ class FeaturedPhoneDealCard extends StatelessWidget {
 
   Widget _buildFramedDevice(FeaturedPhoneDeal deal) {
     return Container(
-      width: 96,
-      height: 146,
+      width: 86,
+      height: 130,
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(18),
@@ -389,25 +452,6 @@ class FeaturedPhoneDealCard extends StatelessWidget {
     );
   }
 
-  Widget _buildGlassTag(String text) {
-    if (text.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 9.5,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
 }
 
 /// Interactive Viewport-fraction Smartphone Deals & Promotions Carousel
@@ -483,7 +527,7 @@ class _PhoneDealsCarouselState extends State<PhoneDealsCarousel> {
       children: [
         // Carousel Slider
         SizedBox(
-          height: 195,
+          height: kDealCardHeight,
           child: Listener(
             onPointerDown: (_) {
               _isInteracting = true;
@@ -527,7 +571,7 @@ class _PhoneDealsCarouselState extends State<PhoneDealsCarousel> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
         // Animated Capsule Indicators
         Row(

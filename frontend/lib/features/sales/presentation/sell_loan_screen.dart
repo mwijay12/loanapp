@@ -15,6 +15,7 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/data/lims_repository.dart';
+import '../../../core/data/sale_ledger.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../loans/presentation/borrower_loan_details_screen.dart';
 
@@ -81,6 +82,13 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   bool _borrowerConsentAgreed = false;
   bool _showSchedulePreview = false;
   bool _isProcessing = false;
+  /// Refuses a second submission while the first is still being written.
+  ///
+  /// UI-level protection only, in one client. The migrations declare
+  /// `sales.receipt_no` as `text unique not null`, but each attempt mints a new
+  /// receipt number, so a second device ringing up the same sale writes a second
+  /// row that no constraint will refuse.
+  final SaleSubmitGuard _submitGuard = SaleSubmitGuard();
   /// The bytes the counter actually captured, if any.
   ///
   /// This used to be an Unsplash URL: pressing "capture" waited 700 ms and then
@@ -199,7 +207,14 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     ref.watch(localeProvider);
     final repository = ref.watch(limsRepositoryProvider);
     final activeBranch = ref.watch(activeBranchProvider);
-    final availableHandsets = repository.getAvailableHandsets(ref, branch: activeBranch);
+    // The loan book only finances handsets; a cash sale may sell anything in
+    // stock. Asking for the phone-only list in cash mode is why a power bank
+    // could not be sold at the counter.
+    final availableHandsets = repository.getAvailableHandsets(
+      ref,
+      branch: activeBranch,
+      phonesOnly: _selectedTransaction == 'LOAN',
+    );
 
     if (availableHandsets.isEmpty) {
       return Scaffold(
@@ -548,7 +563,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
               SizedBox(height: 16),
               Text(
-                tr(_locale, 'sell.selectHandset'),
+                tr(
+                  _locale,
+                  _selectedTransaction == 'LOAN'
+                      ? 'sell.selectHandset'
+                      : 'sell.selectProduct',
+                ),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.ink900),
               ),
               const SizedBox(height: 14),
@@ -576,7 +596,13 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                             color: AppTheme.brand600.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.phone_android_rounded, color: AppTheme.brand600, size: 22),
+                          child: Icon(
+                            phone.cat == 'phones'
+                                ? Icons.phone_android_rounded
+                                : Icons.devices_other_rounded,
+                            color: AppTheme.brand600,
+                            size: 22,
+                          ),
                         ),
                         title: Text(
                           phone.name,
@@ -1595,7 +1621,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: _isProcessing
+        onPressed: _isProcessing || _submitGuard.isInFlight
             ? null
             : () {
                 if (!_formKey.currentState!.validate()) {
@@ -1803,37 +1829,90 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
 
   // ------------------------------------------------------------- Execute Transaction
   Future<void> _executeTransaction(ProductItem phone, LoanQuote quote) async {
+    // The review sheet closes itself before this runs, so for a moment the only
+    // thing under the finger is the primary button again. A spinner is one
+    // rebuild away and cannot win that race; this latch refuses the second
+    // submission outright.
+    if (!_submitGuard.tryBegin()) return;
     setState(() => _isProcessing = true);
     final repository = ref.read(limsRepositoryProvider);
 
-    POSSaleResult result;
-    if (_selectedTransaction == 'LOAN') {
-      result = await repository.executeLoanDisbursement(
-        ref: ref,
-        phone: phone,
-        customerName: _nameController.text.trim(),
-        customerPhone: _phoneController.text.trim(),
-        customerNida: _nidaController.text.trim(),
-        residence: _residenceController.text.trim(),
-        guarantorName: _guarantorNameController.text.trim(),
-        guarantorPhone: _guarantorPhoneController.text.trim(),
-        quote: quote,
-        paymentChannel: tr(_locale, 'sell.drawerChannel'),
-      );
-    } else {
-      result = await repository.executeCashSale(
-        ref: ref,
-        phone: phone,
-        customerName: 'Cash Customer (${_receiptPhoneController.text.trim()})',
-        customerPhone: _receiptPhoneController.text.trim(),
-        paymentChannel: _cashPaymentChannel,
-      );
+    POSSaleResult? result;
+    Object? failure;
+    try {
+      if (_selectedTransaction == 'LOAN') {
+        result = await repository.executeLoanDisbursement(
+          ref: ref,
+          phone: phone,
+          customerName: _nameController.text.trim(),
+          customerPhone: _phoneController.text.trim(),
+          customerNida: _nidaController.text.trim(),
+          residence: _residenceController.text.trim(),
+          guarantorName: _guarantorNameController.text.trim(),
+          guarantorPhone: _guarantorPhoneController.text.trim(),
+          quote: quote,
+          paymentChannel: tr(_locale, 'sell.drawerChannel'),
+        );
+      } else {
+        result = await repository.executeCashSale(
+          ref: ref,
+          phone: phone,
+          customerName: 'Cash Customer (${_receiptPhoneController.text.trim()})',
+          customerPhone: _receiptPhoneController.text.trim(),
+          paymentChannel: _cashPaymentChannel,
+        );
+      }
+    } catch (e) {
+      // A throw here is not a completed sale. It must not reach the success
+      // dialog or the printer.
+      failure = e;
+    } finally {
+      _submitGuard.release();
     }
 
-    if (mounted) {
-      setState(() => _isProcessing = false);
-      _showSuccessDialog(result);
+    if (!mounted) return;
+    setState(() => _isProcessing = false);
+
+    if (result == null) {
+      LimsToast.show(
+        context,
+        trf(_locale, 'sell.saveFailed', {'reason': '${failure ?? 'unknown error'}'}),
+        isError: true,
+        duration: const Duration(seconds: 8),
+      );
+      return;
     }
+
+    if (result.success) {
+      _showSuccessDialog(result);
+    } else {
+      _showSaleFailure(result);
+    }
+  }
+
+  /// The counter is told what happened, not what we hoped happened.
+  void _showSaleFailure(POSSaleResult result) {
+    final message = result.isUnconfirmed
+        ? trf(_locale, 'sell.saveUnconfirmed', {'n': result.receiptId})
+        : trf(_locale, 'sell.saveFailed', {
+            'reason': result.errorMessage ?? tr(_locale, 'sell.saveUnknownReason'),
+          });
+    LimsToast.show(
+      context,
+      message,
+      isError: true,
+      duration: const Duration(seconds: 10),
+    );
+  }
+
+  /// The loan this sale created, or null when the book does not hold it.
+  LoanItem? _findLoanFor(POSSaleResult result) {
+    for (final loan in ref.read(loansProvider)) {
+      if (loan.name == result.customerName && loan.item == result.phoneModel) {
+        return loan;
+      }
+    }
+    return null;
   }
 
   /// Opens the receipt for printing, then closes the dialog and the till.
@@ -1842,14 +1921,19 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   /// roll-80 receipt for the sale that just completed, and the message describes
   /// only what actually happened.
   Future<void> _printReceipt(POSSaleResult result, BuildContext dialogContext) async {
+    // A receipt is a claim that the shop holds a record of this sale, so the
+    // gate is `isSaved` — a confirmed row in `public.sales` — not `success`.
+    // `success` also covers a demo build with no database, where the counter
+    // may finish the sale locally but has nothing to point a customer at.
+    if (!result.isSaved) return;
     final dialogNavigator = Navigator.of(dialogContext, rootNavigator: true);
-    await PdfReportService.generateAndDownloadSaleReceipt(
+    final issued = await PdfReportService.generateAndDownloadSaleReceipt(
       lang: _locale.languageCode == 'sw' ? PdfLang.sw : PdfLang.en,
       sale: result,
       branchName: ref.read(activeBranchProvider),
       servedBy: ref.read(activeStaffMemberProvider).name,
     );
-    if (!mounted) return;
+    if (!mounted || !issued) return;
     dialogNavigator.pop();
     LimsToast.show(
       context,
@@ -1861,6 +1945,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
 
   // ------------------------------------------------------------- Success Dialog
   void _showSuccessDialog(POSSaleResult result) {
+    // The dossier button used to fall back to `loans.first`, which threw a
+    // StateError on an empty book and could have opened a stranger's file. If
+    // the borrower cannot be found, the button is simply not offered.
+    final loan = result.transactionType == 'LOAN' ? _findLoanFor(result) : null;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1893,6 +1982,14 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               style: const TextStyle(fontSize: 12.5, color: AppTheme.ink500),
               textAlign: TextAlign.center,
             ),
+            if (!result.isSaved) ...[
+              const SizedBox(height: 10),
+              Text(
+                tr(_locale, 'sell.demoNote'),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.ink500),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1915,21 +2012,16 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               ),
             ),
             SizedBox(height: 20),
-            if (result.transactionType == 'LOAN') ...[
+            if (loan != null) ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    final loans = ref.read(loansProvider);
-                    final matchingLoan = loans.firstWhere(
-                      (l) => l.name == result.customerName || l.item == result.phoneModel,
-                      orElse: () => loans.first,
-                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => BorrowerLoanDetailsScreen(loanId: matchingLoan.id, initialLoan: matchingLoan),
+                        builder: (_) => BorrowerLoanDetailsScreen(loanId: loan.id, initialLoan: loan),
                       ),
                     );
                   },
@@ -1961,8 +2053,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                 ),
                 SizedBox(width: 8),
                 Expanded(
+                  // Nothing was stored in a demo build, so there is nothing to
+                  // print: the button is offered but dead rather than absent,
+                  // so the cashier can see the option exists and why it does
+                  // not apply (the note above the receipt block says it).
                   child: ElevatedButton.icon(
-                    onPressed: () => _printReceipt(result, ctx),
+                    onPressed: result.isSaved ? () => _printReceipt(result, ctx) : null,
                     icon: const Icon(Icons.receipt_long_rounded, size: 16),
                     label: Text(tr(_locale, 'sell.printReceipt')),
                     style: ElevatedButton.styleFrom(

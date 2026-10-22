@@ -29,21 +29,17 @@ class AuditorDashboard extends ConsumerWidget {
         ref.watch(loansProvider).where((l) => l.status != 'cleared').length;
 
     return DashPage(
+      header: DashHomeHeader(
+        locale: locale,
+        name: staff.name,
+        asset: staff.avatarAsset,
+        grad: staff.grad,
+        unread: unread,
+        roleLabel: tr(locale, 'role.auditor'),
+        onAvatarTap: () => context.push('/settings'),
+        onBellTap: () => context.push('/notifications'),
+      ),
       children: [
-        DashProfileRow(
-          name: staff.name,
-          asset: staff.avatarAsset,
-          grad: staff.grad,
-          unread: unread,
-          onAvatarTap: () => context.push('/settings'),
-          onBellTap: () => context.push('/notifications'),
-        ),
-        const SizedBox(height: 18),
-        DashGreeting(
-          locale: locale,
-          roleLabel: tr(locale, 'role.auditor'),
-        ),
-        const SizedBox(height: 20),
         DashFeatureCard(
           eyebrow: tr(locale, 'dash.auditAccess'),
           icon: Icons.visibility_rounded,

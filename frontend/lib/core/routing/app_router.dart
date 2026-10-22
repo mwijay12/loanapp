@@ -105,6 +105,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/scan',
         builder: (context, state) => const ScanScreen(),
       ),
+      // `/scanner` was pushed from four dashboards and never existed, so every
+      // tap landed on "Page Not Found". The call sites are fixed; this keep-old
+      // alias stays so a stale link, a saved tab or a QR code cannot 404 again.
+      GoRoute(
+        path: '/scanner',
+        redirect: (context, state) => '/scan',
+      ),
       GoRoute(
         path: '/sell-loan',
         builder: (context, state) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/greetings.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/widgets/person_avatar.dart';
 
@@ -32,11 +33,27 @@ class DashPalette {
   static const List<double> pageStops = [0.0, 0.34, 0.74];
 }
 
-/// Page chrome: gradient, safe area and the scroll padding every role shares.
+/// Page chrome: gradient, the sticky home header and the scroll padding every
+/// role shares.
+///
+/// The header used to be two ordinary list items, so the greeting, the avatar and
+/// the bell scrolled away with the content and the top of the phone turned into a
+/// blank strip. It is now a pinned sliver: as the page scrolls, the tall two-line
+/// greeting slides up under a compact bar that keeps the avatar, the greeting and
+/// the notification bell reachable at any scroll position.
 class DashPage extends StatelessWidget {
-  const DashPage({super.key, required this.children});
+  const DashPage({super.key, required this.header, required this.children});
+
+  /// Who is signed in and how to greet them. See [DashHomeHeader].
+  final DashHomeHeader header;
 
   final List<Widget> children;
+
+  /// Tall enough for the 54 px avatar, a 14 px gap and two 32 px greeting lines.
+  static const double _expandedHeader = 158;
+
+  /// The compact bar: a 32 px avatar and one line of text.
+  static const double _collapsedHeader = 62;
 
   @override
   Widget build(BuildContext context) {
@@ -53,14 +70,274 @@ class DashPage extends StatelessWidget {
         ),
         child: SafeArea(
           bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 118),
-            children: children,
+          child: CustomScrollView(
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyHomeHeader(
+                  header: header,
+                  maxExtent: _expandedHeader,
+                  minExtent: _collapsedHeader,
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 118),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(children),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+/// Everything the home header needs to draw itself, in both states.
+///
+/// Passed in rather than read inside the header so the header stays a widget and
+/// the screen stays the only place that knows what the role is called.
+class DashHomeHeader {
+  const DashHomeHeader({
+    required this.locale,
+    required this.name,
+    required this.asset,
+    required this.grad,
+    required this.unread,
+    required this.roleLabel,
+    required this.onAvatarTap,
+    required this.onBellTap,
+  });
+
+  final Locale locale;
+  final String name;
+  final String? asset;
+  final List<Color> grad;
+  final int unread;
+  final String roleLabel;
+  final VoidCallback onAvatarTap;
+  final VoidCallback onBellTap;
+}
+
+class _StickyHomeHeader extends SliverPersistentHeaderDelegate {
+  _StickyHomeHeader({
+    required this.header,
+    required this.maxExtent,
+    required this.minExtent,
+  });
+
+  final DashHomeHeader header;
+
+  @override
+  final double maxExtent;
+
+  @override
+  final double minExtent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final span = maxExtent - minExtent;
+    final t = span <= 0 ? 0.0 : (shrinkOffset / span).clamp(0.0, 1.0);
+
+    // The tall greeting is gone before the bar has finished shrinking; the
+    // compact bar only appears once there is room for it. The overlap is
+    // deliberate, so there is never a frame with nothing at the top.
+    final expandedOpacity = (1 - t * 1.9).clamp(0.0, 1.0);
+    final collapsedOpacity = ((t - 0.34) / 0.66).clamp(0.0, 1.0);
+
+    return ClipRect(
+      child: Stack(
+        children: [
+          // Opaque backdrop, faded in with the collapse, so scrolled content does
+          // not show through the bar.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: t,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    border: const Border(
+                      bottom: BorderSide(color: DashPalette.hairline),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Expanded state: avatar + bell on their row, then the two-line
+          // greeting. Given the full expanded height and clipped as the sliver
+          // shrinks, which is what makes it look like it slides under the bar.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: maxExtent,
+            child: IgnorePointer(
+              ignoring: expandedOpacity < 0.05,
+              child: Opacity(
+                opacity: expandedOpacity,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 9, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DashProfileRow(
+                        name: header.name,
+                        asset: header.asset,
+                        grad: header.grad,
+                        unread: header.unread,
+                        onAvatarTap: header.onAvatarTap,
+                        onBellTap: header.onBellTap,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        tr(header.locale, salutationKeyAt(DateTime.now())),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          height: 1.14,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.6,
+                          color: DashPalette.ink,
+                        ),
+                      ),
+                      Text(
+                        header.roleLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          height: 1.14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.6,
+                          color: DashPalette.ink,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Collapsed state: the same three things on one line.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: minExtent,
+            child: IgnorePointer(
+              ignoring: collapsedOpacity < 0.5,
+              child: Opacity(
+                opacity: collapsedOpacity,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: header.onAvatarTap,
+                        borderRadius: BorderRadius.circular(99),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            gradient: LinearGradient(
+                              colors: header.grad,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: PersonAvatar(
+                            name: header.name,
+                            asset: header.asset,
+                            size: 30,
+                            grad: header.grad,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tr(header.locale, salutationKeyAt(DateTime.now())),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: DashPalette.muted,
+                              ),
+                            ),
+                            Text(
+                              header.roleLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                                color: DashPalette.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      InkWell(
+                        onTap: header.onBellTap,
+                        borderRadius: BorderRadius.circular(99),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Icon(
+                                Icons.notifications_none_rounded,
+                                size: 21,
+                                color: DashPalette.ink,
+                              ),
+                            ),
+                            if (header.unread > 0)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF04438),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyHomeHeader oldDelegate) =>
+      oldDelegate.maxExtent != maxExtent ||
+      oldDelegate.minExtent != minExtent ||
+      oldDelegate.header != header;
 }
 
 // ---------------------------------------------------------------- profile row
@@ -181,7 +458,10 @@ class DashGreeting extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          tr(locale, 'skdash.welcome'),
+          // Follows the clock (East Africa time), not a fixed welcome line.
+          tr(locale, salutationKeyAt(DateTime.now())),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             fontSize: 32,
             height: 1.14,

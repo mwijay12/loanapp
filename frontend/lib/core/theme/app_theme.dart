@@ -594,9 +594,17 @@ class AppTheme {
         crossAxisMargin: 2,
       ),
 
+      // A quiet fade with a short upward drift instead of the default zoom. Set
+      // on the theme rather than per-route, so a screen added later gets the
+      // same motion without remembering to ask for it. iOS keeps Cupertino: it
+      // carries the edge-swipe back gesture a custom builder would remove.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.android: LimsPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: LimsPageTransitionsBuilder(),
+          TargetPlatform.linux: LimsPageTransitionsBuilder(),
+          TargetPlatform.windows: LimsPageTransitionsBuilder(),
+          TargetPlatform.macOS: LimsPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
@@ -710,4 +718,39 @@ class AppTheme {
       letterSpacing: 0.6,
     ),
   );
+}
+
+/// A quiet page transition: 240 ms fade with a 3.5% upward drift.
+///
+/// The default Android transition slides the whole page in from the right, which
+/// on a POS screen with a dark header reads as a shove. This one keeps the
+/// content in place and lets it settle, so a cashier moving between the till,
+/// stock and loans sees the same screen arrive rather than a new one fly in.
+class LimsPageTransitionsBuilder extends PageTransitionsBuilder {
+  const LimsPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.035),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
 }

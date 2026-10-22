@@ -45,21 +45,17 @@ class BranchManagerDashboard extends ConsumerWidget {
         ref.watch(loansProvider).where((l) => l.status == 'overdue').length;
 
     return DashPage(
+      header: DashHomeHeader(
+        locale: locale,
+        name: staff.name,
+        asset: staff.avatarAsset,
+        grad: staff.grad,
+        unread: unread,
+        roleLabel: tr(locale, 'role.branchManager'),
+        onAvatarTap: () => context.push('/settings'),
+        onBellTap: () => context.push('/notifications'),
+      ),
       children: [
-        DashProfileRow(
-          name: staff.name,
-          asset: staff.avatarAsset,
-          grad: staff.grad,
-          unread: unread,
-          onAvatarTap: () => context.push('/settings'),
-          onBellTap: () => context.push('/notifications'),
-        ),
-        const SizedBox(height: 18),
-        DashGreeting(
-          locale: locale,
-          roleLabel: tr(locale, 'role.branchManager'),
-        ),
-        const SizedBox(height: 20),
         DashFeatureCard(
           eyebrow: branch.isEmpty
               ? tr(locale, 'dash.branchToday')

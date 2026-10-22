@@ -285,6 +285,18 @@ class InventoryNotifier extends StateNotifier<List<ProductItem>> {
     ];
   }
 
+  /// Marks a handset as "on offer" for the till home.
+  ///
+  /// This only moves the in-memory row. The caller is responsible for writing
+  /// `products.on_offer`, because a flag that reaches one device and not the
+  /// database is exactly the kind of thing that looks saved and is not.
+  void setOffer(int id, bool onOffer) {
+    state = [
+      for (final p in state)
+        if (p.id == id) p.copyWith(onOffer: onOffer) else p,
+    ];
+  }
+
   void toggleFavorite(int id) {
     state = [
       for (final p in state)
@@ -335,10 +347,21 @@ class LoansNotifier extends StateNotifier<List<LoanItem>> {
       for (final l in state)
         if (l.id == nameOrId || l.name.toLowerCase() == nameOrId.toLowerCase())
           () {
-            final newPaidPct = (l.paid + ((paymentAmount / l.amount) * 100).round()).clamp(0, 100);
-            final isCleared = newPaidPct >= 100;
+            // Money first, percentage second.
+            //
+            // The old line rounded the instalment straight into a percentage:
+            // `l.paid + round(payment / amount * 100)`. At TZS 1,000 on a 2.4M
+            // loan that is 0.04%, which rounds to 0 — the payment was recorded
+            // in the history, the balance did not move, and the till looked
+            // like it had swallowed the money. The exact figure is now kept on
+            // the loan and the percentage is derived from it.
+            final received = (l.totalPaidAmount + paymentAmount).clamp(0, l.amount);
+            final newPaidPct =
+                l.amount <= 0 ? 0 : ((received * 100) / l.amount).round().clamp(0, 100);
+            final isCleared = received >= l.amount;
             return l.copyWith(
               paid: newPaidPct,
+              paidAmountOverride: received,
               due: isCleared ? 'Paid in Full' : 'Due next week',
               status: isCleared ? 'cleared' : (l.status == 'overdue' ? 'current' : l.status),
               isKnoxLocked: isCleared ? false : l.isKnoxLocked,

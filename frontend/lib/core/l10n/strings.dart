@@ -21,6 +21,19 @@ const Map<String, Map<String, String>> _dictionary = {
 
   // Storekeeper dashboard
   'skdash.welcome': {'en': 'Welcome Back,', 'sw': 'Karibu Tena,'},
+  // Time-aware salutations. The band is chosen from the East Africa clock
+  // (`salutationKeyAt`), not from a fixed string, so the first line of the home
+  // screen is different at dawn and at dusk.
+  'greet.morning': {'en': 'Good morning', 'sw': 'Habari za asubuhi'},
+  'greet.afternoon': {'en': 'Good afternoon', 'sw': 'Habari za mchana'},
+  'greet.evening': {'en': 'Good evening', 'sw': 'Habari za jioni'},
+
+  // List / grid switch, and the long-press sheets it shares a vocabulary with.
+  'view.list': {'en': 'List view', 'sw': 'Mwonekano wa orodha'},
+  'view.grid': {'en': 'Grid view', 'sw': 'Mwonekano wa gridi'},
+  'action.openDetails': {'en': 'Open details', 'sw': 'Fungua maelezo'},
+  'action.quickActions': {'en': 'Quick actions', 'sw': 'Vitendo vya haraka'},
+  'loans.peekTitle': {'en': 'Borrower at a glance', 'sw': 'Mkopaji kwa muhtasari'},
   'skdash.searchHint': {
     'en': 'Search IMEI, model, serial...',
     'sw': 'Tafuta IMEI, modeli, serial...',
@@ -290,6 +303,38 @@ const Map<String, Map<String, String>> _dictionary = {
   },
   'home.swipe': {'en': 'Swipe', 'sw': 'Telezesha'},
   'home.issueLoan': {'en': 'Issue Loan', 'sw': 'Toa Mkopo'},
+  'deals.onOffer': {'en': 'ON OFFER', 'sw': 'OFA MAALUM'},
+  'deals.inStock': {'en': '{n} IN STOCK', 'sw': '{n} STOO'},
+  // State only; the unit count lives on the spec line under the handset.
+  'deals.inStockLabel': {'en': 'IN STOCK', 'sw': 'STOO'},
+
+  'deals.units': {'en': '{n} units', 'sw': 'vipande {n}'},
+  'deals.deposit': {'en': 'Deposit', 'sw': 'Malipo ya kwanza'},
+  'deals.perWeek': {'en': '/wk', 'sw': '/wiki'},
+  'stock.onOffer': {'en': 'On offer at the till', 'sw': 'Iko kwenye ofa kaunta'},
+  'stock.onOfferSub': {
+    'en':
+        'Show this handset on the cashier home. Use it for models that have been sitting on the shelf.',
+    'sw':
+        'Onyesha simu hii kwenye ukurasa wa mhudumu. Tumia kwa modeli zilizokaa muda mrefu stoo.',
+  },
+  'stock.markOffer': {'en': 'Put on offer', 'sw': 'Weka kwenye ofa'},
+  'stock.clearOffer': {'en': 'Take off offer', 'sw': 'Ondoa kwenye ofa'},
+  'stock.offerSaved': {'en': 'Offer updated.', 'sw': 'Ofa imehifadhiwa.'},
+  'stock.offerSession': {
+    'en': 'Saved on this device for now — no database is connected.',
+    'sw': 'Imehifadhiwa kwenye kifaa hiki kwa sasa — hakuna hifadhidata iliyounganishwa.',
+  },
+  'stock.offerMigration': {
+    'en':
+        'Not saved: the offers column is missing. Run 2026_10_22_05_product_offers.sql in Supabase.',
+    'sw':
+        'Haijahifadhiwa: safu ya ofa haipo. Endesha 2026_10_22_05_product_offers.sql kwenye Supabase.',
+  },
+  'stock.offerFailed': {
+    'en': 'The offer was not saved. Try again.',
+    'sw': 'Ofa haijahifadhiwa. Jaribu tena.',
+  },
   'home.adminHub': {'en': 'Admin Executive Hub', 'sw': 'Kitovu cha Msimamizi'},
   'home.hqSubtitle': {
     'en': 'HQ Multi-Branch Oversight & Audits',
@@ -586,6 +631,14 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Select handset for checkout',
     'sw': 'Chagua simu ya kuuza',
   },
+  'sell.selectProduct': {
+    'en': 'Select product for checkout',
+    'sw': 'Chagua bidhaa ya kuuza',
+  },
+  'sell.noStockAny': {
+    'en': 'No products available in stock',
+    'sw': 'Hakuna bidhaa zilizopo stoo',
+  },
   'sell.noStock': {
     'en': 'No phones available in stock',
     'sw': 'Hakuna simu zilizopo stoo',
@@ -679,6 +732,26 @@ const Map<String, Map<String, String>> _dictionary = {
   'sell.loanDone': {
     'en': 'Phone loan disbursed',
     'sw': 'Mkopo wa simu umetolewa'
+  },
+  'sell.saveFailed': {
+    'en': 'Sale NOT recorded: {reason}',
+    'sw': 'Mauzo HAYAKUHIFADHIWA: {reason}',
+  },
+  'sell.saveUnconfirmed': {
+    'en':
+        'Not saved and not refused — the database did not answer. Check the sales ledger for receipt {n} before trying again.',
+    'sw':
+        'Haijahifadhiwa wala kukataliwa — hifadhidata haikujibu. Kagua daftari la mauzo kwa risiti {n} kabla ya kujaribu tena.',
+  },
+  'sell.saveUnknownReason': {
+    'en': 'the sale could not be saved.',
+    'sw': 'mauzo hayakuweza kuhifadhiwa.',
+  },
+  'sell.demoNote': {
+    'en':
+        'Demo build — no database is connected, so nothing was written to the shop ledger and no receipt can be issued.',
+    'sw':
+        'Toleo la majaribio — hakuna hifadhidata iliyounganishwa, kwa hiyo hakuna kilichohifadhiwa kwenye daftari la duka na hakuna risiti inayoweza kutolewa.',
   },
   'sell.selectedHandset': {
     'en': 'Selected handset',

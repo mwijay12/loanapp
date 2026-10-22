@@ -296,7 +296,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     time: '1h ago',
                     onTap: () {
                       Navigator.pop(ctx);
-                      context.push('/scanner');
+                      context.push('/scan');
                     },
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -1001,7 +1001,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         iconColor: AppTheme.brand600,
                                         title: 'Hardware Inspector',
                                         subtitle: 'Verify Phone IMEI',
-                                        onTap: () => context.push('/scanner'),
+                                        onTap: () => context.push('/scan'),
                                       ),
                                     ),
                                     const SizedBox(width: 10),
@@ -1043,7 +1043,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             title: 'IMEI Scanner',
                                             subtitle: 'Barcode Inspection',
                                             onTap: () =>
-                                                context.push('/scanner'),
+                                                context.push('/scan'),
                                           ),
                                         ),
                                       ],
@@ -1115,7 +1115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             title: 'Scan Cabinet',
                                             subtitle: 'Check Stock Ready',
                                             onTap: () =>
-                                                context.push('/scanner'),
+                                                context.push('/scan'),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -1266,7 +1266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${l.paid}% repaid',
+                          '${l.paidPercent}% repaid',
                           style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -1914,8 +1914,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           glowColor: glows[i % glows.length],
           imageAsset: p.imageAsset ??
               ProductArt.resolve(brand: p.brand, name: p.name, category: p.cat),
-          tag1: '${p.stock} in stock',
-          tag2: p.imei1 != null ? 'IMEI registered' : p.variant,
+          spec: p.variant,
+          units: '${p.stock} in stock',
           cashPrice: LimsFormatters.currencyCompact(p.price),
           monthlyDue: '${LimsFormatters.currencyCompact(monthly)}/mo',
           actionLabel: tr(ref.watch(localeProvider), 'home.issueLoan'),

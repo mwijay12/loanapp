@@ -104,7 +104,7 @@ class StoreFacts {
       loansOverdue: overdue.length,
       overdueOutstanding: overdue.fold<int>(
         0,
-        (sum, l) => sum + ((l.amount * (100 - l.paid)) / 100).round(),
+        (sum, l) => sum + l.remainingAmount,
       ),
       collectedToday: collected,
       scope: scope,

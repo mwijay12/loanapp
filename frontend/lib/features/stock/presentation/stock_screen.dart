@@ -9,7 +9,10 @@ import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/services/cloudinary_service.dart';
+import '../../../core/services/haptics.dart';
+import '../../../core/data/supabase_source.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../../core/widgets/view_toggle.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
@@ -21,6 +24,10 @@ class StockScreen extends ConsumerStatefulWidget {
 class _StockScreenState extends ConsumerState<StockScreen> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
+  /// Rows or cards. Held per visit: the stock list is a browsing surface, and a
+  /// remembered preference is one more thing to explain when it disagrees with
+  /// what the counter expects to see.
+  CollectionView _view = CollectionView.list;
   final TextEditingController _searchCtrl = TextEditingController();
 
   final List<Map<String, String>> _filterOptions = [
@@ -212,6 +219,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               ),
               const SizedBox(height: 20),
 
+              _buildOfferSwitch(p, locale),
+              const SizedBox(height: 16),
+
               Text(
                 tr(locale, 'stock.inventoryHistory'),
                 style: TextStyle(
@@ -316,6 +326,95 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         );
       },
     );
+  }
+
+  /// The owner's switch: put this handset in front of the cashier.
+  ///
+  /// Reads the live product rather than the value captured when the sheet
+  /// opened, so the switch shows what is actually stored — including a rollback
+  /// when the write did not land.
+  Widget _buildOfferSwitch(ProductItem p, Locale locale) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final current = ref
+            .watch(inventoryProvider)
+            .firstWhere((x) => x.id == p.id, orElse: () => p);
+        return Container(
+          padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.local_fire_department_rounded,
+                  size: 20, color: Color(0xFFD97706)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr(locale, 'stock.onOffer'),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink900,
+                      ),
+                    ),
+                    Text(
+                      tr(locale, 'stock.onOfferSub'),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        height: 1.3,
+                        color: AppTheme.ink500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: current.onOffer,
+                onChanged: (value) => _setOffer(ref, p, value),
+                activeThumbColor: const Color(0xFFD97706),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Writes the flag, and puts the switch back if the write did not land.
+  ///
+  /// A switch that stays on after a failed write is the exact failure this
+  /// project keeps finding: state on screen that the database never received.
+  Future<void> _setOffer(WidgetRef ref, ProductItem p, bool value) async {
+    final locale = ref.read(localeProvider);
+    final previous = p.onOffer;
+    ref.read(inventoryProvider.notifier).setOffer(p.id, value);
+
+    final outcome = await SupabaseSource.setProductOffer(
+      productId: p.id,
+      onOffer: value,
+    );
+    if (!mounted) return;
+
+    switch (outcome) {
+      case OfferSaveOutcome.saved:
+        LimsToast.show(context, tr(locale, 'stock.offerSaved'), isSuccess: true);
+      case OfferSaveOutcome.notConfigured:
+        // Demo and offline builds have no ledger. The choice holds for this
+        // session and says so.
+        LimsToast.show(context, tr(locale, 'stock.offerSession'));
+      case OfferSaveOutcome.migrationMissing:
+        ref.read(inventoryProvider.notifier).setOffer(p.id, previous);
+        LimsToast.show(context, tr(locale, 'stock.offerMigration'), isError: true);
+      case OfferSaveOutcome.failed:
+        ref.read(inventoryProvider.notifier).setOffer(p.id, previous);
+        LimsToast.show(context, tr(locale, 'stock.offerFailed'), isError: true);
+    }
   }
 
   Widget _buildDetailStat(String val, String label) {
@@ -1090,14 +1189,28 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Counter Text
-            Text(
-              '${products.length} models · $totalUnits units',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF9AA8BF),
-              ),
+            // Counter text and the list / grid switch
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${products.length} models · $totalUnits units',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF9AA8BF),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ViewToggle(
+                  view: _view,
+                  locale: ref.watch(localeProvider),
+                  onChanged: (v) => setState(() => _view = v),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
 
@@ -1110,6 +1223,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   'No products match your search.',
                   style: TextStyle(fontSize: 13, color: AppTheme.ink500),
                 ),
+              )
+            else if (_view == CollectionView.grid)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.80,
+                ),
+                itemCount: products.length,
+                itemBuilder: (_, i) => _buildProductTile(products[i]),
               )
             else
               ...products.map((p) => _buildProductCard(p)),
@@ -1136,7 +1263,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showProductDetail(p),
+          onTap: () {
+            Haptics.tap();
+            _showProductDetail(p);
+          },
+          // Long press is the owner's shortcut: the same three things the detail
+          // sheet offers, without walking into it.
+          onLongPress: () {
+            Haptics.longPress();
+            _showQuickActions(p);
+          },
           borderRadius: BorderRadius.circular(18),
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -1187,6 +1323,33 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           color: AppTheme.ink500,
                         ),
                       ),
+                      if (p.onOffer) ...[
+                        const SizedBox(height: 3),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7E6),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.local_fire_department_rounded,
+                                  size: 11, color: Color(0xFFD97706)),
+                              const SizedBox(width: 3),
+                              Text(
+                                tr(ref.read(localeProvider), 'deals.onOffer'),
+                                style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1235,6 +1398,283 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// One card in the two-column grid.
+  ///
+  /// The same product, the same actions, a different shape: at a glance the
+  /// counter sees more of the shelf, which is what the grid is for. The price and
+  /// the status stay, because a card that does not say "in stock" is decoration.
+  Widget _buildProductTile(ProductItem p) {
+    final locale = ref.read(localeProvider);
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE9EFF7)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0C0F3478),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            Haptics.tap();
+            _showProductDetail(p);
+          },
+          onLongPress: () {
+            Haptics.longPress();
+            _showQuickActions(p);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: _buildProductThumbnail(p, iconSize: 22),
+                    ),
+                    const Spacer(),
+                    if (p.onOffer)
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7E6),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.local_fire_department_rounded,
+                                size: 10, color: Color(0xFFD97706)),
+                            const SizedBox(width: 2),
+                            Text(
+                              tr(locale, 'deals.onOffer'),
+                              style: const TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFB45309),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 9),
+                Text(
+                  p.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.ink900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${p.sku} · ${p.stock} in stock',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.ink500,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        p.shortPrice,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.ink900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    _buildStatusBadge(p.status),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// What a long press on a stock row opens.
+  ///
+  /// Only things the screen can really do: the detail sheet, and the same offer
+  /// flag the owner sets in it. No invented "delete" or "edit" that would land
+  /// in a table that does not exist.
+  void _showQuickActions(ProductItem p) {
+    final locale = ref.read(localeProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _buildProductThumbnail(p, iconSize: 20),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.ink900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${p.sku} · ${p.stock} in stock',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.ink500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _quickActionRow(
+                icon: Icons.open_in_new_rounded,
+                label: tr(locale, 'action.openDetails'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showProductDetail(p);
+                },
+              ),
+              _quickActionRow(
+                icon: p.onOffer
+                    ? Icons.local_fire_department_rounded
+                    : Icons.local_fire_department_outlined,
+                label: tr(
+                    locale, p.onOffer ? 'stock.clearOffer' : 'stock.markOffer'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _setOffer(ref, p, !p.onOffer);
+                },
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(tr(locale, 'common.close')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _quickActionRow({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: () {
+        Haptics.tap();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 19, color: AppTheme.ink700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.ink900,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: Color(0xFFCBD5E1)),
+          ],
         ),
       ),
     );

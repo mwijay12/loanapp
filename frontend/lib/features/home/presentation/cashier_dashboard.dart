@@ -10,6 +10,7 @@ import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 import 'dashboard_kit.dart';
+import 'featured_deals_section.dart';
 
 /// The counter cashier's home.
 ///
@@ -36,21 +37,17 @@ class CashierDashboard extends ConsumerWidget {
       ..sort((a, b) => b.soldAt.compareTo(a.soldAt));
 
     return DashPage(
+      header: DashHomeHeader(
+        locale: locale,
+        name: staff.name,
+        asset: staff.avatarAsset,
+        grad: staff.grad,
+        unread: unread,
+        roleLabel: tr(locale, 'role.counterCashier'),
+        onAvatarTap: () => context.push('/settings'),
+        onBellTap: () => context.push('/notifications'),
+      ),
       children: [
-        DashProfileRow(
-          name: staff.name,
-          asset: staff.avatarAsset,
-          grad: staff.grad,
-          unread: unread,
-          onAvatarTap: () => context.push('/settings'),
-          onBellTap: () => context.push('/notifications'),
-        ),
-        const SizedBox(height: 18),
-        DashGreeting(
-          locale: locale,
-          roleLabel: tr(locale, 'role.counterCashier'),
-        ),
-        const SizedBox(height: 20),
         DashFeatureCard(
           eyebrow: tr(locale, 'dash.cashTill'),
           icon: Icons.point_of_sale_rounded,
@@ -61,6 +58,9 @@ class CashierDashboard extends ConsumerWidget {
           ctaLabel: tr(locale, 'dash.newSale'),
           onCta: () => context.push('/sell-loan'),
         ),
+        const SizedBox(height: 18),
+        // Back on the counter home: what the shop owner wants pushed today.
+        const FeaturedDealsSection(),
         const SizedBox(height: 14),
         DashAiCard(
           locale: locale,
@@ -96,7 +96,7 @@ class CashierDashboard extends ConsumerWidget {
               iconColor: const Color(0xFF0EA5E9),
               title: tr(locale, 'dash.scanCabinet'),
               sub: tr(locale, 'dash.scanCabinetSub'),
-              route: '/scanner',
+              route: '/scan',
             ),
             DashAction(
               icon: Icons.access_time_filled_rounded,

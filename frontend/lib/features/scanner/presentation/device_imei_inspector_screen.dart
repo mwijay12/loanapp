@@ -317,7 +317,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
             // This used to pick a sample IMEI by the second hand and announce it
             // as a scan. It now opens the camera, and the inspector opens without
             // a serial rather than guessing one.
-            onPressed: () => context.push('/scanner'),
+            onPressed: () => context.push('/scan'),
           ),
         ],
         bottom: PreferredSize(

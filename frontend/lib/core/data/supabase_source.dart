@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import 'branch_provider.dart';
 import 'sales_provider.dart';
 import 'mock_lims_data.dart';
+import 'sale_ledger.dart';
 
 /// Reads the app's rows out of Supabase.
 ///
@@ -54,9 +55,12 @@ class SupabaseSource {
   /// record behind it and the ledger started again on reload. This is the row
   /// that makes the receipt reproducible.
   ///
-  /// Best effort on purpose: a sale that has already taken money must not be lost
-  /// because the network blinked, so failures are recorded rather than thrown.
-  static Future<bool> recordSale({
+  /// It answers with [SaleLedgerWrite], not a bool. The old bool collapsed two
+  /// different facts into `false`: "the server refused this row" and "the request
+  /// went out and nothing came back". The first is safe to retry; the second may
+  /// already be stored, and reporting it as a failure is how a handset gets sold
+  /// twice. Nothing is thrown here; the caller decides what the counter is told.
+  static Future<SaleLedgerWrite> recordSale({
     required String receiptNo,
     required String kind,
     required int total,
@@ -70,10 +74,26 @@ class SupabaseSource {
     String? branchId,
     int? productId,
   }) async {
-    if (!SupabaseConfig.isConfigured) return false;
+    if (!SupabaseConfig.isConfigured) {
+      return const SaleLedgerWrite(SalePersistence.notConfigured);
+    }
+
+    // Resolving the client is local work. If it fails, no request ever left the
+    // device, so the row is definitely not stored and a retry cannot duplicate.
+    final SupabaseQueryBuilder table;
     try {
-      final client = Supabase.instance.client;
-      await client.from('sales').insert({
+      table = Supabase.instance.client.from('sales');
+    } catch (e) {
+      ApiService.lastBackendError = 'recordSale: $e';
+      debugPrint('LIMS: no client for sale $receiptNo -> $e');
+      return const SaleLedgerWrite(
+        SalePersistence.failed,
+        'The sale could not be sent because the database client is not ready.',
+      );
+    }
+
+    try {
+      await table.insert({
         'receipt_no': receiptNo,
         'branch_id': branchId,
         'staff_id': null,
@@ -88,11 +108,56 @@ class SupabaseSource {
         'balance': balance,
         'payment_channel': paymentChannel,
       });
-      return true;
-    } catch (e) {
+      return const SaleLedgerWrite(SalePersistence.confirmed);
+    } on PostgrestException catch (e) {
+      // The database answered with an error status. The row is not there.
       ApiService.lastBackendError = 'recordSale: $e';
       debugPrint('LIMS: could not record sale $receiptNo -> $e');
-      return false;
+      return SaleLedgerWrite(
+        SalePersistence.failed,
+        'The server refused the sale record (${e.code ?? 'no code'}): ${e.message}',
+      );
+    } catch (e) {
+      // A timeout, a dropped socket, a proxy that answered nothing: the insert
+      // may have committed before the answer went missing. Report the truth —
+      // unknown — instead of inventing "not saved".
+      ApiService.lastBackendError = 'recordSale: $e';
+      debugPrint('LIMS: sale $receiptNo unconfirmed -> $e');
+      return SaleLedgerWrite(
+        SalePersistence.unconfirmed,
+        'The sale was sent but the database did not confirm it. '
+        'Check the sales ledger for receipt $receiptNo before ringing it up again.',
+      );
+    }
+  }
+
+  /// Writes `products.on_offer` for one handset.
+  ///
+  /// The column arrives with migration `2026_10_22_05_product_offers.sql`. Until
+  /// that runs, PostgREST answers 42703 (undefined column) and nothing is saved —
+  /// so this reports [OfferSaveOutcome.migrationMissing] instead of pretending
+  /// the shop owner's choice stuck.
+  static Future<OfferSaveOutcome> setProductOffer({
+    required int productId,
+    required bool onOffer,
+  }) async {
+    if (!SupabaseConfig.isConfigured) return OfferSaveOutcome.notConfigured;
+    try {
+      await Supabase.instance.client
+          .from('products')
+          .update({'on_offer': onOffer}).eq('id', productId);
+      return OfferSaveOutcome.saved;
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'setProductOffer: $e';
+      debugPrint('LIMS: could not set offer on product $productId -> $e');
+      if ((e.code ?? '') == '42703' || e.message.contains('on_offer')) {
+        return OfferSaveOutcome.migrationMissing;
+      }
+      return OfferSaveOutcome.failed;
+    } catch (e) {
+      ApiService.lastBackendError = 'setProductOffer: $e';
+      debugPrint('LIMS: could not set offer on product $productId -> $e');
+      return OfferSaveOutcome.failed;
     }
   }
 
@@ -179,6 +244,9 @@ class SupabaseSource {
         soldToday: (r['sold_today'] as num?)?.toInt() ?? 0,
         onLoan: (r['on_loan'] as num?)?.toInt() ?? 0,
         fav: r['is_favorite'] == true,
+        // Absent until migration 2026_10_22_05 runs; a missing key reads false
+        // rather than failing the whole catalogue.
+        onOffer: r['on_offer'] == true,
         brand: r['brand']?.toString(),
         imei1: r['imei1']?.toString(),
         imei2: r['imei2']?.toString(),
@@ -334,4 +402,55 @@ class SupabaseSnapshot {
 
   bool get isEmpty =>
       products.isEmpty && loans.isEmpty && branches.isEmpty && activities.isEmpty;
+}
+
+/// The production [SaleLedger]: one row in `public.sales`, classified.
+class SupabaseSaleLedger implements SaleLedger {
+  const SupabaseSaleLedger();
+
+  @override
+  Future<SaleLedgerWrite> write({
+    required String receiptNo,
+    required String kind,
+    required int total,
+    required int paid,
+    required int balance,
+    required String paymentChannel,
+    required String customerName,
+    required String customerPhone,
+    required String phoneModel,
+    String? imei,
+    String? branchId,
+    int? productId,
+  }) {
+    return SupabaseSource.recordSale(
+      receiptNo: receiptNo,
+      kind: kind,
+      total: total,
+      paid: paid,
+      balance: balance,
+      paymentChannel: paymentChannel,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      phoneModel: phoneModel,
+      imei: imei,
+      branchId: branchId,
+      productId: productId,
+    );
+  }
+}
+
+/// What happened to the "on offer" switch.
+enum OfferSaveOutcome {
+  /// `products.on_offer` was written.
+  saved,
+
+  /// No backend in this build: the choice lives in memory for this session only.
+  notConfigured,
+
+  /// The column does not exist yet — the SQL migration has not been run.
+  migrationMissing,
+
+  /// The write was attempted and failed.
+  failed,
 }

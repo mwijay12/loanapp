@@ -33,32 +33,28 @@ class LoanOfficerDashboard extends ConsumerWidget {
     final overdue = open.where((l) => l.status == 'overdue').toList();
     final outstanding = open.fold<int>(
       0,
-      (sum, l) => sum + ((l.amount * (100 - l.paid)) / 100).round(),
+      (sum, l) => sum + l.remainingAmount,
     );
     final onTime = loans.isEmpty
         ? 0
         : (((loans.length - overdue.length) / loans.length) * 100).round();
     final overdueDue = overdue.fold<int>(
       0,
-      (sum, l) => sum + ((l.amount * (100 - l.paid)) / 100).round(),
+      (sum, l) => sum + l.remainingAmount,
     );
 
     return DashPage(
+      header: DashHomeHeader(
+        locale: locale,
+        name: staff.name,
+        asset: staff.avatarAsset,
+        grad: staff.grad,
+        unread: unread,
+        roleLabel: tr(locale, 'role.loanOfficer'),
+        onAvatarTap: () => context.push('/settings'),
+        onBellTap: () => context.push('/notifications'),
+      ),
       children: [
-        DashProfileRow(
-          name: staff.name,
-          asset: staff.avatarAsset,
-          grad: staff.grad,
-          unread: unread,
-          onAvatarTap: () => context.push('/settings'),
-          onBellTap: () => context.push('/notifications'),
-        ),
-        const SizedBox(height: 18),
-        DashGreeting(
-          locale: locale,
-          roleLabel: tr(locale, 'role.loanOfficer'),
-        ),
-        const SizedBox(height: 20),
         DashFeatureCard(
           eyebrow: tr(locale, 'dash.creditOutstanding'),
           icon: Icons.account_balance_wallet_rounded,
@@ -122,7 +118,7 @@ class LoanOfficerDashboard extends ConsumerWidget {
               iconColor: const Color(0xFF0EA5E9),
               title: tr(locale, 'dash.inspector'),
               sub: tr(locale, 'dash.inspectorSub'),
-              route: '/scanner',
+              route: '/scan',
             ),
             DashAction(
               icon: Icons.notifications_active_rounded,

@@ -15,6 +15,10 @@ class ProductItem {
   final int soldToday;
   final int onLoan;
   bool fav;
+  /// "On offer": the shop owner has put this handset in front of the cashier
+  /// on the till home, usually because it has been sitting on the shelf.
+  /// Persisted as `products.on_offer`; see migration 2026_10_22_05.
+  bool onOffer;
   final String? brand;
   final String? imei1;
   final String? imei2;
@@ -38,6 +42,7 @@ class ProductItem {
     required this.soldToday,
     required this.onLoan,
     this.fav = false,
+    this.onOffer = false,
     this.brand,
     this.imei1,
     this.imei2,
@@ -62,6 +67,7 @@ class ProductItem {
     int? soldToday,
     int? onLoan,
     bool? fav,
+    bool? onOffer,
     String? brand,
     String? imei1,
     String? imei2,
@@ -85,6 +91,7 @@ class ProductItem {
       soldToday: soldToday ?? this.soldToday,
       onLoan: onLoan ?? this.onLoan,
       fav: fav ?? this.fav,
+      onOffer: onOffer ?? this.onOffer,
       brand: brand ?? this.brand,
       imei1: imei1 ?? this.imei1,
       imei2: imei2 ?? this.imei2,
@@ -161,6 +168,20 @@ class LoanItem {
   final int installmentWeeks;
   final List<LoanPaymentRecord> payments;
 
+  /// Exact money received, once the counter has rung up a repayment.
+  ///
+  /// [paid] is an integer percentage of [amount], so a TZS 1,000 instalment on
+  /// a TZS 2,400,000 loan is 0.04% and rounds back to the percentage it started
+  /// from: the money was received, the record was written, and the balance did
+  /// not move. When a repayment is recorded we keep the exact figure here and
+  /// read the balance from it. Loans that only ever carried a percentage
+  /// (seeded rows, or rows loaded from `paid_percent`) keep using [paid], so no
+  /// existing figure changes.
+  ///
+  /// This is in-memory only: the ledger stores `paid_percent`, so the shilling
+  /// residue is lost on reload until repayments are stored as rows of their own.
+  final int? paidAmountOverride;
+
   LoanItem({
     String? id,
     required this.name,
@@ -183,6 +204,7 @@ class LoanItem {
     int? weeklyInstallment,
     int? installmentWeeks,
     List<LoanPaymentRecord>? payments,
+    this.paidAmountOverride,
   })  : // A blank column means "not recorded", never "here is a plausible
         // Tanzanian phone number". These fallbacks used to be a real-looking
         // phone, NIDA number, IMEI, guarantor and Kariakoo address, so a loan row
@@ -203,8 +225,21 @@ class LoanItem {
         installmentWeeks = installmentWeeks ?? 0,
         payments = payments ?? [];
 
-  int get totalPaidAmount => (amount * (paid / 100.0)).round();
+  /// Money received so far, in whole shillings.
+  ///
+  /// Prefers the exact figure kept by [recordPayment] and falls back to the
+  /// stored percentage. See [LoanBalance] for why the percentage is taken of
+  /// [amount] and not of the deposit-adjusted balance.
+  int get totalPaidAmount =>
+      (paidAmountOverride ?? (amount * (paid / 100.0)).round())
+          .clamp(0, amount);
+
   int get remainingAmount => (amount - totalPaidAmount).clamp(0, amount);
+
+  /// The percentage the screens draw, computed from money so a small instalment
+  /// still moves the bar by the shilling it was worth.
+  int get paidPercent =>
+      amount <= 0 ? 0 : ((totalPaidAmount * 100) / amount).round().clamp(0, 100);
 
   String get formattedAmount {
     final s = amount.toString();
@@ -274,6 +309,7 @@ class LoanItem {
     int? weeklyInstallment,
     int? installmentWeeks,
     List<LoanPaymentRecord>? payments,
+    int? paidAmountOverride,
   }) {
     return LoanItem(
       id: id ?? this.id,
@@ -297,6 +333,7 @@ class LoanItem {
       weeklyInstallment: weeklyInstallment ?? this.weeklyInstallment,
       installmentWeeks: installmentWeeks ?? this.installmentWeeks,
       payments: payments ?? this.payments,
+      paidAmountOverride: paidAmountOverride ?? this.paidAmountOverride,
     );
   }
 }
