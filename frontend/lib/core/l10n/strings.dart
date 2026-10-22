@@ -765,6 +765,152 @@ const Map<String, Map<String, String>> _dictionary = {
   'adm.assignedBranch': {'en': 'Assigned branch', 'sw': 'Tawi Lililopangiwa'},
   'adm.deviceHold': {'en': 'Place device hold', 'sw': 'Weka Device Hold'},
 
+  // ------------------------------------------------------------ admin console
+  // The console screens used to be half English, half Swahili on the same card
+  // ("Branch Network & Hubs" above "Wafanyakazi & RBAC", "Week" next to "Mwezi").
+  // Every visible word there now resolves through these keys, so one language
+  // wins for the whole screen instead of per widget.
+  'admin.titleAdmin': {'en': 'Admin Console', 'sw': 'Kituo cha Msimamizi'},
+  'admin.titleBranch': {'en': 'Branch Console', 'sw': 'Kituo cha Tawi'},
+  'admin.console': {'en': 'Console', 'sw': 'Kituo'},
+  'admin.tabNetwork': {
+    'en': 'Branch Network & Hubs',
+    'sw': 'Mtandao wa Matawi',
+  },
+  'admin.staffTab': {'en': 'Staff & RBAC', 'sw': 'Wafanyakazi & RBAC'},
+  'admin.revenueToday': {'en': 'Revenue today', 'sw': 'Mauzo ya leo'},
+  'admin.activeBranches': {'en': 'Active branches', 'sw': 'Matawi yanayofanya kazi'},
+  'admin.branchesOpen': {'en': '{n} of {total} open', 'sw': '{n} kati ya {total} wazi'},
+  'admin.loansOutstanding': {'en': 'Loans outstanding', 'sw': 'Mikopo inayodaiwa'},
+  'admin.overdue': {'en': '{n} overdue', 'sw': '{n} imechelewa'},
+  'admin.alerts': {'en': 'Alerts', 'sw': 'Tahadhari'},
+  'admin.nothingPending': {'en': 'Nothing pending', 'sw': 'Hakuna inayosubiri'},
+  'admin.needsReview': {'en': 'Needs review', 'sw': 'Inahitaji kuangaliwa'},
+  'admin.vsYesterday': {'en': 'vs yesterday', 'sw': 'kulinganisha na jana'},
+  'admin.noYesterday': {
+    'en': 'No figure for yesterday',
+    'sw': 'Hakuna kumbukumbu ya jana',
+  },
+  'admin.rangeWeek': {'en': 'Week', 'sw': 'Wiki'},
+  'admin.rangeMonth': {'en': 'Month', 'sw': 'Mwezi'},
+  'admin.periodWeek': {'en': 'this week', 'sw': 'wiki hii'},
+  'admin.periodMonth': {'en': 'this month', 'sw': 'mwezi huu'},
+  'admin.networkRevenue': {
+    'en': 'Network revenue · {period}',
+    'sw': 'Mauzo ya mtandao · {period}',
+  },
+  'admin.branchRevenue': {
+    'en': 'Branch revenue · {period}',
+    'sw': 'Mauzo ya tawi · {period}',
+  },
+  'admin.vsPrev': {'en': '{n}% vs prev', 'sw': '{n}% dhidi ya awali'},
+  'admin.noSalesYet': {
+    'en': 'No sales recorded yet',
+    'sw': 'Hakuna mauzo yaliyorekodiwa bado',
+  },
+  'admin.tapBar': {
+    'en': 'Tap a bar to see that day',
+    'sw': 'Gusa upau kuona siku hiyo',
+  },
+  'admin.onlyDays': {
+    'en': 'only {n} days recorded',
+    'sw': 'siku {n} tu zimeandikwa',
+  },
+  'admin.transactions': {'en': 'transactions', 'sw': 'miamala'},
+  'admin.was': {'en': 'was', 'sw': 'ilikuwa'},
+  'admin.vsLastWeek': {'en': 'vs same day last week', 'sw': 'vs siku kama hii wiki iliyopita'},
+  'admin.noEarlierFigure': {
+    'en': 'no figure for last week',
+    'sw': 'hakuna kumbukumbu ya wiki iliyopita',
+  },
+  'admin.branches': {'en': 'Branches', 'sw': 'Matawi'},
+  'admin.lowStockModels': {'en': '{n} low-stock models', 'sw': 'bidhaa {n} chini ya kiwango'},
+  'admin.alertsTitle': {'en': 'Alerts & Escalations', 'sw': 'Tahadhari na Mambo ya Dharura'},
+  'admin.noAlerts': {
+    'en': 'Nothing needs review right now.',
+    'sw': 'Hakuna kinachohitaji kuangaliwa sasa.',
+  },
+  'admin.alertOverdue': {
+    'en': '{n} loans are past their due date',
+    'sw': 'mikopo {n} imepita tarehe ya malipo',
+  },
+  'admin.alertLowStock': {
+    'en': '{n} models are low on stock',
+    'sw': 'bidhaa {n} zina stock ndogo',
+  },
+  'admin.alertNoSalesToday': {
+    'en': 'No sales recorded today',
+    'sw': 'Hakuna mauzo yaliyorekodiwa leo',
+  },
+  'admin.alertNoSalesTodaySub': {
+    'en': 'The shop day is open but the till has no entries',
+    'sw': 'Siku ya kazi imefunguliwa lakini kasha halina kumbukumbu',
+  },
+  'admin.activeRoleTitle': {
+    'en': 'Active role (server-assigned)',
+    'sw': 'Jukumu linalotumika (limewekwa na server)',
+  },
+  'admin.signedInAs': {
+    'en': 'Signed in as {role}. Role changes happen server-side.',
+    'sw': 'Umeingia kama {role}. Mabadiliko ya jukumu hufanywa server.',
+  },
+  'admin.staffDirectory': {
+    'en': 'Staff directory & credentials',
+    'sw': 'Orodha ya wafanyakazi',
+  },
+  'admin.staffCount': {
+    'en': '{n} staff registered across branches',
+    'sw': 'wafanyakazi {n} wamesajiliwa katika matawi',
+  },
+  'admin.addStaff': {'en': 'Add staff', 'sw': 'Ongeza staff'},
+  'admin.noAccessTitle': {'en': 'No console access', 'sw': 'Huna ruhusa ya console'},
+  'admin.noAccessBody': {
+    'en': 'Your role is {role}. The console needs Super Admin or Branch Manager. Ask your supervisor for access.',
+    'sw': 'Jukumu lako ni {role}. Kituo kinahitaji Super Admin au Branch Manager. Omba ruhusa kwa msimamizi wako.',
+  },
+  'admin.closeBranch': {'en': 'Close branch', 'sw': 'Funga tawi'},
+  'admin.reopenBranch': {'en': 'Reopen branch', 'sw': 'Fungua tawi'},
+  'admin.closeBranchHint': {
+    'en': 'It disappears from the pickers, but its records stay.',
+    'sw': 'Halitaonekana kwenye uchaguzi, lakini rekodi zake zinabaki.',
+  },
+  'admin.reopenBranchHint': {
+    'en': 'It returns to the list of operating branches.',
+    'sw': 'Litarudi kwenye orodha ya matawi yanayofanya kazi.',
+  },
+  'admin.roleSuperAdmin': {
+    'en': 'Full executive access: network revenue, profit margins, staff RBAC, and the device-hold policy switch.',
+    'sw': 'Uongozi kamili: mauzo ya mtandao, faida, ruhusa za wafanyakazi, na sera ya device hold.',
+  },
+  'admin.roleBranchManager': {
+    'en': 'Branch supervision: daily register and drawer audit, supervisor discount PIN overrides, staff shift audits.',
+    'sw': 'Usimamizi wa tawi: daftari la siku na ukaguzi wa kasha, PIN ya punguzo, ukaguzi wa zamu.',
+  },
+  'admin.roleCredit': {
+    'en': 'Credit and risk: customer KYC scoring, loan approval or rejection, device-hold flags for defaulters, and collections.',
+    'sw': 'Mikopo na hatari: alama za KYC, kukubali au kukataa mkopo, device hold kwa wadaiwa, na ukusanyaji.',
+  },
+  'admin.roleInventory': {
+    'en': 'Logistics and warehouse: inbound shipments, serialised IMEI intake, audits, and branch transfers.',
+    'sw': 'Usafirishaji na ghala: shehena zinazoingia, IMEI, ukaguzi, na uhamishaji wa matawi.',
+  },
+  'admin.roleStaff': {
+    'en': 'Retail POS: cash and mobile money sales, customer KYC intake, stock scan, and shift clock-in.',
+    'sw': 'Mauzo: fedha taslimu na mobile money, KYC ya mteja, skani ya stock, na kuingia zamu.',
+  },
+  'admin.roleAuditor': {
+    'en': 'Oversight only: read-only access to registers, loan history, stock movements and reports.',
+    'sw': 'Uangalizi tu: unaweza kusoma daftari, historia ya mikopo, mienendo ya stock na ripoti.',
+  },
+  'admin.roleInvited': {
+    'en': 'Invited but not yet activated: the account exists but has no access until the invitation is accepted.',
+    'sw': 'Amealikwa lakini hajaamilishwa: akaunti ipo lakini haina ruhusa hadi aukubali mwaliko.',
+  },
+  'admin.roleUnknown': {
+    'en': 'Unrecognised role — treated as read-only until a Super Admin assigns a valid role.',
+    'sw': 'Jukumu lisilotambulika — linahesabiwa kama kusoma tu hadi Super Admin ape jukumu halali.',
+  },
+
   // ------------------------------------------------------------------- generic
   'common.save': {'en': 'Save', 'sw': 'Hifadhi'},
   'common.cancel': {'en': 'Cancel', 'sw': 'Ghairi'},

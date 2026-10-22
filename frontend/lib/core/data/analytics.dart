@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'branch_provider.dart';
+import 'sales_provider.dart';
+
 /// Revenue history behind the console chart.
 ///
 /// The chart used to be seven hand-written bar heights, so changing the range
@@ -14,7 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum RevenueRange { week, month }
 
 extension RevenueRangeLabel on RevenueRange {
-  String get label => this == RevenueRange.week ? 'Wiki' : 'Mwezi';
+  String get label => this == RevenueRange.week ? 'Week' : 'Month';
 
   String get caption => this == RevenueRange.week ? 'this week' : 'this month';
 
@@ -88,9 +91,45 @@ List<DailySale> demoLedger(DateTime today) {
   return days;
 }
 
-/// Ledger for the signed-in build. Demo mode seeds a fixed history.
+/// The shop's own takings, one entry per East Africa Time day.
+///
+/// This used to be `demoLedger` unconditionally: a seeded ninety-day history with
+/// weekend bumps and month-end lifts. It looked convincing and it was fiction - a
+/// bar never corresponded to a cash sale, and pressing it could not have shown
+/// anything real because there was nothing real behind it.
+///
+/// The ledger now aggregates `public.sales`. The seeded history is kept only for a
+/// build that has no database at all, so the demo link still renders something.
 final salesLedgerProvider = Provider<List<DailySale>>((ref) {
-  return demoLedger(DateTime.now());
+  final rows = ref.watch(salesProvider);
+  if (rows.isEmpty) {
+    return demoLedger(eatTodayDate);
+  }
+
+  final branches = ref.watch(branchesProvider);
+  final nameById = {for (final b in branches) b.id: b.name};
+
+  final byDate = <DateTime, List<SaleRecord>>{};
+  for (final r in rows) {
+    final d = eatDateOf(r.soldAt);
+    byDate.putIfAbsent(d, () => []).add(r);
+  }
+
+  final dates = byDate.keys.toList()..sort();
+  return [
+    for (final d in dates)
+      DailySale(
+        date: d,
+        amount: byDate[d]!.fold<int>(0, (s, r) => s + r.total),
+        branch: nameById[byDate[d]!.first.branchId] ?? 'All branches',
+        transactions: byDate[d]!.length,
+      ),
+  ];
+});
+
+/// Whether the chart is drawing the shop's own ledger or the seeded fallback.
+final ledgerIsRealProvider = Provider<bool>((ref) {
+  return ref.watch(salesProvider).isNotEmpty;
 });
 
 class RevenuePoint {
@@ -99,12 +138,35 @@ class RevenuePoint {
     required this.value,
     required this.isCurrent,
     required this.isPeak,
+    this.date,
+    this.transactions = 0,
+    this.previousValue = 0,
+    this.previousLabel = '',
   });
 
   final String label;
   final int value;
   final bool isCurrent;
   final bool isPeak;
+
+  /// The day (or week) this bar stands for, so tapping it can name the date.
+  final DateTime? date;
+
+  final int transactions;
+
+  /// The same weekday one week earlier, or the same bucket in the previous
+  /// window. Zero is a real answer: the shop sold nothing that day.
+  final int previousValue;
+
+  /// e.g. "8 Oct", so the comparison can be read without opening a calendar.
+  final String previousLabel;
+
+  /// Percent change against the equivalent earlier period. Null when there was
+  /// no earlier figure to compare with, which is different from "no change".
+  int? get deltaPercent {
+    if (previousValue <= 0) return null;
+    return (((value - previousValue) / previousValue) * 100).round();
+  }
 }
 
 class RevenueSeries {
@@ -154,34 +216,59 @@ final revenueSeriesProvider =
       : window.map((d) => d.amount).reduce((a, b) => a > b ? a : b);
 
   const shortDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const monthNames = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  String shortDate(DateTime d) => '${d.day} ${monthNames[d.month]}';
+
+  // Previous figures are looked up by date, because "the same weekday last week"
+  // is a date, not a bar position.
+  final byDate = {for (final d in ledger) d.date: d};
 
   final points = <RevenuePoint>[];
   if (range == RevenueRange.week) {
     for (final d in window) {
+      final prevDate = d.date.subtract(const Duration(days: 7));
+      final prev = byDate[prevDate];
       points.add(
         RevenuePoint(
           label: shortDays[d.date.weekday - 1],
           value: d.amount,
-          isCurrent: d.date.day == today.day && d.date.month == today.month,
+          isCurrent: d.date == today,
           isPeak: d.amount == peak,
+          date: d.date,
+          transactions: d.transactions,
+          previousValue: prev?.amount ?? 0,
+          previousLabel: shortDate(prevDate),
         ),
       );
     }
   } else {
     // Month view groups the 30 days into four weekly buckets, which keeps the
     // axis readable at phone width instead of cramming thirty labels.
+    final prevWindow =
+        ledger.where((d) => !d.date.isBefore(prevStart) && d.date.isBefore(start)).toList();
     for (var i = 0; i < 4; i++) {
       final bucketStart = i * 7;
       final bucket = window.skip(bucketStart).take(7).toList();
       if (bucket.isEmpty) break;
       final sum = bucket.fold<int>(0, (s, d) => s + d.amount);
-      final label = 'W${i + 1}';
+      final tx = bucket.fold<int>(0, (s, d) => s + d.transactions);
+      final prevBucket = prevWindow.skip(bucketStart).take(7).toList();
+      final prevSum = prevBucket.fold<int>(0, (s, d) => s + d.amount);
       points.add(
         RevenuePoint(
-          label: label,
+          label: 'W${i + 1}',
           value: sum,
-          isCurrent: i == 3,
+          isCurrent: i == (window.length / 7).ceil() - 1,
           isPeak: false,
+          date: bucket.first.date,
+          transactions: tx,
+          previousValue: prevSum,
+          previousLabel: prevBucket.isEmpty
+              ? ''
+              : 'W${i + 1} prior',
         ),
       );
     }
@@ -196,6 +283,10 @@ final revenueSeriesProvider =
             value: p.value,
             isCurrent: p.isCurrent,
             isPeak: p.value == peakValue,
+            date: p.date,
+            transactions: p.transactions,
+            previousValue: p.previousValue,
+            previousLabel: p.previousLabel,
           ))
       .toList();
 
