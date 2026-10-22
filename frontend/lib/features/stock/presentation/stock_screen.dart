@@ -1545,7 +1545,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                                       Icon(Icons.photo_library_rounded, size: 13, color: AppTheme.brand600),
                                                       SizedBox(width: 4),
                                                       Text(
-                                                        'Pakia Galari',
+                                                        'Upload photo',
                                                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
                                                       ),
                                                     ],
