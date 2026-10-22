@@ -288,7 +288,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   InkWell(
                     onTap: () {
                       Navigator.pop(ctx);
-                      context.push('/imei-inspector?imei=${p.imei1 ?? "354928104829104"}');
+                      // This used to open the inspector on a hardcoded serial
+                      // when the product had none on file, so the screen showed
+                      // a full history for a handset nobody selected.
+                      final serial = p.imei1;
+                      if (serial == null || serial.isEmpty) {
+                        LimsToast.show(context, tr(locale, 'stock.noSerialOnFile'));
+                        return;
+                      }
+                      context.push('/imei-inspector?imei=$serial');
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -1233,13 +1241,17 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   void _showAddPhoneModal() {
-    final nameCtrl = TextEditingController(text: 'Galaxy A15');
-    final imei1Ctrl = TextEditingController(text: '358920112849102');
-    final imei2Ctrl = TextEditingController(text: '358920112849110');
-    final buyingCtrl = TextEditingController(text: '290000');
-    final cashPriceCtrl = TextEditingController(text: '380000');
-    final loanPriceCtrl = TextEditingController(text: '460000');
-    final qtyCtrl = TextEditingController(text: '5');
+    // The form used to open pre-filled with a Galaxy A15, two serial numbers and
+    // three prices. Tapping "Save" without touching anything wrote a handset with
+    // a made-up IMEI into stock. It now starts empty; the model chips below fill
+    // it only when someone picks one.
+    final nameCtrl = TextEditingController();
+    final imei1Ctrl = TextEditingController();
+    final imei2Ctrl = TextEditingController();
+    final buyingCtrl = TextEditingController();
+    final cashPriceCtrl = TextEditingController();
+    final loanPriceCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController(text: '1');
     String brand = 'Samsung';
     String storage = '128GB';
     String ram = '6GB';
@@ -1796,20 +1808,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: imei1Ctrl,
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   labelText: 'Primary IMEI 1 (15 digits)',
-                                  prefixIcon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppTheme.brand600),
-                                  border: const OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(Icons.auto_fix_high_rounded, size: 18, color: AppTheme.brand600),
-                                    onPressed: () {
-                                      final randomImei = '35${DateTime.now().millisecondsSinceEpoch.toString().padRight(13, '0').substring(0, 13)}';
-                                      imei1Ctrl.text = randomImei;
-                                      setModalState(() {});
-                                    },
-                                    tooltip: 'Generate valid IMEI',
-                                  ),
+                                  prefixIcon: Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppTheme.brand600),
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  // There used to be a button here that wrote a
+                                  // serial built from the current timestamp into
+                                  // the field. A serial identifies one physical
+                                  // handset; a generated one identifies nothing and
+                                  // still passed the Luhn check. Scan or type it.
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -1959,10 +1967,25 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           return;
                         }
 
-                        final price = int.tryParse(cashPriceCtrl.text.replaceAll(',', '')) ?? 380000;
-                        final qty = int.tryParse(qtyCtrl.text) ?? 5;
-                        final cost = int.tryParse(buyingCtrl.text.replaceAll(',', '')) ?? 300000;
-                        final loanP = int.tryParse(loanPriceCtrl.text.replaceAll(',', '')) ?? (price * 1.25).round();
+                        // These used to fall back to TZS 380,000, 5 units and
+                        // TZS 300,000 when the fields were blank, so an empty form
+                        // saved a priced handset. Now a blank field stops the save.
+                        final price = int.tryParse(cashPriceCtrl.text.replaceAll(',', ''));
+                        final qty = int.tryParse(qtyCtrl.text);
+                        final cost = int.tryParse(buyingCtrl.text.replaceAll(',', ''));
+                        final loanP = int.tryParse(loanPriceCtrl.text.replaceAll(',', ''));
+                        if (nameCtrl.text.trim().isEmpty ||
+                            price == null ||
+                            price <= 0 ||
+                            qty == null ||
+                            qty <= 0) {
+                          LimsToast.show(
+                            context,
+                            'Enter the model name, the cash price and how many units arrived.',
+                            isError: true,
+                          );
+                          return;
+                        }
 
                         // Unknown brands get brand-matched artwork instead of
                         // a random stock photo of some other manufacturer's phone.
@@ -2017,7 +2040,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         Navigator.pop(ctx);
                         LimsToast.show(
                           context,
-                          '${newItem.name} ($qty units) registered into Kariakoo inventory!',
+                          '${newItem.name} ($qty units) added to ${ref.read(activeBranchProvider)} stock.',
                           isSuccess: true,
                         );
                       },

@@ -30,33 +30,46 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
   bool _isSearching = false;
   bool _hasSearched = false;
 
-  // Inspected device data
-  String _model = 'iPhone 15 Pro Max';
+  // Inspected device data. Every one of these is written by _performSearch from
+  // the row that actually answered; none of them carries a starting value. They
+  // used to open pre-filled with an iPhone 15 Pro Max, a borrower named Bakari
+  // Juma Mwambungu, a TZS 2,450,000 balance and a serial that did not exist —
+  // which meant the first screen a shopkeeper saw described a handset nobody had
+  // looked up.
+  String _model = '—';
   String? _matchedArt;
-  String _variant = '256GB · Natural Titanium';
-  String _imei = '354928104829104';
-  final String _serialNumber = 'F2LW9012MD67';
-  String _status = 'ON_LOAN'; // 'ON_LOAN', 'CASH_SOLD', 'IN_STOCK', 'OVERDUE'
-  String _borrowerName = 'Bakari Juma Mwambungu';
-  String _borrowerPhone = '0754 892 314';
-  String _borrowerNida = '19920415-14120-00002-18';
-  int _totalLoanAmount = 4450000;
-  final int _depositPaid = 1112500;
-  int _remainingBalance = 2450000;
-  String _nextDueDate = 'Ijumaa, 10 Oktoba 2026';
-  int _warrantyDaysLeft = 248;
-  final String _branch = 'Kariakoo Main Hub';
-  String? _loanId = 'LIMS-LN-4891';
+  String _variant = '—';
+  String _imei = '';
+  /// Read from the answering row, never invented. These used to be `final`
+  /// constants, so every handset in the shop reported the same serial number,
+  /// the same branch and the same deposit.
+  String _serialNumber = '—';
+  String _status = 'UNKNOWN'; // 'ON_LOAN', 'CASH_SOLD', 'IN_STOCK', 'OVERDUE', 'UNKNOWN', 'INVALID'
+  String _borrowerName = '—';
+  String _borrowerPhone = '—';
+  String _borrowerNida = '—';
+  int _totalLoanAmount = 0;
+  int _depositPaid = 0;
+  int _remainingBalance = 0;
+  String _nextDueDate = '—';
+  int _warrantyDaysLeft = 0;
+  String _branch = '—';
+  String? _loanId;
+  /// The rows that actually answered the lookup. The audit trail is built
+  /// from these, so a movement row only appears when the database has one.
+  LoanItem? _answeredLoan;
+  ProductItem? _answeredProduct;
 
   @override
   void initState() {
     super.initState();
+    // Opening this screen used to run a search for a made-up serial, so the
+    // first thing a shopkeeper saw was a device they had not scanned - complete
+    // with a borrower, a deposit and four fabricated movement rows. The field
+    // now starts empty and the screen waits to be told which handset to check.
     if (widget.initialImei != null && widget.initialImei!.isNotEmpty) {
       _imeiController.text = widget.initialImei!;
       _performSearch(widget.initialImei!);
-    } else {
-      _imeiController.text = '354928104829104';
-      _performSearch('354928104829104');
     }
   }
 
@@ -123,8 +136,15 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
     setState(() {
       _isSearching = false;
       _imei = digits;
+      _serialNumber = '—';
+      _depositPaid = 0;
+      _branch = ref.read(activeBranchProvider);
+      _answeredLoan = null;
+      _answeredProduct = null;
 
       if (matchedLoan != null) {
+        _answeredLoan = matchedLoan;
+        _serialNumber = digits;
         _model = matchedLoan.item;
         _variant = '';
         _status = matchedLoan.status == 'overdue' ? 'OVERDUE' : 'ON_LOAN';
@@ -137,6 +157,10 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         _nextDueDate = matchedLoan.due;
         _warrantyDaysLeft = 0;
         _loanId = matchedLoan.id;
+        _depositPaid = matchedLoan.totalDeposit;
+        _branch = matchedLoan.location.trim().isEmpty
+            ? ref.read(activeBranchProvider)
+            : matchedLoan.location;
         _matchedArt = ProductArt.resolve(
           brand: null,
           name: matchedLoan.item,
@@ -146,6 +170,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
       }
 
       if (matchedProduct != null) {
+        _answeredProduct = matchedProduct;
         _model = matchedProduct.name;
         _variant = matchedProduct.variant;
         _status = 'IN_STOCK';
@@ -157,6 +182,8 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         _nextDueDate = tr(_locale, 'insp.notFinanced');
         _warrantyDaysLeft = 0;
         _loanId = null;
+        _serialNumber = matchedProduct.imei1 ?? '—';
+        _branch = ref.read(activeBranchProvider);
         _matchedArt = ProductArt.resolve(
           explicit: matchedProduct.imageAsset,
           brand: matchedProduct.brand,
@@ -178,6 +205,10 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         _nextDueDate = (row['due_info'] ?? '—').toString();
         _warrantyDaysLeft = 0;
         _loanId = remote.status == 'on_loan' ? (row['id'] ?? '').toString() : null;
+        _serialNumber = (row['serial_no'] ?? row['serial'] ?? '—').toString();
+        _depositPaid = SupabaseSource.parseMoney(row['deposit'] ?? row['total_deposit']);
+        _branch = (row['branch_name'] ?? row['branch'] ?? ref.read(activeBranchProvider))
+            .toString();
         _status = remote.status == 'on_loan'
             ? ((row['status'] ?? '') == 'overdue' ? 'OVERDUE' : 'ON_LOAN')
             : 'IN_STOCK';
@@ -208,6 +239,13 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
   }
 
   Future<void> _sendPaymentReminderSms() async {
+    // No number on the contract means no message. The old code would have
+    // opened the messaging app against a fallback number the row never held.
+    if (_borrowerPhone.replaceAll(RegExp(r'[^0-9+]'), '').length < 9) {
+      if (!mounted) return;
+      LimsToast.show(context, tr(_locale, 'insp.noPhoneOnFile'));
+      return;
+    }
     final amount = LimsFormatters.formatNumber(
         _remainingBalance > 50000 ? 50000 : _remainingBalance);
     final body = trf(_locale, 'insp.reminderSms', {
@@ -251,7 +289,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         ),
       );
     } else {
-      LimsToast.show(context, 'This device has no active loan.');
+      LimsToast.show(context, tr(_locale, 'insp.noActiveLoan'));
     }
   }
 
@@ -268,13 +306,13 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.ink900),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Hardware Verification & IMEI Inspector',
-          style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+        title: Text(
+          tr(_locale, 'insp.screenTitle'),
+          style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
         ),
         actions: [
           IconButton(
-            tooltip: 'Skani barcode / IMEI',
+            tooltip: tr(_locale, 'insp.scanTooltip'),
             icon: const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.brand600),
             // This used to pick a sample IMEI by the second hand and announce it
             // as a scan. It now opens the camera, and the inspector opens without
@@ -315,10 +353,10 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.ink900),
                       decoration: InputDecoration(
                         hintText: tr(_locale, 'insp.imeiHint'),
-                        hintStyle: TextStyle(fontSize: 13, color: AppTheme.ink400, fontWeight: FontWeight.normal),
+                        hintStyle: const TextStyle(fontSize: 13, color: AppTheme.ink400, fontWeight: FontWeight.normal),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onSubmitted: _performSearch,
                     ),
@@ -342,35 +380,41 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                     ),
                     child: _isSearching
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Kagua', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                        : Text(tr(_locale, 'insp.search'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // Quick Samples Chips
-            Row(
-              children: [
-                const Text('Mifano:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.ink500)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildQuickImeiChip('354928104829104', 'iPhone 15 Pro (Mkopo)'),
-                        const SizedBox(width: 6),
-                        _buildQuickImeiChip('864920042819384', 'Redmi (Overdue Loan)'),
-                        const SizedBox(width: 6),
-                        _buildQuickImeiChip('358920112849102', 'Galaxy A15 (Stoo)'),
-                      ],
+            // Real serials already on the shelf. This row used to offer three
+            // invented IMEIs labelled "Mifano" (iPhone 15 Pro, Redmi, Galaxy A15)
+            // and tapping one produced a full inspection of a handset that did not
+            // exist. It now offers serials that are actually recorded in stock, and
+            // shows nothing at all when no unit has a serial on file.
+            if (_serialsOnFile.isNotEmpty) ...[
+              Row(
+                children: [
+                  Text(tr(_locale, 'insp.serialsOnFile'),
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.ink500)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < _serialsOnFile.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 6),
+                            _buildQuickImeiChip(_serialsOnFile[i].$1, _serialsOnFile[i].$2),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
 
             if (_hasSearched) ...[
               // Handset Overview Card
@@ -400,6 +444,20 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
         ),
       ),
     );
+  }
+
+  /// Serials that a real row in stock carries. Empty is the normal answer when
+  /// nobody has keyed serials in yet, and an empty list hides the row instead of
+  /// filling it with sample numbers.
+  List<(String, String)> get _serialsOnFile {
+    final out = <(String, String)>[];
+    for (final p in ref.watch(inventoryProvider)) {
+      final imei = p.imei1;
+      if (imei == null || imei.isEmpty) continue;
+      out.add((imei, p.name));
+      if (out.length == 4) break;
+    }
+    return out;
   }
 
   Widget _buildQuickImeiChip(String imei, String label) {
@@ -522,9 +580,9 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildParamItem('Serial No.', _serialNumber),
+              _buildParamItem(tr(_locale, 'insp.serialNo'), _serialNumber),
               _buildParamItem(tr(_locale, 'insp.branch'), _branch),
-              _buildParamItem('Loan value', 'TZS ${LimsFormatters.formatNumber(_totalLoanAmount)}'),
+              _buildParamItem(tr(_locale, 'insp.loanValue'), 'TZS ${LimsFormatters.formatNumber(_totalLoanAmount)}'),
             ],
           ),
         ],
@@ -638,11 +696,11 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Hire-Purchase Recovery & Actions',
+                          Text(
+                            tr(_locale, 'insp.recoveryTitle'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                           ),
                           Text(
                             isOverdue ? tr(_locale, 'insp.overdueLine') : tr(_locale, 'insp.currentLine'),
@@ -664,7 +722,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  isOverdue ? 'Overdue' : 'Active',
+                  isOverdue ? tr(_locale, 'insp.overdueTag') : tr(_locale, 'insp.activeTag'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -708,7 +766,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: OutlinedButton.icon(
                   onPressed: _sendPaymentReminderSms,
                   icon: const Icon(Icons.sms_outlined, size: 16),
-                  label: const Text('Send payment SMS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  label: Text(tr(_locale, 'insp.sendSms'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.brand600,
                     side: const BorderSide(color: Color(0xFFCEE1FE)),
@@ -722,7 +780,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: ElevatedButton.icon(
                   onPressed: _openBorrowerDossier,
                   icon: const Icon(Icons.folder_shared_rounded, size: 16),
-                  label: const Text('Jalada la Mkopaji', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  label: Text(tr(_locale, 'insp.borrowerDossier'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.brand600,
                     foregroundColor: Colors.white,
@@ -761,7 +819,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                   tr(_locale, 'insp.loanSection'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
               ),
               if (_loanId != null)
@@ -776,10 +834,10 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                       ),
                     );
                   },
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Text('Faili Kamili', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
-                      Icon(Icons.chevron_right_rounded, size: 16, color: AppTheme.brand600),
+                      Text(tr(_locale, 'insp.fullFile'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
+                      const Icon(Icons.chevron_right_rounded, size: 16, color: AppTheme.brand600),
                     ],
                   ),
                 ),
@@ -815,7 +873,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Simu: $_borrowerPhone · NIDA: $_borrowerNida',
+                      trf(_locale, 'insp.phoneNida', {'phone': _borrowerPhone, 'nida': _borrowerNida}),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 11.5, color: AppTheme.ink500),
@@ -833,7 +891,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Salio Lililobaki', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
+                    Text(tr(_locale, 'insp.remainingBalance'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: AppTheme.ink500)),
                     const SizedBox(height: 2),
                     Text(
                       'TZS ${LimsFormatters.formatNumber(_remainingBalance)}',
@@ -849,7 +907,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Due date', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: AppTheme.ink500)),
+                    Text(tr(_locale, 'insp.dueDate'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: AppTheme.ink500)),
                     const SizedBox(height: 2),
                     Text(
                       _nextDueDate,
@@ -871,7 +929,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
                 context.push('/sell-loan?type=LOAN&model=$_model&imei=$_imei');
               },
               icon: const Icon(Icons.payments_rounded, size: 18),
-              label: const Text('Record a payment', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              label: Text(tr(_locale, 'insp.recordPayment'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.brand600,
                 foregroundColor: Colors.white,
@@ -902,12 +960,12 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Hali ya Waranti (Warranty)',
+                  tr(_locale, 'insp.warrantyTitle'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.ink900),
                 ),
               ),
               const SizedBox(width: 8),
@@ -926,7 +984,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
             ],
           ),
           const SizedBox(height: 12),
-          const Text('Inajumuisha: Kioo cha Asili, Motherboard & Ufundi wa Mfumo chini ya LIMS Care Guarantee.', style: TextStyle(fontSize: 12, color: AppTheme.ink600)),
+          Text(tr(_locale, 'insp.warrantyIncludes'), style: const TextStyle(fontSize: 12, color: AppTheme.ink600)),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
@@ -943,6 +1001,7 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
   }
 
   Widget _buildDeviceTimelineCard() {
+    final audit = _auditEntries;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -956,15 +1015,90 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Device Audit Trail', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
+          Text(tr(_locale, 'insp.auditTitle'), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.ink900)),
           const SizedBox(height: 14),
-          _buildAuditRow(Icons.inventory_2_rounded, 'Received into Warehouse', 'PO #4920 · Kariakoo Main Hub', '15 Sept 2026', AppTheme.brand600),
-          _buildAuditRow(Icons.verified_user_rounded, 'Collateral Agreement Executed', 'IMEI $_imei mapped to loan contract (PDPA Compliant)', '16 Sept 2026', const Color(0xFF7C5CFC)),
-          _buildAuditRow(Icons.assignment_ind_rounded, 'Loan Disbursed', 'Deposit TZS ${LimsFormatters.formatNumber(_depositPaid)} · $_borrowerName', '18 Sept 2026', const Color(0xFF12B76A)),
-          _buildAuditRow(Icons.payments_rounded, 'Weekly Installment #1', 'TZS 150,000 via M-Pesa (MP891204)', '25 Sept 2026', const Color(0xFF0EA5E9), isLast: true),
+          // These four rows used to be typed into the widget: a made-up purchase
+          // order at "Kariakoo Main Hub", a signature on a date, a disbursement
+          // and an "Installment #1" of TZS 150,000 through an M-Pesa code that
+          // never existed. Every handset in the shop showed the same history. The
+          // rows below are the payments that are actually on the contract, or an
+          // empty state that says nothing has been recorded.
+          if (audit.isEmpty)
+            Text(
+              tr(_locale, 'insp.auditEmpty'),
+              style: const TextStyle(fontSize: 12, color: AppTheme.ink500, height: 1.5),
+            )
+          else
+            for (var i = 0; i < audit.length; i++)
+              _buildAuditRow(
+                audit[i].icon,
+                audit[i].title,
+                audit[i].sub,
+                audit[i].date,
+                audit[i].color,
+                isLast: i == audit.length - 1,
+              ),
         ],
       ),
     );
+  }
+
+  /// Real movement for the handset in hand, newest first, built only from rows
+  /// that exist: the contract itself and the instalments recorded against it.
+  List<_AuditEntry> get _auditEntries {
+    final out = <_AuditEntry>[];
+
+    final loan = _answeredLoan;
+    if (loan != null) {
+      final payments = [...loan.payments]
+        ..sort((a, b) => b.date.compareTo(a.date));
+      for (final pay in payments.take(4)) {
+        out.add(_AuditEntry(
+          Icons.payments_rounded,
+          tr(_locale, 'insp.auditInstallment'),
+          '${pay.formattedAmount} · ${pay.channel} · ${pay.refNumber}',
+          pay.date,
+          const Color(0xFF0EA5E9),
+        ));
+      }
+      out.add(_AuditEntry(
+        Icons.assignment_ind_rounded,
+        trf(_locale, 'insp.auditContract', {'id': loan.id}),
+        _depositPaid > 0
+            ? trf(_locale, 'insp.auditContractDeposit',
+                {'name': _borrowerName, 'deposit': LimsFormatters.formatNumber(_depositPaid)})
+            : trf(_locale, 'insp.auditContractNoDeposit', {'name': _borrowerName}),
+        '—',
+        const Color(0xFF12B76A),
+      ));
+    }
+
+    final product = _answeredProduct;
+    if (product != null) {
+      out.add(_AuditEntry(
+        Icons.inventory_2_rounded,
+        tr(_locale, 'insp.auditInStock'),
+        trf(_locale, 'insp.auditInStockSub', {
+          'sku': product.sku,
+          'branch': _branch,
+          'stock': '${product.stock}',
+        }),
+        '—',
+        AppTheme.brand600,
+      ));
+    }
+
+    if (loan == null && product == null && _status != 'UNKNOWN' && _status != 'INVALID') {
+      out.add(_AuditEntry(
+        Icons.verified_user_rounded,
+        tr(_locale, 'insp.auditRemoteMatch'),
+        trf(_locale, 'insp.auditRemoteMatchSub', {'serial': _serialNumber}),
+        '—',
+        const Color(0xFF7C5CFC),
+      ));
+    }
+
+    return out;
   }
 
   Widget _buildAuditRow(IconData icon, String title, String sub, String date, Color color, {bool isLast = false}) {
@@ -1015,4 +1149,17 @@ class _DeviceImeiInspectorScreenState extends ConsumerState<DeviceImeiInspectorS
       ],
     );
   }
+}
+
+/// One line of the device audit trail. Nothing is stored that a query did not
+/// return, which is why [date] is '—' for rows whose timestamp the schema does
+/// not carry.
+class _AuditEntry {
+  final IconData icon;
+  final String title;
+  final String sub;
+  final String date;
+  final Color color;
+
+  const _AuditEntry(this.icon, this.title, this.sub, this.date, this.color);
 }

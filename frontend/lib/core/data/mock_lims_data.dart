@@ -183,19 +183,24 @@ class LoanItem {
     int? weeklyInstallment,
     int? installmentWeeks,
     List<LoanPaymentRecord>? payments,
-  })  : id = id ?? 'LIMS-LN-${(1000 + (name.hashCode.abs() % 9000))}',
-        phone = phone ?? '0754 892 314',
-        nida = nida ?? '19900812-11101-00001-24',
-        location = location ?? 'Kariakoo, Msimbazi St, Dar es Salaam',
-        businessAddress = businessAddress ?? 'Machinga Complex, Floor 2, Kibanda #14',
-        imei = imei ?? '356984112048591',
-        guarantorName = guarantorName ?? 'Rashid Ally',
-        guarantorPhone = guarantorPhone ?? '0713 884 102',
-        guarantorRelation = guarantorRelation ?? 'Kaka (Brother)',
+  })  : // A blank column means "not recorded", never "here is a plausible
+        // Tanzanian phone number". These fallbacks used to be a real-looking
+        // phone, NIDA number, IMEI, guarantor and Kariakoo address, so a loan row
+        // with empty columns displayed a complete invented identity — and a text
+        // reminder would have opened a stranger's number.
+        id = id ?? 'LIMS-LN-${(1000 + (name.hashCode.abs() % 9000))}',
+        phone = phone ?? '',
+        nida = nida ?? '',
+        location = location ?? '',
+        businessAddress = businessAddress ?? '',
+        imei = imei ?? '',
+        guarantorName = guarantorName ?? '',
+        guarantorPhone = guarantorPhone ?? '',
+        guarantorRelation = guarantorRelation ?? '',
         isKnoxLocked = isKnoxLocked ?? (status == 'overdue'),
-        totalDeposit = totalDeposit ?? (amount * 0.25).round(),
-        weeklyInstallment = weeklyInstallment ?? ((amount * 0.75) / (installmentWeeks ?? 8)).round(),
-        installmentWeeks = installmentWeeks ?? 8,
+        totalDeposit = totalDeposit ?? 0,
+        weeklyInstallment = weeklyInstallment ?? 0,
+        installmentWeeks = installmentWeeks ?? 0,
         payments = payments ?? [];
 
   int get totalPaidAmount => (amount * (paid / 100.0)).round();
