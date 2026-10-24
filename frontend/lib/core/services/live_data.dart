@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../data/branch_provider.dart';
 import '../data/inventory_provider.dart';
 import '../data/sales_provider.dart';
+import '../data/petty_cash_provider.dart';
 import '../data/supabase_source.dart';
 import 'api_service.dart';
 
@@ -96,7 +97,8 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader> {
       ref.read(branchesProvider.notifier).replaceAll(snapshot.branches);
       ref.read(activitiesProvider.notifier).replaceAll(snapshot.activities);
       ref.read(staffProvider.notifier).replaceAll(snapshot.staff);
-    ref.read(salesProvider.notifier).replaceAll(await SupabaseSource.fetchSales());
+      ref.read(pettyCashProvider.notifier).replaceAll(snapshot.pettyCash);
+      ref.read(salesProvider.notifier).replaceAll(await SupabaseSource.fetchSales());
 
       ref.read(dataSourceProvider.notifier).state = DataSourceState(
         kind: DataSourceKind.live,
@@ -107,6 +109,7 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader> {
           'branches': snapshot.branches.length,
           'activities': snapshot.activities.length,
           'staff': snapshot.staff.length,
+          'expenses': snapshot.pettyCash.length,
         },
       );
     } catch (e) {

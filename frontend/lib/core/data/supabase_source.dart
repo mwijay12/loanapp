@@ -8,6 +8,7 @@ import 'branch_provider.dart';
 import 'sales_provider.dart';
 import 'mock_lims_data.dart';
 import 'sale_ledger.dart';
+import 'petty_cash_provider.dart';
 
 /// Reads the app's rows out of Supabase.
 ///
@@ -161,6 +162,55 @@ class SupabaseSource {
     }
   }
 
+  /// Fetches petty cash expenses for the last [days] days.
+  static Future<List<PettyCashRecord>> fetchPettyCash({int days = 60}) async {
+    if (!SupabaseConfig.isConfigured) return const [];
+    try {
+      final client = Supabase.instance.client;
+      final since = DateTime.now()
+          .subtract(Duration(days: days))
+          .toUtc()
+          .toIso8601String();
+      final rows = await client
+          .from('petty_cash')
+          .select()
+          .gte('created_at', since)
+          .order('created_at', ascending: false);
+      return (rows as List)
+          .map((r) => PettyCashRecord.fromRow(Map<String, dynamic>.from(r)))
+          .toList();
+    } catch (e) {
+      ApiService.lastBackendError = 'fetchPettyCash: $e';
+      debugPrint('LIMS: could not read petty cash -> $e');
+      return const [];
+    }
+  }
+
+  /// Records a new petty cash expense.
+  static Future<bool> recordPettyCash({
+    required int amount,
+    required String category,
+    String? description,
+    String? branchId,
+    String? staffId,
+  }) async {
+    if (!SupabaseConfig.isConfigured) return false;
+    try {
+      await Supabase.instance.client.from('petty_cash').insert({
+        'amount': amount,
+        'category': category,
+        'description': description,
+        'branch_id': branchId,
+        'staff_id': staffId,
+      });
+      return true;
+    } catch (e) {
+      ApiService.lastBackendError = 'recordPettyCash: $e';
+      debugPrint('LIMS: could not record petty cash -> $e');
+      return false;
+    }
+  }
+
   Future<SupabaseSnapshot> load() async {
     final api = ApiService();
     final results = await Future.wait([
@@ -169,6 +219,7 @@ class SupabaseSource {
       api.getBranches(),
       api.getActivities(),
       api.getStaff(),
+      api.getPettyCash(),
     ]);
 
     return SupabaseSnapshot(
@@ -177,8 +228,13 @@ class SupabaseSource {
       branches: _branches(results[2]),
       activities: _activities(results[3]),
       staff: _staff(results[4]),
+      pettyCash: _pettyCash(results[5]),
       error: ApiService.lastBackendError,
     );
+  }
+
+  List<PettyCashRecord> _pettyCash(List<Map<String, dynamic>> rows) {
+    return rows.map((r) => PettyCashRecord.fromRow(r)).toList();
   }
 
   /// `'3,850,000'` -> 3850000, `'TZS 4.85M'` -> 4850000, `3850000` -> 3850000.
@@ -390,6 +446,7 @@ class SupabaseSnapshot {
     required this.branches,
     required this.activities,
     this.staff = const [],
+    this.pettyCash = const [],
     this.error,
   });
 
@@ -398,10 +455,11 @@ class SupabaseSnapshot {
   final List<BranchRecord> branches;
   final List<ActivityItem> activities;
   final List<StaffMember> staff;
+  final List<PettyCashRecord> pettyCash;
   final String? error;
 
   bool get isEmpty =>
-      products.isEmpty && loans.isEmpty && branches.isEmpty && activities.isEmpty;
+      products.isEmpty && loans.isEmpty && branches.isEmpty && activities.isEmpty && pettyCash.isEmpty;
 }
 
 /// The production [SaleLedger]: one row in `public.sales`, classified.

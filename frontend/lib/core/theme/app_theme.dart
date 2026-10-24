@@ -251,7 +251,7 @@ class AppTheme {
         ),
       ),
 
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: surface,
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x120A1712),
@@ -482,7 +482,7 @@ class AppTheme {
         minVerticalPadding: 12,
       ),
 
-      tabBarTheme: const TabBarThemeData(
+      tabBarTheme: const TabBarTheme(
         labelColor: brand800,
         unselectedLabelColor: ink400,
         indicatorColor: brand700,
@@ -500,7 +500,7 @@ class AppTheme {
         ),
       ),
 
-      dialogTheme: DialogThemeData(
+      dialogTheme: DialogTheme(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,

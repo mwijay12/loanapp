@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/sales_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
@@ -74,7 +75,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todaySales = ref.watch(todaySalesTotalProvider);
+    final todaySales = ref.watch(salesTodayValueProvider);
     final activeLoansTotal = ref.watch(activeLoansTotalProvider);
     final lowStockCount = ref.watch(lowStockCountProvider);
     final currentRole = ref.watch(userRoleProvider);
@@ -459,6 +460,61 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+
+        // Petty Cash Quick Access
+        InkWell(
+          onTap: () => context.push('/petty-cash'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFECACA)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0C0F3478),
+                  blurRadius: 10,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDC2626),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.monetization_on_rounded,
+                      color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Petty Cash',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14.5,
+                            color: Color(0xFF991B1B)),
+                      ),
+                      Text(
+                        'Record cleaning, food, or operational expenses',
+                        style: TextStyle(fontSize: 11.5, color: Color(0xFFDC2626)),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 14, color: Color(0xFFDC2626)),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 16),
 

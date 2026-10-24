@@ -420,9 +420,12 @@ final activeLoansTotalProvider = Provider<int>((ref) {
 
 // Kept as aliases so existing screens keep compiling, but the numbers now come
 // from the sales ledger. `products.soldToday` was a stored column that only moved
-// when someone edited it by hand.
+// when someone edits it by hand.
 final todaySalesTotalProvider =
     Provider<int>((ref) => ref.watch(salesTodayTotalProvider));
+
+final todaySalesValueProvider =
+    Provider<int>((ref) => ref.watch(salesTodayValueProvider));
 
 final todayTransactionsCountProvider =
     Provider<int>((ref) => ref.watch(salesTodayCountProvider));

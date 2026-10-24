@@ -93,16 +93,20 @@ DateTime get eatTodayDate => eatDateOf(DateTime.now());
 
 bool isEatToday(DateTime t) => eatDateOf(t) == eatTodayDate;
 
-/// Today's takings, read from the sales ledger.
-///
-/// This replaces a sum over `products.sold_today`, a column that only changes when
-/// someone edits the row by hand. That is why "Today's Sales" read 66,006,000 for
-/// days: it was never a total of anything that happened.
+/// Today's revenue (actual cash collected).
 final salesTodayTotalProvider = Provider<int>((ref) {
   return ref
       .watch(salesProvider)
       .where((s) => isEatToday(s.soldAt))
       .fold<int>(0, (sum, s) => sum + s.paid);
+});
+
+/// Today's gross sales (total value of items sold, including pending loan balances).
+final salesTodayValueProvider = Provider<int>((ref) {
+  return ref
+      .watch(salesProvider)
+      .where((s) => isEatToday(s.soldAt))
+      .fold<int>(0, (sum, s) => sum + s.total);
 });
 
 final salesTodayCountProvider = Provider<int>((ref) {

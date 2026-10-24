@@ -6,7 +6,7 @@ import '../constants/app_constants.dart';
 import '../data/store_movement.dart';
 
 /// Supabase Backend Configuration for LIMS
-/// Organization: hvqssaxwrrmewmvqujus
+/// Organization: fzlykkwgkydswvnlryhk
 /// Lead Architect: David Erick Mwijage (mwijay12)
 class SupabaseConfig {
   // Injected at build time: flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
@@ -381,6 +381,19 @@ class ApiService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getSales() async {
+    try {
+      final response = await client
+          .from('sales')
+          .select()
+          .order('sold_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      _report('backend call', e);
+      return [];
+    }
+  }
+
   /// Every handset physically present at one branch.
   ///
   /// Branch stock is not a number on the product row: `products.stock` is the
@@ -676,6 +689,16 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getStaff() async {
     try {
       final response = await client.from('staff').select().order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      _report('backend call', e);
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getPettyCash() async {
+    try {
+      final response = await client.from('petty_cash').select().order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       _report('backend call', e);

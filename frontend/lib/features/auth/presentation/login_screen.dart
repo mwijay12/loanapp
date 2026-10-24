@@ -27,6 +27,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    // Pre-fill demo credentials if in demo mode to allow quick access.
+    if (AppConstants.demoMode) {
+      _phoneCtrl.text = 'demo.admin@example.com';
+      _passCtrl.text = AppConstants.demoPassword;
+    }
     // Mtumiaji akiruka onboarding, ruhusa zinaombwa hapa (kimya, bila sheet)
     // ili zisiwakatishe baadaye wakiwa kazini.
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -20,6 +20,7 @@ import '../../features/loans/presentation/borrower_loan_details_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/scanner/presentation/device_imei_inspector_screen.dart';
+import '../../features/petty_cash/presentation/petty_cash_screen.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import '../services/onboarding_prefs.dart';
@@ -143,6 +144,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/attendance',
         builder: (context, state) => const AttendanceScreen(),
+      ),
+      GoRoute(
+        path: '/petty-cash',
+        builder: (context, state) => const PettyCashScreen(),
       ),
       GoRoute(
         path: '/daily-closing',

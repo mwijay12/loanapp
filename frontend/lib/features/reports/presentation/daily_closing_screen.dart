@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/sales_provider.dart';
+import '../../../core/data/petty_cash_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../../core/data/branch_provider.dart';
 
 class DailyClosingScreen extends ConsumerStatefulWidget {
   const DailyClosingScreen({super.key});
@@ -25,9 +28,9 @@ class _DailyClosingScreenState extends ConsumerState<DailyClosingScreen> {
 
   void _closeDay() {
     final activeBranch = ref.read(activeBranchProvider);
-    final todaySales = ref.read(todaySalesTotalProvider);
-    final cashSales = (todaySales * 0.65).round();
-    final expectedDrawer = (cashSales - 180000).clamp(0, 99999999);
+    final todaySales = ref.read(salesTodayTotalProvider);
+    final expenses = ref.read(expensesTodayProvider);
+    final expectedDrawer = (todaySales - expenses).clamp(0, 99999999);
 
     setState(() => _isClosed = true);
 
@@ -61,11 +64,9 @@ class _DailyClosingScreenState extends ConsumerState<DailyClosingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todaySales = ref.watch(todaySalesTotalProvider);
-    final cashSales = (todaySales * 0.65).round();
-    final cardSales = (todaySales * 0.35).round();
-    const expenses = 180000;
-    final expectedDrawer = (cashSales - expenses).clamp(0, 99999999);
+    final todaySales = ref.watch(salesTodayTotalProvider);
+    final expenses = ref.watch(expensesTodayProvider);
+    final expectedDrawer = (todaySales - expenses).clamp(0, 99999999);
 
     return Scaffold(
       backgroundColor: AppTheme.canvas,
@@ -110,9 +111,8 @@ class _DailyClosingScreenState extends ConsumerState<DailyClosingScreen> {
               ),
               child: Column(
                 children: [
-                  _buildCloseRow('Cash sales', LimsFormatters.currency(cashSales)),
-                  _buildCloseRow('Card sales', LimsFormatters.currency(cardSales)),
-                  _buildCloseRow('Expenses', '− ${LimsFormatters.currency(expenses)}', valueColor: const Color(0xFFF43F5E)),
+                  _buildCloseRow('Today\'s Takings', LimsFormatters.currency(todaySales)),
+                  _buildCloseRow('Expenses (Petty Cash)', '− ${LimsFormatters.currency(expenses)}', valueColor: const Color(0xFFF43F5E)),
                   const Divider(height: 24, color: Color(0xFFE2E8F0)),
                   _buildCloseRow('Expected in drawer', LimsFormatters.currency(expectedDrawer), isTotal: true),
                 ],
