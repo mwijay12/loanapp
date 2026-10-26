@@ -40,9 +40,18 @@ class AppConstants {
   // A production build MUST NOT set this flag. The branch is compiled out when
   // it is false, so a release APK cannot be talked into demo mode at runtime.
   // ---------------------------------------------------------------------
-  static const bool demoMode = true;
+  static const bool demoMode = false;
 
   static const String demoPassword = 'Demo@2026';
+
+  /// Pre-fills the sign-in form with the demo identity.
+  ///
+  /// Separate from [demoMode] on purpose: the till talks to the real database,
+  /// but whoever is holding the phone at the counter should not have to type a
+  /// password in front of a customer to reach the screens we are showing. This
+  /// flag only fills the fields — it does not accept the login locally, so a
+  /// wrong password still fails at Supabase.
+  static const bool prefillDemoCredentials = true;
 
   /// Demo identities. Deliberately hardcoded and deliberately obvious: these
   /// are throwaway accounts for a showcase, never real staff.

@@ -26,6 +26,7 @@ import '../data/inventory_provider.dart';
 import '../services/onboarding_prefs.dart';
 import '../data/mock_lims_data.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/back_guard.dart';
 
 /// Where the app boots.
 ///
@@ -42,6 +43,13 @@ const Set<String> _publicRoutes = <String>{'/login', '/onboarding'};
 
 /// Exposed for tests: a guard that omits /onboarding bounces first-run visitors.
 const Set<String> kPublicRoutes = _publicRoutes;
+
+/// One screen that lives outside the shell.
+///
+/// Wrapped so a back gesture on it returns to the shell instead of closing the
+/// app when the screen was opened as the first entry on the stack.
+Widget _standalone(Widget screen, {String fallback = '/home'}) =>
+    BackGuard(child: screen, fallback: fallback);
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -60,6 +68,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (signedIn && path == '/login') return '/home';
       return null;
     },
+    // A stale link, a saved tab or a printed QR code can point at a route that
+    // no longer exists. That used to dead-end on a "Page Not Found" screen with
+    // no way back; now it simply returns to the shell.
+    onException: (context, state, router) => router.go('/home'),
     routes: [
       GoRoute(
         path: '/',
@@ -100,11 +112,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/ai',
-        builder: (context, state) => const AIScreen(),
+        builder: (context, state) => _standalone(const AIScreen()),
       ),
       GoRoute(
         path: '/scan',
-        builder: (context, state) => const ScanScreen(),
+        builder: (context, state) => _standalone(const ScanScreen()),
       ),
       // `/scanner` was pushed from four dashboards and never existed, so every
       // tap landed on "Page Not Found". The call sites are fixed; this keep-old
@@ -119,64 +131,67 @@ final routerProvider = Provider<GoRouter>((ref) {
           final type = state.uri.queryParameters['type'];
           final model = state.uri.queryParameters['model'];
           final imei = state.uri.queryParameters['imei'];
-          return SellLoanScreen(
+          return _standalone(SellLoanScreen(
             initialTransaction: type,
             initialPhoneModel: model,
             initialImei: imei,
-          );
+          ));
         },
       ),
       GoRoute(
         path: '/imei-inspector',
         builder: (context, state) {
           final imei = state.uri.queryParameters['imei'];
-          return DeviceImeiInspectorScreen(initialImei: imei);
+          return _standalone(DeviceImeiInspectorScreen(initialImei: imei));
         },
       ),
       GoRoute(
         path: '/receive',
-        builder: (context, state) => const ReceiveStockScreen(),
+        builder: (context, state) => _standalone(const ReceiveStockScreen()),
       ),
       GoRoute(
         path: '/transfer',
-        builder: (context, state) => const TransferScreen(),
+        builder: (context, state) => _standalone(const TransferScreen()),
       ),
       GoRoute(
         path: '/attendance',
-        builder: (context, state) => const AttendanceScreen(),
+        builder: (context, state) => _standalone(const AttendanceScreen()),
       ),
       GoRoute(
         path: '/petty-cash',
-        builder: (context, state) => const PettyCashScreen(),
+        builder: (context, state) => _standalone(const PettyCashScreen()),
       ),
       GoRoute(
         path: '/daily-closing',
-        builder: (context, state) => const DailyClosingScreen(),
+        builder: (context, state) => _standalone(const DailyClosingScreen()),
       ),
       GoRoute(
         path: '/admin',
-        builder: (context, state) => AdminDashboardScreen(
+        builder: (context, state) => _standalone(AdminDashboardScreen(
           initialTab: state.uri.queryParameters['tab'],
-        ),
+        )),
       ),
       GoRoute(
         path: '/branch-performance',
-        builder: (context, state) => const BranchPerformanceScreen(),
+        builder: (context, state) => _standalone(const BranchPerformanceScreen()),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (context, state) => const NotificationsScreen(),
+        builder: (context, state) => _standalone(const NotificationsScreen()),
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
+        builder: (context, state) => _standalone(const SettingsScreen()),
       ),
       GoRoute(
         path: '/loan-details',
         builder: (context, state) {
           final loan = state.extra as LoanItem?;
           final loanId = state.uri.queryParameters['id'] ?? (loan != null ? loan.id : '');
-          return BorrowerLoanDetailsScreen(loanId: loanId, initialLoan: loan);
+          return _standalone(
+            BorrowerLoanDetailsScreen(loanId: loanId, initialLoan: loan),
+            fallback: '/loans',
+          );
         },
       ),
     ],

@@ -3,14 +3,16 @@ import time
 import re
 import os
 
-# Ensure we are in the right directory
-os.chdir('frontend/build/web')
+# Resolve everything from this file's own folder so the script runs wherever
+# the project was cloned.
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+os.chdir(os.path.join(PROJECT_ROOT, 'frontend', 'build', 'web'))
 
 # Start Python HTTP server
 server_proc = subprocess.Popen(['python3', '-m', 'http.server', '8080'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 # Start cloudflared tunnel
-tunnel_proc = subprocess.Popen(['/tmp/cloudflared', 'tunnel', '--url', 'http://localhost:8080'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+tunnel_proc = subprocess.Popen([os.path.join(PROJECT_ROOT, 'cloudflared'), 'tunnel', '--url', 'http://localhost:8080'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
 # Wait for the tunnel URL
 url = None

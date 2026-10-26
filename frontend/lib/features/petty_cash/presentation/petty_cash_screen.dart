@@ -100,7 +100,7 @@ class _PettyCashScreenState extends ConsumerState<PettyCashScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Record New Expense (Petty Cash)',
+                'Record New Expense',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.ink900),
               ),
               const SizedBox(height: 18),
@@ -152,7 +152,7 @@ class _PettyCashScreenState extends ConsumerState<PettyCashScreen> {
     return Scaffold(
       backgroundColor: AppTheme.canvas,
       appBar: AppBar(
-        title: const Text('Petty Cash (Petty Cash)', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('Petty Cash', style: TextStyle(fontWeight: FontWeight.w800)),
         backgroundColor: Colors.white,
         elevation: 0,
       ),

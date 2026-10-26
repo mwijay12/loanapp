@@ -28,7 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     // Pre-fill demo credentials if in demo mode to allow quick access.
-    if (AppConstants.demoMode) {
+    if (AppConstants.prefillDemoCredentials) {
       _phoneCtrl.text = 'demo.admin@example.com';
       _passCtrl.text = AppConstants.demoPassword;
     }
@@ -176,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // in without being handed credentials out of band. Compiled out
                 // when DEMO_MODE is not true, so a production build never shows
                 // this card.
-                if (AppConstants.demoMode) ...[
+                if (AppConstants.prefillDemoCredentials) ...[
                   // Only compiled in with --dart-define=DEMO_MODE=true. On a
                   // build with Supabase configured these are real Auth users,
                   // so the card fills the form and the password is still checked
