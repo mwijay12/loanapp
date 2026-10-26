@@ -9,6 +9,16 @@ import '../data/lims_repository.dart';
 import '../data/mock_lims_data.dart';
 import '../data/loan_balance.dart';
 
+/// Why some `pw.TextStyle(...)` calls below are not `const`:
+///
+/// `pdf`'s `TextStyle` const-initialiser contains
+/// `fontWeight != FontWeight.bold`, and `FontWeight` overrides `==`. Current
+/// Dart rejects non-canonical operand types (`bool`/`num`/`String`/`null`) in
+/// constant expressions, so **any** `const pw.TextStyle` that passes
+/// `fontWeight:` is a hard compile error. Verified against pdf 3.11.3 *and*
+/// 3.13.1 — upstream has not changed it, so pinning a different pdf version
+/// does not help. Only the 10 sites that pass `fontWeight:` were de-`const`ed;
+/// the other 47 are still legitimately `const`.
 class PdfReportService {
   PdfReportService._();
 
@@ -44,7 +54,7 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     'LIMS · SMARTPHONE POS & FINANCING',
-                    style: const pw.TextStyle(
+                    style: pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.blue800,
@@ -71,7 +81,7 @@ class PdfReportService {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('OFFICIAL AUDIT', style: const pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                    pw.Text('OFFICIAL AUDIT', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
                     pw.Text(reportId, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
                   ],
                 ),
@@ -97,7 +107,7 @@ class PdfReportService {
           // Inventory Table
           pw.Text(
             '1. Branch Handset Inventory & Valuation',
-            style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
@@ -111,7 +121,7 @@ class PdfReportService {
                 p.status.toUpperCase(),
               ];
             }).toList(),
-            headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8.5),
             cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
@@ -121,7 +131,7 @@ class PdfReportService {
           // Loans Table
           pw.Text(
             '2. Active Micro-Loans & Collections Schedule',
-            style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
@@ -135,7 +145,7 @@ class PdfReportService {
                 l.status.toUpperCase(),
               ];
             }).toList(),
-            headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8.5),
             cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
@@ -207,7 +217,7 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     'LIMS · SMARTPHONE POS & FINANCING',
-                    style: const pw.TextStyle(
+                    style: pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.blue800,
@@ -234,7 +244,7 @@ class PdfReportService {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('AUDIT REF: $reportId', style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                    pw.Text('AUDIT REF: $reportId', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
                     pw.Text(AppConstants.fiscalLine(), style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
                     pw.Text('TRA EFD Station Verified', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green800)),
                   ],
@@ -258,13 +268,13 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 16),
 
-          pw.Text('Shift Attendance Ledger', style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          pw.Text('Shift Attendance Ledger', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 8),
 
           // Timesheet Table
           pw.TableHelper.fromTextArray(
             headers: [l.staffName, l.role, l.date, l.clockIn, l.clockOut, l.shiftHours, 'Verification & GPS', l.status],
-            headerStyle: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+            headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
             cellStyle: const pw.TextStyle(fontSize: 8),
             cellAlignment: pw.Alignment.centerLeft,

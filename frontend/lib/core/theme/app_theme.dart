@@ -251,7 +251,13 @@ class AppTheme {
         ),
       ),
 
-      cardTheme: CardTheme(
+      // `CardThemeData`, not `CardTheme`. On the pinned SDK (Flutter 3.47.8)
+      // `CardTheme` is an `InheritedWidget` and only `CardThemeData` is
+      // assignable to `ThemeData.cardTheme`, so the old name is a hard *compile*
+      // error that took the whole app down: 18 of 30 test files could not even
+      // load, because each one pulls in this library. Every field used below
+      // still exists on `CardThemeData`, so this rename is not a visual change.
+      cardTheme: CardThemeData(
         color: surface,
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x120A1712),
@@ -482,7 +488,7 @@ class AppTheme {
         minVerticalPadding: 12,
       ),
 
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         labelColor: brand800,
         unselectedLabelColor: ink400,
         indicatorColor: brand700,
@@ -500,7 +506,10 @@ class AppTheme {
         ),
       ),
 
-      dialogTheme: DialogTheme(
+      // Same *Theme → *ThemeData rename as `cardTheme` above. Nothing in CI runs
+      // `flutter analyze` or `flutter test`, so this kind of SDK-rename break can
+      // land on `main` and stay invisible until someone tries to build.
+      dialogTheme: DialogThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,

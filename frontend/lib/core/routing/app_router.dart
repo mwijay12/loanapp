@@ -1,3 +1,7 @@
+// `Widget`/`BuildContext` are named directly by `_standalone` below. This file
+// previously imported no Flutter library at all and only appeared to resolve,
+// so the analyzer reported `Undefined class 'Widget'` as a hard error.
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_screen.dart';
