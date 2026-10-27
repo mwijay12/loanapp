@@ -183,13 +183,27 @@ class FeaturedPhoneDealCard extends ConsumerWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        deal.badge.toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w900,
-                                          color: deal.badgeTextColor,
-                                          letterSpacing: 0.5,
+                                      // Flexible, not bare. The row sits in the
+                                      // card's left column, which is only ~91px
+                                      // wide on a 360px phone, and the label is
+                                      // translated — "MUDA MFUPI" and friends can
+                                      // be longer than the column. With the dot
+                                      // and the gap taking 12px, an unshrinkable
+                                      // label overflowed by a fraction of a pixel
+                                      // and that overflow failed the whole
+                                      // role_dashboards_test.dart file, because
+                                      // the cashier home mounts this carousel.
+                                      Flexible(
+                                        child: Text(
+                                          deal.badge.toUpperCase(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w900,
+                                            color: deal.badgeTextColor,
+                                            letterSpacing: 0.5,
+                                          ),
                                         ),
                                       ),
                                     ],

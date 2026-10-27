@@ -603,6 +603,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       ),
       child: Text(
         label,
+        // The grid tile gives this badge less room than the label wants, so the
+        // pill has to be able to give up width instead of pushing past its
+        // parent. See the price row in [_buildProductTile].
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
@@ -1663,18 +1668,35 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 10),
+                    // Both children shrink, with the price getting the wider
+                    // share. A grid cell on a narrow phone is ~144px wide and
+                    // the two labels together want more than that (a wide
+                    // 14.5px price plus an "Out of Stock" pill), so neither can
+                    // be left inflexible: giving only the price a Flexible would
+                    // still overflow, because the pill alone is already wider
+                    // than the cell. The 2:1 split keeps the price legible —
+                    // that is the number a shopkeeper is scanning for — and lets
+                    // the status pill take the ellipsis when space runs out.
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          p.shortPrice,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.brand600,
+                        Flexible(
+                          flex: 2,
+                          child: Text(
+                            p.shortPrice,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.brand600,
+                            ),
                           ),
                         ),
-                        _buildStatusBadge(p.status),
+                        Flexible(
+                          flex: 1,
+                          child: _buildStatusBadge(p.status),
+                        ),
                       ],
                     ),
                   ],
