@@ -9,9 +9,9 @@ import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
 import 'ui_kit.dart';
 
-/// The card and the carousel viewport that holds it are the same height.
-/// Keeping it in one place stops the page view from clipping the card when the
-/// card is retuned.
+/// Card height, in one place, so the carousel viewport cannot clip the card.
+/// Not the same number as [kCarouselHeight] — the viewport is taller on purpose
+/// to leave room for the shadow and the scale transform.
 const double kDealCardHeight = 186;
 const double kCarouselHeight = 226; // Added extra space for shadows and scaling transform
 
@@ -211,6 +211,17 @@ class FeaturedPhoneDealCard extends ConsumerWidget {
                                 const SizedBox(height: 5),
                                 Text(
                                   deal.subtitle,
+                                  // Bounded on purpose. The subtitle carries two
+                                  // facts ("Deposit … · …/wk") and had no maxLines,
+                                  // so in the ~150px left column it wrapped to three
+                                  // lines and pushed the column past the card's
+                                  // height — a RenderFlex overflow that failed the
+                                  // whole deal_card_test.dart file, not just the
+                                  // assertion that caused it. Two lines keeps both
+                                  // facts reachable; ellipsis, because a clipped
+                                  // number is still better than a torn layout.
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,

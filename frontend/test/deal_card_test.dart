@@ -103,7 +103,18 @@ void main() {
   testWidgets('the card is the height the carousel gives it', (tester) async {
     await _mount(tester);
 
-    expect(kDealCardHeight, 158);
+    // 186, not the 158 this file was born with. `e97617d` (2026-10-22) added
+    // this constant and this assertion together at 158, so the test was green
+    // when written. `0e64bb1` (2026-10-23, "enlarge product images in grid and
+    // carousel") raised the card to 186 in the same breath as it enlarged the
+    // handset art (98x92 -> 115, padding 11/9 -> 16/12) and touched no test
+    // file. The resize was deliberate; the assertion was just never updated,
+    // and CI has no `test` step, so nothing reported it for five days.
+    //
+    // Kept rather than deleted, and pinned to a literal rather than to itself:
+    // its job is to fail the next time someone resizes the card without
+    // saying so here. Change the design -> change the number, on purpose.
+    expect(kDealCardHeight, 186);
     expect(
       tester.getSize(find.byType(FeaturedPhoneDealCard)).height,
       kDealCardHeight,
