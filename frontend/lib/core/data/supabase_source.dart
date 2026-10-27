@@ -223,17 +223,17 @@ class SupabaseSource {
     ]);
 
     return SupabaseSnapshot(
-      products: _products(results[0]),
-      loans: _loans(results[1]),
-      branches: _branches(results[2]),
-      activities: _activities(results[3]),
-      staff: _staff(results[4]),
-      pettyCash: _pettyCash(results[5]),
+      products: parseProducts(results[0]),
+      loans: parseLoans(results[1]),
+      branches: parseBranches(results[2]),
+      activities: parseActivities(results[3]),
+      staff: parseStaff(results[4]),
+      pettyCash: parsePettyCash(results[5]),
       error: ApiService.lastBackendError,
     );
   }
 
-  List<PettyCashRecord> _pettyCash(List<Map<String, dynamic>> rows) {
+  List<PettyCashRecord> parsePettyCash(List<Map<String, dynamic>> rows) {
     return rows.map((r) => PettyCashRecord.fromRow(r)).toList();
   }
 
@@ -282,7 +282,7 @@ class SupabaseSource {
     return [a, b];
   }
 
-  List<ProductItem> _products(List<Map<String, dynamic>> rows) {
+  List<ProductItem> parseProducts(List<Map<String, dynamic>> rows) {
     return rows.map((r) {
       final stock = (r['stock'] as num?)?.toInt() ?? 0;
       final min = (r['min_stock'] as num?)?.toInt() ?? 0;
@@ -314,7 +314,7 @@ class SupabaseSource {
     }).toList();
   }
 
-  List<LoanItem> _loans(List<Map<String, dynamic>> rows) {
+  List<LoanItem> parseLoans(List<Map<String, dynamic>> rows) {
     const palette = <List<Color>>[
       [Color(0xFF6366F1), Color(0xFF8B5CF6)],
       [Color(0xFF0EA5E9), Color(0xFF2563EB)],
@@ -354,7 +354,7 @@ class SupabaseSource {
   }
 
   /// Rows from `staff`, with the person's own portrait when the column is set.
-  List<StaffMember> _staff(List<Map<String, dynamic>> rows) {
+  List<StaffMember> parseStaff(List<Map<String, dynamic>> rows) {
     return rows.map((r) {
       final role = UserRoles.normalize(r['role']?.toString());
       return StaffMember(
@@ -379,7 +379,7 @@ class SupabaseSource {
     }).toList();
   }
 
-  List<BranchRecord> _branches(List<Map<String, dynamic>> rows) {
+  List<BranchRecord> parseBranches(List<Map<String, dynamic>> rows) {
     return rows.map((r) {
       final sales = parseMoney(r['sales']);
       final flagged = parseMoney(r['sales_today']);
@@ -394,7 +394,7 @@ class SupabaseSource {
     }).toList();
   }
 
-  List<ActivityItem> _activities(List<Map<String, dynamic>> rows) {
+  List<ActivityItem> parseActivities(List<Map<String, dynamic>> rows) {
     IconData iconFor(String? name) {
       switch (name) {
         case 'payments':

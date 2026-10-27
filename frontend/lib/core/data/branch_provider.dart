@@ -78,6 +78,27 @@ class BranchesNotifier extends StateNotifier<List<BranchRecord>> {
     state = List.from(items);
   }
 
+  /// Applies one `branches` row from the live stream — a branch opened, renamed,
+  /// or flagged closed at the head office. Keyed on id, so a redelivery cannot
+  /// produce a duplicate entry in the branch picker.
+  void mergeRow(BranchRecord item) {
+    if (!state.any((b) => b.id == item.id)) {
+      state = [...state, item];
+      return;
+    }
+    state = [
+      for (final b in state)
+        if (b.id == item.id) item else b,
+    ];
+  }
+
+  void removeRow(String id) {
+    state = [
+      for (final b in state)
+        if (b.id != id) b,
+    ];
+  }
+
   void add({required String name, required String city}) {
     final nextId = 'BR-${(state.length + 1).toString().padLeft(2, '0')}';
     state = [

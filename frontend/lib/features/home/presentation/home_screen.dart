@@ -7,10 +7,10 @@ import '../../../core/data/branch_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/widgets/live_greeting.dart';
+import '../../../core/widgets/live_status_pill.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/notifications_provider.dart';
 import '../../../core/data/product_art.dart';
-import '../../../core/services/live_data.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/person_avatar.dart';
@@ -31,8 +31,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _isSyncing = false;
-
   /// The picker used to carry its own hardcoded list of nine branches, which
   /// did not include the launch branch (Mbagala) and did include branches that
   /// do not exist in the database. It now reads the branch store.
@@ -40,19 +38,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // P0: client-side role switcher removed. Role is server-assigned and
   // shown read-only in the header chip below.
 
-  void _triggerSync() async {
-    if (_isSyncing) return;
-    setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (mounted) {
-      setState(() => _isSyncing = false);
-      LimsToast.show(
-        context,
-        'All branch stock & transactions synced with HQ',
-        isSuccess: true,
-      );
-    }
-  }
+  // The sync pill used to sit here as a 1.2-second `Future.delayed` plus a success
+  // toast, with no request in it. It is `LiveStatusPill` now, whose label and
+  // toast both come from the same state the loader writes.
 
   void _openBranchSelector() {
     final currentRole = ref.read(userRoleProvider);
@@ -1825,41 +1813,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const SizedBox(height: 2),
-            InkWell(
-              onTap: _triggerSync,
-              borderRadius: BorderRadius.circular(99),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _isSyncing
-                        ? const SizedBox(
-                            width: 10,
-                            height: 10,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 1.6, color: Color(0xFF059669)),
-                          )
-                        : const Icon(Icons.check_circle_rounded,
-                            size: 12, color: Color(0xFF059669)),
-                    const SizedBox(width: 3),
-                    Text(
-                      dataSourceLabel(ref.watch(dataSourceProvider)),
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const LiveStatusPill(),
           ],
         ),
       ],

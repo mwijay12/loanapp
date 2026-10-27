@@ -143,6 +143,23 @@ class StaffNotifier extends StateNotifier<List<StaffMember>> {
     ];
   }
 
+  /// A staff row from the live stream. Idempotent: a suspension applied at one
+  /// branch reaches every other screen once, and its redelivery changes nothing.
+  void mergeRow(StaffMember member) {
+    if (!state.any((s) => s.id == member.id)) {
+      state = [...state, member];
+      return;
+    }
+    updateStaff(member);
+  }
+
+  void removeRow(String id) {
+    state = [
+      for (final s in state)
+        if (s.id != id) s,
+    ];
+  }
+
   void toggleStatus(String id) {
     state = [
       for (final s in state)
@@ -303,6 +320,39 @@ class InventoryNotifier extends StateNotifier<List<ProductItem>> {
         if (p.id == id) p.copyWith(fav: !p.fav) else p,
     ];
   }
+
+  /// Puts one server row into the catalogue without touching the others.
+  ///
+  /// This is what makes a stock change at another branch land in under a second
+  /// instead of at the next reload. Two rules matter:
+  ///
+  ///  * **Idempotent.** Postgres can deliver the same UPDATE twice, and a socket
+  ///    rejoin can redeliver the tail of a burst. Replacing by id means the
+  ///    second copy is harmless; `addProduct` would have shown the handset twice
+  ///    and doubled the stock count.
+  ///  * **No reordering on update.** A row that only changed `stock` stays where
+  ///    the shopkeeper left it. A genuinely new row goes to the front, matching
+  ///    `addProduct`.
+  void mergeRow(ProductItem item) {
+    final exists = state.any((p) => p.id == item.id);
+    if (!exists) {
+      state = [item, ...state];
+      return;
+    }
+    state = [
+      for (final p in state)
+        if (p.id == item.id) item else p,
+    ];
+  }
+
+  /// Drops a product that was deleted at the database. Without this a deleted
+  /// handset keeps being sellable on a screen that looks live.
+  void removeRow(int id) {
+    state = [
+      for (final p in state)
+        if (p.id != id) p,
+    ];
+  }
 }
 
 final inventoryProvider = StateNotifierProvider<InventoryNotifier, List<ProductItem>>((ref) {
@@ -319,6 +369,27 @@ class LoansNotifier extends StateNotifier<List<LoanItem>> {
 
   void addLoan(LoanItem loan) {
     state = [loan, ...state];
+  }
+
+  /// Applies one `loans` row from the live stream: a payment recorded on a
+  /// handset moves `paid_percent` on the admin's screen without a reload.
+  /// Idempotent by id, and an update never moves the row.
+  void mergeRow(LoanItem loan) {
+    if (!state.any((l) => l.id == loan.id)) {
+      state = [loan, ...state];
+      return;
+    }
+    state = [
+      for (final l in state)
+        if (l.id == loan.id) loan else l,
+    ];
+  }
+
+  void removeRow(String id) {
+    state = [
+      for (final l in state)
+        if (l.id != id) l,
+    ];
   }
 
   void toggleKnoxLock(String loanIdOrName, bool isLocked) {

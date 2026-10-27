@@ -65,6 +65,41 @@ class SalesNotifier extends StateNotifier<List<SaleRecord>> {
     state = [sale, ...state];
   }
 
+  /// Applies one `sales` row delivered by the realtime stream.
+  ///
+  /// Keyed on `receipt_no`, not `id`: [SaleRecord] is the ledger the screens read
+  /// and it carries no uuid, while `sales.receipt_no` is `unique not null` in
+  /// 2026_10_21_02c_sales.sql. The two together mean a receipt identifies exactly
+  /// one row.
+  ///
+  /// The dedupe is the point. The counter writes its own sale and prepends it with
+  /// [add]; a moment later the socket delivers the same insert. Without a key
+  /// check here the shop would count that sale twice, and the second copy is the
+  /// one that looks live. Rows stay newest-first, which is the order
+  /// `SupabaseSource.fetchSales` returns and what the ledger screens assume.
+  void mergeRow(SaleRecord sale) {
+    final exists = state.any((s) => s.receiptNo == sale.receiptNo);
+    if (exists) {
+      state = [
+        for (final s in state)
+          if (s.receiptNo == sale.receiptNo) sale else s,
+      ];
+      return;
+    }
+    final merged = <SaleRecord>[sale, ...state]
+      ..sort((a, b) => b.soldAt.compareTo(a.soldAt));
+    state = merged;
+  }
+
+  /// A sale deleted or voided at the database. Leaving it on screen keeps the
+  /// day's revenue wrong on a header that claims to be live.
+  void removeRow(String receiptNo) {
+    state = [
+      for (final s in state)
+        if (s.receiptNo != receiptNo) s,
+    ];
+  }
+
   void clear() => state = <SaleRecord>[];
 }
 
