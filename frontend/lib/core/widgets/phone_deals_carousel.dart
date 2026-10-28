@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../data/inventory_provider.dart';
 import '../data/mock_lims_data.dart';
+import '../data/supabase_source.dart';
 import '../services/haptics.dart';
 import '../constants/app_constants.dart';
-import '../data/inventory_provider.dart';
 import 'ui_kit.dart';
 
 /// Card height, in one place, so the carousel viewport cannot clip the card.
@@ -449,12 +449,43 @@ class FeaturedPhoneDealCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final qty = int.tryParse(qtyCtrl.text) ?? 0;
-                  if (qty <= 0) return;
+                  if (qty <= 0) {
+                    LimsToast.show(context, 'Enter a valid quantity', isError: true);
+                    return;
+                  }
                   final newStock = isAdd ? p.stock + qty : p.stock - qty;
-                  if (newStock < 0) return;
-                  ref.read(inventoryProvider.notifier).updateStock(p.id, newStock);
+                  if (newStock < 0) {
+                    LimsToast.show(
+                      context,
+                      'Cannot remove $qty: only ${p.stock} on hand',
+                      isError: true,
+                    );
+                    return;
+                  }
+
+                  // The card is on the home screen, so a change made here is the one
+                  // the shop expects to find in the stock list minutes later. It used
+                  // to move this widget's provider only: the number slid back on
+                  // refresh, and the stock page never saw it at all.
+                  final write = await SupabaseSource.adjustStock(
+                    productId: p.id,
+                    delta: isAdd ? qty : -qty,
+                  );
+                  if (!context.mounted) return;
+                  if (!write.saved) {
+                    LimsToast.show(
+                      context,
+                      write.error ?? 'The stock change was not saved.',
+                      isError: true,
+                    );
+                    return;
+                  }
+
+                  ref
+                      .read(inventoryProvider.notifier)
+                      .setStockTotal(p.id, write.stock ?? newStock);
                   ref.read(activitiesProvider.notifier).addActivity(
                     ActivityItem(
                       icon: isAdd ? Icons.add_circle_rounded : Icons.remove_circle_rounded,
@@ -466,7 +497,11 @@ class FeaturedPhoneDealCard extends ConsumerWidget {
                     ),
                   );
                   Navigator.pop(ctx);
-                  LimsToast.show(context, 'Stock updated: ${p.name} is now $newStock units', isSuccess: true);
+                  LimsToast.show(
+                    context,
+                    'Stock updated: ${p.name} is now ${write.stock ?? newStock} units',
+                    isSuccess: true,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isAdd ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),

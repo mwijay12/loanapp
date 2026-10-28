@@ -266,7 +266,20 @@ class InventoryNotifier extends StateNotifier<List<ProductItem>> {
     ];
   }
 
-  void updateStock(int id, int delta) {
+  /// Moves the on-screen count by [delta].
+  ///
+  /// **In-memory only.** Nothing here reaches Postgres: this list is a projection
+  /// of `products`, and the writer is
+  /// [SupabaseSource.adjustStock]. The reason the
+  /// name says "units" and not "stock" is the bug it replaces. This method used to
+  /// be `updateStock(id, delta)`, and two screens passed the *new total* into
+  /// `delta`: 24 units plus a delivery of 1 became `24 + 25 = 49`, then 98. The
+  /// owner's 100 handsets were lost a second way on top of never being written.
+  ///
+  /// So: call [addStockUnits]/[reduceStockUnits] for what arrived or left,
+  /// [setStockTotal] for a number the database just confirmed — never this with a
+  /// total.
+  void applyStockDelta(int id, int delta) {
     state = [
       for (final p in state)
         if (p.id == id)
@@ -277,6 +290,35 @@ class InventoryNotifier extends StateNotifier<List<ProductItem>> {
                 : (p.stock + delta) <= p.min
                     ? 'low'
                     : 'in',
+          )
+        else
+          p,
+    ];
+  }
+
+  /// Goods arrived. Mirrors what the database was just told.
+  void addStockUnits(int id, int units) {
+    if (units <= 0) return;
+    applyStockDelta(id, units);
+  }
+
+  /// Goods left the shelf outside a sale: damage, a correction, a return.
+  void reduceStockUnits(int id, int units) {
+    if (units <= 0) return;
+    applyStockDelta(id, -units);
+  }
+
+  /// Paints the count from a value Postgres returned.
+  ///
+  /// This is the only place a total is legitimate, precisely because the total came
+  /// from the row and not from arithmetic on this side.
+  void setStockTotal(int id, int stock) {
+    state = [
+      for (final p in state)
+        if (p.id == id)
+          p.copyWith(
+            stock: stock.clamp(0, 9999),
+            status: stock <= 0 ? 'out' : (stock <= p.min ? 'low' : 'in'),
           )
         else
           p,

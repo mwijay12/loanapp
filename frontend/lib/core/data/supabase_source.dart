@@ -10,6 +10,56 @@ import 'mock_lims_data.dart';
 import 'sale_ledger.dart';
 import 'petty_cash_provider.dart';
 
+/// What the database did with a stock change.
+///
+/// `failed` and `unconfirmed` are different facts and must not share a word: the
+/// first means the server refused and the row is untouched, the second means the
+/// request left the device and no answer came back, so the number may already have
+/// moved. A shop told "not saved" after an unconfirmed write enters the delivery
+/// again and the stock ends up wrong in the other direction.
+enum StockWriteStatus { saved, rejected, failed, unconfirmed, notConfigured }
+
+class StockWrite {
+  const StockWrite(this.status, {this.error, this.stock, this.previous});
+
+  final StockWriteStatus status;
+  final String? error;
+
+  /// The stock Postgres agreed to hold, once the change landed.
+  final int? stock;
+
+  /// What the row said beforehand, so a screen can put its number back.
+  final int? previous;
+
+  bool get saved => status == StockWriteStatus.saved;
+}
+
+/// What the database did with a new catalogue row.
+enum ProductWriteStatus {
+  saved,
+
+  /// The SKU was already on file, so the units went onto that product instead.
+  duplicatedSku,
+  rejected,
+  failed,
+  unconfirmed,
+  notConfigured,
+}
+
+class ProductWrite {
+  const ProductWrite(this.status, {this.product, this.message});
+
+  final ProductWriteStatus status;
+
+  /// The stored row, or the existing one when [ProductWriteStatus.duplicatedSku].
+  final ProductItem? product;
+  final String? message;
+
+  bool get saved => status == ProductWriteStatus.saved;
+  bool get restocked => status == ProductWriteStatus.duplicatedSku;
+  bool get storedSomewhere => saved || restocked;
+}
+
 /// Reads the app's rows out of Supabase.
 ///
 /// The live database stores money as formatted text — `'3,850,000'`,
@@ -162,6 +212,292 @@ class SupabaseSource {
     }
   }
 
+  /// Writes the two picture columns for one product.
+  ///
+  /// The photo editor used to call `InventoryNotifier.updateProductImage` and then
+  /// toast "Picha ya ... imesasishwa kikamilifu!" — a success message for a change
+  /// that lived in this isolate until the next reload. That is also half of why one
+  /// product appeared to wear a different picture on a different screen: the picture
+  /// the shop picked was never stored, so each surface fell back to whatever it
+  /// chose for itself.
+  ///
+  /// Only a renderable value is sent. `ProductArt.samsung` and friends are Dart
+  /// constant names, not files; storing one guarantees a runtime load failure and a
+  /// per-screen substitute. Passing a symbolic name here clears the column instead,
+  /// which is what lets the single [ProductArt] fallback apply everywhere.
+  static Future<StockWrite> setProductImage({
+    required int productId,
+    String? imageAsset,
+    String? imageUrl,
+  }) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const StockWrite(StockWriteStatus.notConfigured);
+    }
+
+    final asset = _realAssetPath(imageAsset);
+    final url = (imageUrl ?? '').trim();
+    // A picker can hand over both halves of a choice at once. One source per row is
+    // the rule the catalogue is normalised to, so the asset wins and the URL goes.
+    final values = <String, dynamic>{
+      'image_asset': asset,
+      'image_url': asset != null
+          ? null
+          : (url.startsWith('http') ? url : null),
+    };
+
+    final SupabaseQueryBuilder row;
+    try {
+      row = Supabase.instance.client.from('products');
+    } catch (e) {
+      ApiService.lastBackendError = 'setProductImage: $e';
+      debugPrint('LIMS: no client for image on product $productId -> $e');
+      return const StockWrite(StockWriteStatus.failed,
+          error: 'The database client is not ready.');
+    }
+
+    try {
+      await row.update(values).eq('id', productId);
+      debugPrint('LIMS: product $productId image -> ${values['image_asset'] ?? values['image_url'] ?? '(cleared)'}');
+      return const StockWrite(StockWriteStatus.saved);
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'setProductImage: $e';
+      debugPrint('LIMS: could not set image on product $productId -> $e');
+      return StockWrite(StockWriteStatus.failed,
+          error:
+              'The server refused the picture (${e.code ?? 'no code'}): ${e.message}');
+    } catch (e) {
+      ApiService.lastBackendError = 'setProductImage: $e';
+      debugPrint('LIMS: image write on $productId unconfirmed -> $e');
+      return const StockWrite(
+        StockWriteStatus.unconfirmed,
+        error:
+            'The picture was sent but the database did not confirm it. Reload before trying again.',
+      );
+    }
+  }
+
+  /// Adds units to, or takes them from, one product row.
+  ///
+  /// This is the write the stock screens never made. `InventoryNotifier.updateStock`
+  /// moved the number in memory, the till said "Stock updated", and `products`
+  /// still answered 166 the next time anything read it — which is exactly what the
+  /// owner saw when he added 100 handsets and a refresh gave him 166 back.
+  ///
+  /// The caller describes the change the way the shop describes it ("+100",
+  /// "-3"), never the number it hopes the row ends on, so the same mistake
+  /// cannot come back: two screens that both pass a *total* into a parameter
+  /// that is *added* produce 49 from 24 on the first click and 98 on the second.
+  ///
+  /// Read-then-write, not a raw `increment`: the row also carries `status`, which
+  /// depends on the total. The cost is a race — a sale completing between the read
+  /// and the write can be overwritten — so the honest follow-up is a
+  /// `SECURITY DEFINER` RPC doing `stock = stock + p_qty` inside one statement.
+  static Future<StockWrite> adjustStock({
+    required int productId,
+    required int delta,
+  }) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const StockWrite(StockWriteStatus.notConfigured);
+    }
+    if (delta == 0) {
+      return const StockWrite(StockWriteStatus.rejected,
+          error: 'No quantity was given.');
+    }
+
+    final SupabaseQueryBuilder row;
+    try {
+      row = Supabase.instance.client.from('products');
+    } catch (e) {
+      ApiService.lastBackendError = 'adjustStock: $e';
+      debugPrint('LIMS: no client for stock adjust $productId -> $e');
+      return const StockWrite(StockWriteStatus.failed,
+          error: 'The database client is not ready.');
+    }
+
+    try {
+      final current = await row
+          .select('stock, min_stock')
+          .eq('id', productId)
+          .maybeSingle();
+      if (current == null) {
+        return StockWrite(StockWriteStatus.rejected,
+            error:
+                'Product $productId is not in the catalogue, so its stock cannot be changed.');
+      }
+
+      final now = (current['stock'] as num?)?.toInt() ?? 0;
+      final min = (current['min_stock'] as num?)?.toInt() ?? 0;
+      final next = now + delta;
+      if (next < 0) {
+        return StockWrite(
+          StockWriteStatus.rejected,
+          error:
+              'Only $now unit${now == 1 ? '' : 's'} of that product are on hand, so ${-delta} cannot be removed.',
+        );
+      }
+
+      await row.update({
+        'stock': next,
+        'status': next <= 0 ? 'out' : (next <= min ? 'low' : 'in'),
+      }).eq('id', productId);
+
+      debugPrint('LIMS: product $productId stock $now -> $next (delta $delta)');
+      return StockWrite(StockWriteStatus.saved, stock: next, previous: now);
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'adjustStock: $e';
+      debugPrint('LIMS: could not adjust stock on product $productId -> $e');
+      return StockWrite(StockWriteStatus.failed,
+          error:
+              'The server refused the stock change (${e.code ?? 'no code'}): ${e.message}');
+    } catch (e) {
+      // Same distinction recordSale makes: the request may have committed and the
+      // answer gone missing. Saying "not saved" here is how a delivery gets
+      // entered twice.
+      ApiService.lastBackendError = 'adjustStock: $e';
+      debugPrint('LIMS: stock adjust on $productId unconfirmed -> $e');
+      return const StockWrite(
+        StockWriteStatus.unconfirmed,
+        error:
+            'The stock change was sent but the database did not confirm it. '
+            'Check the stock list before saving it again.',
+      );
+    }
+  }
+
+  /// Registers a new handset or accessory, and says what really happened.
+  ///
+  /// Every field the catalogue stores is sent. What the old code did was build a
+  /// `ProductItem` with a made-up id (`millisecondsSinceEpoch % 10000`) and hand it
+  /// to the provider, which put it at the front of a list in memory. Nothing was
+  /// inserted, so `products` still held its twelve rows from 15 October and the
+  /// refresh wiped the owner's new stock out.
+  ///
+  /// `sku` is UNIQUE in the database and the till builds it from brand, storage and
+  /// colour, so the same model in the same finish collides on the second intake.
+  /// A shop means "more of this one arrived" when it saves that again, so a
+  /// collision restocks the existing row rather than reporting a failure — and
+  /// [ProductWrite.duplicatedSku] exists so the screen can say that in words.
+  static Future<ProductWrite> createProduct(ProductItem draft) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const ProductWrite(ProductWriteStatus.notConfigured);
+    }
+    if (draft.name.trim().isEmpty || draft.price <= 0) {
+      return const ProductWrite(ProductWriteStatus.rejected,
+          message: 'A new product needs a name and a cash price above zero.');
+    }
+
+    // The row id belongs to Postgres (integer identity). The draft's id came from
+    // the clock on this device, and `0` is what PostgREST reads as "assign one".
+    final values = <String, dynamic>{
+      'name': draft.name.trim(),
+      'variant': draft.variant,
+      'sku': draft.sku,
+      'price': draft.price,
+      'stock': draft.stock,
+      'min_stock': draft.min,
+      'category': draft.cat,
+      'status': draft.status,
+      'sold_today': draft.soldToday,
+      'on_loan': draft.onLoan,
+      'is_favorite': draft.fav,
+      'gradient_start': _hex(draft.grad.first),
+      'gradient_end': _hex(draft.grad.last),
+      'brand': draft.brand,
+      'imei1': draft.imei1,
+      'imei2': draft.imei2,
+      'cost_price': draft.costPrice,
+      'loan_price': draft.loanPrice,
+      // Symbolic art names (ProductArt.samsung) are not files, and a row storing
+      // one renders differently on every screen that resolves it its own way. Only
+      // a real asset path is worth storing.
+      'image_asset': _realAssetPath(draft.imageAsset),
+      'image_url': (draft.imageUrl ?? '').trim().isEmpty
+          ? null
+          : draft.imageUrl!.trim(),
+    };
+
+    final SupabaseQueryBuilder table;
+    try {
+      table = Supabase.instance.client.from('products');
+    } catch (e) {
+      ApiService.lastBackendError = 'createProduct: $e';
+      debugPrint('LIMS: no client for createProduct -> $e');
+      return const ProductWrite(ProductWriteStatus.failed,
+          message: 'The database client is not ready.');
+    }
+
+    try {
+      final stored = await table.insert(values).select().single();
+      final saved = parseProductRow(stored);
+      debugPrint('LIMS: created product ${saved.id} ${saved.name} stock ${saved.stock}');
+      return ProductWrite(ProductWriteStatus.saved, product: saved);
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'createProduct: $e';
+      debugPrint('LIMS: could not create product ${draft.name} -> $e');
+
+      final duplicate = (e.code ?? '') == '23505' ||
+          e.message.contains('products_sku_key') ||
+          e.message.contains('duplicate key');
+      final bySku = duplicate ? await _rowBySku(draft.sku) : null;
+      if (bySku != null) {
+        if (draft.stock <= 0) {
+          return ProductWrite(ProductWriteStatus.duplicatedSku, product: bySku);
+        }
+        final moved = await adjustStock(
+          productId: bySku.id,
+          delta: draft.stock,
+        );
+        if (moved.saved) {
+          return ProductWrite(ProductWriteStatus.duplicatedSku,
+              product: bySku.copyWith(stock: moved.stock),
+              message: moved.error);
+        }
+        return ProductWrite(ProductWriteStatus.failed,
+            message:
+                'A product with SKU ${draft.sku} already exists and its stock could not be raised: '
+                '${moved.error ?? 'the server refused the change'}');
+      }
+      if (duplicate) {
+        return ProductWrite(ProductWriteStatus.failed,
+            message:
+                'SKU ${draft.sku} is already on file. Change the storage or colour, or add stock to the existing product instead.');
+      }
+      // A serial already registered under another model is a real answer, not a
+      // form error to retry.
+      if ((e.code ?? '') == '23505' && e.message.contains('imei1')) {
+        return ProductWrite(ProductWriteStatus.failed,
+            message:
+                'IMEI ${draft.imei1} is already registered on another product.');
+      }
+      return ProductWrite(ProductWriteStatus.failed,
+          message:
+              'The server refused the new product (${e.code ?? 'no code'}): ${e.message}');
+    } catch (e) {
+      ApiService.lastBackendError = 'createProduct: $e';
+      debugPrint('LIMS: createProduct unconfirmed -> $e');
+      return const ProductWrite(
+        ProductWriteStatus.unconfirmed,
+        message:
+            'The new product was sent but the database did not confirm it. '
+            'Reload the stock list before saving it again.',
+      );
+    }
+  }
+
+  static Future<ProductItem?> _rowBySku(String sku) async {
+    try {
+      final row = await Supabase.instance.client
+          .from('products')
+          .select()
+          .eq('sku', sku)
+          .maybeSingle();
+      return row == null ? null : parseProductRow(row);
+    } catch (e) {
+      debugPrint('LIMS: sku lookup for $sku failed -> $e');
+      return null;
+    }
+  }
+
   /// Fetches petty cash expenses for the last [days] days.
   static Future<List<PettyCashRecord>> fetchPettyCash({int days = 60}) async {
     if (!SupabaseConfig.isConfigured) return const [];
@@ -282,36 +618,66 @@ class SupabaseSource {
     return [a, b];
   }
 
+  /// `Color(0xFF1B6EF3)` -> `'#1B6EF3'`, the format `products.gradient_*` holds.
+  static String? _hex(Color? c) {
+    if (c == null) return null;
+    // `Color.value` is deprecated on Flutter 3.27+ in favour of the double
+    // channels, but it is the one spelling that also compiles on the SDK this
+    // project was built with, and nothing here depends on the alpha byte.
+    // ignore: deprecated_member_use
+    return '#${(c.value & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+  }
+
+  /// A stored asset path, or null when the value is not one.
+  ///
+  /// Seven catalogue rows carry `ProductArt.samsung` and friends: a Dart class
+  /// name, not a file. `Image.asset('ProductArt.samsung')` fails, and each screen
+  /// then substitutes the artwork it picked itself — which is how one product ends
+  /// up with several different pictures across the app. Storing the real path (or
+  /// nothing, so the single ProductArt fallback applies) removes the disagreement.
+  static String? _realAssetPath(String? raw) {
+    final s = (raw ?? '').trim();
+    if (s.isEmpty || s.startsWith('http')) return null;
+    return s.startsWith('assets/') ? s : null;
+  }
+
   List<ProductItem> parseProducts(List<Map<String, dynamic>> rows) {
-    return rows.map((r) {
-      final stock = (r['stock'] as num?)?.toInt() ?? 0;
-      final min = (r['min_stock'] as num?)?.toInt() ?? 0;
-      return ProductItem(
-        id: (r['id'] as num).toInt(),
-        name: (r['name'] ?? '').toString(),
-        variant: (r['variant'] ?? '').toString(),
-        sku: (r['sku'] ?? '').toString(),
-        price: parseMoney(r['price']),
-        stock: stock,
-        min: min,
-        cat: (r['category'] ?? 'phones').toString(),
-        grad: _gradient(r['gradient_start'], r['gradient_end']),
-        status: (r['status'] ?? 'in').toString(),
-        soldToday: (r['sold_today'] as num?)?.toInt() ?? 0,
-        onLoan: (r['on_loan'] as num?)?.toInt() ?? 0,
-        fav: r['is_favorite'] == true,
-        // Absent until migration 2026_10_22_05 runs; a missing key reads false
-        // rather than failing the whole catalogue.
-        onOffer: r['on_offer'] == true,
-        brand: r['brand']?.toString(),
-        imei1: r['imei1']?.toString(),
-        imei2: r['imei2']?.toString(),
-        costPrice: r['cost_price'] == null ? null : parseMoney(r['cost_price']),
-        loanPrice: r['loan_price'] == null ? null : parseMoney(r['loan_price']),
-        imageAsset: r['image_asset']?.toString(),
-        imageUrl: r['image_url']?.toString(),
-      );
-    }).toList();
+    return rows.map(parseProductRow).toList();
+  }
+
+  /// One `products` row into the model the catalogue renders.
+  ///
+  /// Kept separate from [parseProducts] because a write returns exactly one row and
+  /// the provider must be given the row Postgres actually stored — its id, its
+  /// status, its sku — rather than the draft the form held.
+  static ProductItem parseProductRow(Map<String, dynamic> r) {
+    final stock = (r['stock'] as num?)?.toInt() ?? 0;
+    final min = (r['min_stock'] as num?)?.toInt() ?? 0;
+    return ProductItem(
+      id: (r['id'] as num).toInt(),
+      name: (r['name'] ?? '').toString(),
+      variant: (r['variant'] ?? '').toString(),
+      sku: (r['sku'] ?? '').toString(),
+      price: parseMoney(r['price']),
+      stock: stock,
+      min: min,
+      cat: (r['category'] ?? 'phones').toString(),
+      grad: _gradient(r['gradient_start'], r['gradient_end']),
+      status: (r['status'] ?? 'in').toString(),
+      soldToday: (r['sold_today'] as num?)?.toInt() ?? 0,
+      onLoan: (r['on_loan'] as num?)?.toInt() ?? 0,
+      fav: r['is_favorite'] == true,
+      // Absent until migration 2026_10_22_05 runs; a missing key reads false
+      // rather than failing the whole catalogue.
+      onOffer: r['on_offer'] == true,
+      brand: r['brand']?.toString(),
+      imei1: r['imei1']?.toString(),
+      imei2: r['imei2']?.toString(),
+      costPrice: r['cost_price'] == null ? null : parseMoney(r['cost_price']),
+      loanPrice: r['loan_price'] == null ? null : parseMoney(r['loan_price']),
+      imageAsset: r['image_asset']?.toString(),
+      imageUrl: r['image_url']?.toString(),
+    );
   }
 
   List<LoanItem> parseLoans(List<Map<String, dynamic>> rows) {

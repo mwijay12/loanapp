@@ -1106,7 +1106,27 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
+                      // Stored first. The toast used to promise "imesasishwa
+                      // kikamilifu" for a change that only this device saw, and the
+                      // old picture came back on the next load.
+                      final write = await SupabaseSource.setProductImage(
+                        productId: p.id,
+                        imageAsset: selectedAsset,
+                        imageUrl: selectedUrl,
+                      );
+                      if (!mounted || !ctx.mounted) return;
+
+                      if (!write.saved) {
+                        LimsToast.show(
+                          context,
+                          write.error ??
+                              'Picha haijahifadhiwa. Jaribu tena.',
+                          isError: true,
+                        );
+                        return;
+                      }
+
                       ref.read(inventoryProvider.notifier).updateProductImage(
                         p.id,
                         imageAsset: selectedAsset,
@@ -2606,7 +2626,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         final imei1 = imei1Ctrl.text.trim();
                         if (imei1.isNotEmpty && !LimsValidators.isValidImei(imei1)) {
                           LimsToast.show(
@@ -2654,7 +2674,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         final resolvedUrl = resolvedAsset == null ? pickedUrl : null;
 
                         final newItem = ProductItem(
-                          id: DateTime.now().millisecondsSinceEpoch % 10000,
+                          // Postgres owns the id. It used to be
+                          // `millisecondsSinceEpoch % 10000`, which both invented a
+                          // number that could collide with a real row and let the
+                          // form believe it had saved something: the item went into
+                          // the provider list only, so the catalogue stayed at its
+                          // twelve rows and a refresh erased the intake. The draft's
+                          // id is now ignored — `products.id` is a sequence and the
+                          // stored row comes back with the real one.
+                          id: 0,
                           name: '$brand ${nameCtrl.text.trim().isEmpty ? "Handset" : nameCtrl.text.trim()}',
                           variant: '$storage · $colorName',
                           sku: '${brand.substring(0, brand.length >= 2 ? 2 : 1).toUpperCase()}-${storage.replaceAll("GB", "")}-$colorName',
@@ -2675,14 +2703,37 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           imageUrl: resolvedUrl,
                         );
 
-                        ref.read(inventoryProvider.notifier).addProduct(newItem);
+                        // The database answers before the shelf moves. Every toast
+                        // from here on describes a row that exists in `products`.
+                        final write = await SupabaseSource.createProduct(newItem);
+                        // Both contexts: this State may have been popped, and the
+                        // sheet's own `ctx` is what Navigator.pop is called on.
+                        if (!mounted || !ctx.mounted) return;
+
+                        final stored = write.product;
+                        if (!write.storedSomewhere || stored == null) {
+                          // Leave the sheet open: the form still holds what the
+                          // person typed, and the number on the shelf has not moved.
+                          LimsToast.show(
+                            context,
+                            write.message ??
+                                'The database did not take this product. Nothing was added — try again, and if it keeps failing the change is not saved anywhere.',
+                            isError: true,
+                          );
+                          return;
+                        }
+
+                        // mergeRow, not addProduct: the Realtime INSERT for this row
+                        // can arrive around the same moment, and a second copy would
+                        // show the handset twice and count its stock twice.
+                        ref.read(inventoryProvider.notifier).mergeRow(stored);
                         ref.read(activitiesProvider.notifier).addActivity(
                           ActivityItem(
                             icon: Icons.inventory_2_rounded,
                             iconColor: AppTheme.brand600,
                             bgColor: AppTheme.brand100,
-                            title: 'Stock Intake: ${newItem.name}',
-                            description: '$qty units received · ${LimsFormatters.currency(price)}',
+                            title: 'Stock Intake: ${stored.name}',
+                            description: '$qty units received · ${LimsFormatters.currency(stored.price)}',
                             time: 'Just now',
                           ),
                         );
@@ -2690,7 +2741,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         Navigator.pop(ctx);
                         LimsToast.show(
                           context,
-                          '${newItem.name} ($qty units) added to ${ref.read(activeBranchProvider)} stock.',
+                          write.restocked
+                              ? '${stored.name} was already on file under SKU ${stored.sku} — $qty units added, now ${stored.stock} in stock.'
+                              : '${stored.name} ($qty units) added to ${ref.read(activeBranchProvider)} stock.',
                           isSuccess: true,
                         );
                       },
@@ -2789,7 +2842,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final qty = int.tryParse(qtyCtrl.text) ?? 0;
                   if (qty <= 0) {
                     LimsToast.show(context, 'Enter a valid quantity', isError: true);
@@ -2801,8 +2854,30 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     return;
                   }
 
-                  final newStock = isAdding ? p.stock + qty : p.stock - qty;
-                  ref.read(inventoryProvider.notifier).updateStock(p.id, newStock);
+                  // What changed, not what the total should be. The call before this
+                  // one passed `p.stock + qty` into a parameter that was then *added*
+                  // again, so adding 1 to 24 units showed 49 on the till.
+                  final delta = isAdding ? qty : -qty;
+                  final write = await SupabaseSource.adjustStock(
+                    productId: p.id,
+                    delta: delta,
+                  );
+                  if (!mounted || !ctx.mounted) return;
+
+                  if (!write.saved) {
+                    // Nothing on the shelf moves. The old code reported success for a
+                    // change that never left the device.
+                    LimsToast.show(
+                      context,
+                      write.error ??
+                          'The stock change was not saved. The number you see is still the old one.',
+                      isError: true,
+                    );
+                    return;
+                  }
+
+                  final newStock = write.stock ?? p.stock + delta;
+                  ref.read(inventoryProvider.notifier).setStockTotal(p.id, newStock);
 
                   ref.read(activitiesProvider.notifier).addActivity(
                         ActivityItem(

@@ -225,7 +225,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
       for (final line in receipt.lines) {
         ref
             .read(inventoryProvider.notifier)
-            .updateStock(line.productId, line.qty);
+            .addStockUnits(line.productId, line.qty);
       }
     }
 

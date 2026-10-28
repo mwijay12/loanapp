@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_constants.dart';
 import '../data/store_movement.dart';
+import '../data/supabase_source.dart';
 
 /// Supabase Backend Configuration for LIMS
 /// Organization: fzlykkwgkydswvnlryhk
@@ -696,29 +697,17 @@ class ApiService {
   /// ids that do not exist in the database, then report success. The count on screen
   /// went up and the row in `products` did not change. This reads the current stock,
   /// writes the sum, and returns false when the database did not answer.
+  ///
+  /// The arithmetic lives in one place now — [SupabaseSource.adjustStock] — so a
+  /// delivery and a manual stock edit cannot drift apart on how `status` is derived
+  /// or what happens when the row is missing.
   Future<bool> addStock({required int productId, required int quantity}) async {
     if (quantity <= 0) return false;
-    try {
-      final row = await client
-          .from('products')
-          .select('stock, min_stock')
-          .eq('id', productId)
-          .maybeSingle();
-      if (row == null) return false;
-
-      final current = (row['stock'] as num?)?.toInt() ?? 0;
-      final min = (row['min_stock'] as num?)?.toInt() ?? 0;
-      final next = current + quantity;
-
-      await client.from('products').update({
-        'stock': next,
-        'status': next <= min ? 'low' : 'in',
-      }).eq('id', productId);
-      return true;
-    } catch (e) {
-      _report('backend call', e);
-      return false;
-    }
+    final write = await SupabaseSource.adjustStock(
+      productId: productId,
+      delta: quantity,
+    );
+    return write.saved;
   }
 
   bool get isConfigured => SupabaseConfig.isConfigured;
