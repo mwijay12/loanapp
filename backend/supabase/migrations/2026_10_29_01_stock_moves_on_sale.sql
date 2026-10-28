@@ -86,7 +86,12 @@ begin
   insert into public.product_history (product_id, title, detail, time_label, event_type)
   values (
     product.id,
-    'Sold: ' || product.name,
+-- A financed handset leaves the shop exactly as a sold one does, but a history line
+-- reading "Sold" for a loan is wrong in a way a manager will notice while chasing a
+-- device. Same movement, honest verb.
+    case when coalesce(new.kind, 'cash') = 'loan'
+         then 'Financed: ' || product.name
+         else 'Sold: ' || product.name end,
     'Receipt ' || coalesce(new.receipt_no, '—')
       || ' · ' || coalesce(new.kind, 'cash')
       || ' · ' || coalesce(new.payment_channel, 'unspecified')
