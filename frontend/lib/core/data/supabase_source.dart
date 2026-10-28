@@ -60,6 +60,44 @@ class ProductWrite {
   bool get storedSomewhere => saved || restocked;
 }
 
+/// What the database said about a manager PIN.
+///
+/// The four states are not interchangeable at a counter:
+///  * [granted] — a token that spends once within three minutes.
+///  * [wrongPin] — the PIN did not match. The person may try again, and the
+///    attempt is in `override_audit` as `pin_failed`.
+///  * [locked] — five failures inside fifteen minutes. Trying more makes it
+///    worse, so the message has to say stop, not "wrong PIN".
+///  * [failed] — nothing to do with the PIN: no session, a role that may not set
+///    one, a malformed PIN, or a server error.
+enum ManagerOverrideStatus { granted, wrongPin, locked, failed, notConfigured }
+
+@immutable
+class ManagerOverride {
+  const ManagerOverride(this.status, {this.token, this.error});
+
+  final ManagerOverrideStatus status;
+
+  /// The single-use uuid to put in `sales.override_token`.
+  final String? token;
+  final String? error;
+
+  bool get isGranted => status == ManagerOverrideStatus.granted && token != null;
+
+  /// A sentence for the person standing at the till.
+  String get message => error ?? switch (status) {
+        ManagerOverrideStatus.granted => 'Approved.',
+        ManagerOverrideStatus.wrongPin =>
+          'That PIN is not correct. The attempt was recorded.',
+        ManagerOverrideStatus.locked =>
+          'Too many wrong PINs. Overrides are locked for 15 minutes.',
+        ManagerOverrideStatus.failed =>
+          'The override could not be requested.',
+        ManagerOverrideStatus.notConfigured =>
+          'This build has no database, so no override was checked.',
+      };
+}
+
 /// Reads the app's rows out of Supabase.
 ///
 /// The live database stores money as formatted text — `'3,850,000'`,
@@ -124,6 +162,7 @@ class SupabaseSource {
     String? imei,
     String? branchId,
     int? productId,
+    String? overrideToken,
   }) async {
     if (!SupabaseConfig.isConfigured) {
       return const SaleLedgerWrite(SalePersistence.notConfigured);
@@ -158,6 +197,11 @@ class SupabaseSource {
         'paid': paid,
         'balance': balance,
         'payment_channel': paymentChannel,
+        // Null unless a Branch Manager typed their PIN for this very sale. The
+        // INSERT policy calls manager_override_is_valid() on it, so a role that may
+        // not sell is stopped by Postgres and not by this file. A forged uuid fails:
+        // it is not in manager_overrides, and a spent one is gone.
+        'override_token': overrideToken,
       });
       return const SaleLedgerWrite(SalePersistence.confirmed);
     } on PostgrestException catch (e) {
@@ -209,6 +253,162 @@ class SupabaseSource {
       ApiService.lastBackendError = 'setProductOffer: $e';
       debugPrint('LIMS: could not set offer on product $productId -> $e');
       return OfferSaveOutcome.failed;
+    }
+  }
+
+  /// Turns an RPC failure into one of the four honest answers.
+  ///
+  /// Pure on purpose: this is the only place the wording is decided, and it can be
+  /// tested without a live project. The database raises with a fixed message and
+  /// errcode (migration `2026_10_28_02_manager_override.sql`):
+  /// `override_pin_locked` (42501), `override_no_session` / `override_role_forbidden`
+  /// (42501), `override_pin_format` / `override_action_unknown` (22023).
+  static ManagerOverride classifyOverrideFailure(Object error) {
+    final text = error.toString();
+    if (text.contains('override_pin_locked')) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.locked,
+        error:
+            'Five wrong PINs in fifteen minutes. Overrides are locked for now — '
+            'a Branch Manager can see the attempts in the override log.',
+      );
+    }
+    if (text.contains('override_no_session')) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error: 'The session is not recognised by the server, so no PIN was checked.',
+      );
+    }
+    if (text.contains('override_role_forbidden')) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error: 'This role cannot set an override PIN. Only a Branch Manager or Super Admin can.',
+      );
+    }
+    if (text.contains('override_pin_format')) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error: 'A PIN is 6 digits, numbers only.',
+      );
+    }
+    if (text.contains('override_action_unknown')) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error: 'Unknown override action: the server accepts a sale or a payment.',
+      );
+    }
+    return ManagerOverride(
+      ManagerOverrideStatus.failed,
+      error: 'The server refused the request: ${text.replaceAll('PostgrestException:', '').trim()}',
+    );
+  }
+
+  /// Asks a Branch Manager to authorise one action with their own PIN.
+  ///
+  /// This is the client half of the R9 gate. The PIN never touches a Dart
+  /// comparison: it goes to `request_manager_override`, which checks it against
+  /// `profiles.manager_pin_hash` with bcrypt and, on a match, returns a uuid that
+  /// the INSERT policies accept once, for that action, for that staff member, for
+  /// three minutes. A Storekeeper selling without it is refused **by the database**
+  /// — the app cannot talk its way past that, which is the whole point.
+  ///
+  /// `p_pin` and `p_action` are the wire names. PostgREST resolves an RPC by
+  /// parameter name, so `{'pin': ...}` answers `404 PGRST202` and every call looks
+  /// like a missing function.
+  static Future<ManagerOverride> requestManagerOverride({
+    required String pin,
+    String action = 'sale',
+  }) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const ManagerOverride(ManagerOverrideStatus.notConfigured);
+    }
+    // Fail before the request: five malformed guesses are all it takes to lock the
+    // manager out for fifteen minutes, and a client-side format check costs nothing.
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.wrongPin,
+        error: 'A PIN is 6 digits, numbers only.',
+      );
+    }
+
+    try {
+      final token = await Supabase.instance.client.rpc(
+        'request_manager_override',
+        params: {'p_pin': pin, 'p_action': action},
+      );
+      // A void-shaped uuid: the RPC returns null when the PIN did not match, and
+      // it has already written the pin_failed row before doing so.
+      if (token == null) {
+        return const ManagerOverride(ManagerOverrideStatus.wrongPin);
+      }
+      return ManagerOverride(ManagerOverrideStatus.granted, token: token.toString());
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'requestManagerOverride: $e';
+      debugPrint('LIMS: override request refused -> ${e.code} ${e.message}');
+      return classifyOverrideFailure(e.message);
+    } catch (e) {
+      ApiService.lastBackendError = 'requestManagerOverride: $e';
+      debugPrint('LIMS: override request unconfirmed -> $e');
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error:
+            'The override request was sent but the server did not answer. '
+            'Do not keep pressing: check the override log first.',
+      );
+    }
+  }
+
+  /// Stores a manager's own PIN. The server hashes it; this never sees a hash and
+  /// never stores one on the device.
+  static Future<ManagerOverride> setManagerPin({required String pin}) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const ManagerOverride(ManagerOverrideStatus.notConfigured);
+    }
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error: 'A PIN is 6 digits, numbers only.',
+      );
+    }
+    try {
+      await Supabase.instance.client
+          .rpc('set_manager_pin', params: {'p_pin': pin});
+      return const ManagerOverride(ManagerOverrideStatus.granted);
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'setManagerPin: $e';
+      debugPrint('LIMS: set PIN refused -> ${e.code} ${e.message}');
+      return classifyOverrideFailure(e.message);
+    } catch (e) {
+      ApiService.lastBackendError = 'setManagerPin: $e';
+      debugPrint('LIMS: set PIN unconfirmed -> $e');
+      return const ManagerOverride(
+        ManagerOverrideStatus.failed,
+        error: 'The PIN was sent but the server did not confirm it. Try once more.',
+      );
+    }
+  }
+
+  /// The override log, newest first.
+  ///
+  /// `override_audit` cannot be written, changed or deleted by any client — that
+  /// is what makes it worth showing. Profile uuids are resolved to names by the
+  /// caller from the staff list it already has, because assuming an embedded
+  /// resource here would mean assuming a foreign key that has not been verified.
+  static Future<List<Map<String, dynamic>>> fetchOverrideAudit({int limit = 40}) async {
+    if (!SupabaseConfig.isConfigured) return const [];
+    try {
+      final rows = await Supabase.instance.client
+          .from('override_audit')
+          .select('id, at, action, actor_profile, manager_profile, branch_name, target_table, target_id, detail')
+          .order('at', ascending: false)
+          .limit(limit);
+      return (rows as List)
+          .map((r) => Map<String, dynamic>.from(r as Map))
+          .toList();
+    } catch (e) {
+      ApiService.lastBackendError = 'fetchOverrideAudit: $e';
+      debugPrint('LIMS: could not read the override log -> $e');
+      return const [];
     }
   }
 
@@ -846,6 +1046,7 @@ class SupabaseSaleLedger implements SaleLedger {
     String? imei,
     String? branchId,
     int? productId,
+    String? overrideToken,
   }) {
     return SupabaseSource.recordSale(
       receiptNo: receiptNo,
@@ -860,6 +1061,7 @@ class SupabaseSaleLedger implements SaleLedger {
       imei: imei,
       branchId: branchId,
       productId: productId,
+      overrideToken: overrideToken,
     );
   }
 }

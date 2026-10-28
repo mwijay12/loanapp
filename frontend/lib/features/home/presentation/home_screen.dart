@@ -7,6 +7,7 @@ import '../../../core/data/branch_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/widgets/live_greeting.dart';
+import '../../../core/widgets/manager_override.dart';
 import '../../../core/widgets/live_status_pill.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/notifications_provider.dart';
@@ -487,159 +488,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// The manager's override screen.
+  ///
+  /// This used to be a sheet that printed a PIN on the screen and listed one
+  /// invented counter request with an Approve button that announced an OTP dispatch.
+  /// A PIN on display is not an approval control, and a fabricated request gets a
+  /// customer approved who never walked in. The panel now sets the manager's own PIN
+  /// through `set_manager_pin` and reads `override_audit`, which no client can write.
   void _showSupervisorPinDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3F2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.pin_outlined,
-                            color: Color(0xFFD92D20), size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Supervisor Override PIN',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Column(
-                children: [
-                  Text(
-                    'Active Branch Override Master PIN',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B)),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    '8 8 2 1',
-                    style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 8,
-                        color: Color(0xFF1E60F2)),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Use this PIN at counter to authorize custom cash discounts or override minimum deposit requirements.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Pending Counter Requests (1)',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A)),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.discount_rounded,
-                      color: Color(0xFF1E60F2), size: 22),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Galaxy A15 · TZS 30,000 Discount',
-                            style: TextStyle(
-                                fontSize: 12.5, fontWeight: FontWeight.w700)),
-                        Text('Requested by Zawadi (Till #2) · Cash Buyer',
-                            style: TextStyle(
-                                fontSize: 11, color: Color(0xFF475569))),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Discount authorized! OTP PIN dispatched to Till #2.'),
-                          backgroundColor: Color(0xFF10B981),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E60F2),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      minimumSize: Size.zero,
-                    ),
-                    child: const Text('Approve',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
+    showManagerOverridePanel(context);
   }
-
   @override
   Widget build(BuildContext context) {
     final currentRole = ref.watch(userRoleProvider);

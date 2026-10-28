@@ -32,6 +32,11 @@ class _FakeLedger implements SaleLedger {
   final List<String> receipts = [];
   final List<String> kinds = [];
 
+  /// Recorded so a test can see whether an approval token reached the ledger. The
+  /// token's own behaviour is proven against the live database
+  /// (`tools/verify_manager_override.py`), not here: it is issued by Postgres.
+  final List<String?> overrideTokens = [];
+
   @override
   Future<SaleLedgerWrite> write({
     required String receiptNo,
@@ -46,8 +51,10 @@ class _FakeLedger implements SaleLedger {
     String? imei,
     String? branchId,
     int? productId,
+    String? overrideToken,
   }) {
     writes++;
+    overrideTokens.add(overrideToken);
     receipts.add(receiptNo);
     kinds.add(kind);
     final pending = gate;

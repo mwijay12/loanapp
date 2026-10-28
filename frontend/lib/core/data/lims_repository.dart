@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../constants/app_constants.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/manager_override.dart';
 import 'mock_lims_data.dart';
 import 'branch_provider.dart';
 import 'inventory_provider.dart';
@@ -270,6 +273,7 @@ class MockLimsRepository implements LimsRepository {
     POSSaleResult result,
     ProductItem phone, {
     required String kind,
+    String? overrideToken,
   }) async {
     final branchName = ref.read(activeBranchProvider);
     final branches = ref.read(branchesProvider);
@@ -293,6 +297,7 @@ class MockLimsRepository implements LimsRepository {
       imei: result.primaryImei,
       branchId: branchId,
       productId: phone.id,
+      overrideToken: overrideToken,
     );
     if (write.isConfirmed) {
       ref.read(salesProvider.notifier).add(
@@ -362,7 +367,33 @@ class MockLimsRepository implements LimsRepository {
       timestamp: now,
     );
 
-    final write = await _persistSale(ref, sale, phone, kind: 'cash');
+    // R9: a Storekeeper may take cash, but only while a Branch Manager is standing
+    // at the counter with their own PIN. The token below is what the sales INSERT
+    // policy checks, so this prompt is not the gate — it is the door. Refusing to
+    // approve leaves the sale unsold, which is the only correct outcome: the money
+    // and the handset stay where they were.
+    // A build with no database has nothing to approve against: there is no
+    // `sales` row, no policy and no manager_overrides table. Asking for a PIN there
+    // would be theatre, so the prompt is skipped and the result still reports
+    // `notConfigured` - locally complete, `isSaved` false, no receipt.
+    String? overrideToken;
+    if (SupabaseConfig.isConfigured &&
+        ref.read(userRoleProvider) == UserRoles.storekeeper) {
+      final approval = await promptManagerOverride(
+        ref.context,
+        action: 'sale',
+        detail: 'Sale: ${phone.name} · TZS ${phone.price}',
+      );
+      if (!approval.isGranted) {
+        return sale.copyWith(
+          persistence: SalePersistence.failed,
+          errorMessage: approval.message,
+        );
+      }
+      overrideToken = approval.token;
+    }
+
+    final write = await _persistSale(ref, sale, phone, kind: 'cash', overrideToken: overrideToken);
 
     if (write.isConfirmed || write.status == SalePersistence.notConfigured) {
       _applyLocalSale(

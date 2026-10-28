@@ -75,6 +75,7 @@ abstract class SaleLedger {
     String? imei,
     String? branchId,
     int? productId,
+    String? overrideToken,
   });
 }
 
