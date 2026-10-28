@@ -315,6 +315,27 @@ class UserRoles {
       normalize(raw) == branchManager ||
       normalize(raw) == superAdmin;
 
+  /// Roles whose rows survive a `select * from loans`.
+  ///
+  /// This is a transcription of the `loans_read` policy in
+  /// 2026_10_20_01_rls_policies.sql:133-136, not an independent opinion. Loan
+  /// rows carry borrower PII, so a Storekeeper is excluded there, and the
+  /// repository hands back an empty list rather than an error when RLS refuses.
+  ///
+  /// The reason for naming it in Dart at all is navigation: without this the
+  /// bottom bar offers a Storekeeper a Borrowers tab that can only ever render
+  /// zero rows and then apologise with "no borrower matches your search", which
+  /// blames the reader for a door that was never his. The database remains the
+  /// boundary — this only decides which door to show.
+  static const Set<String> loanViewers = <String>{
+    superAdmin,
+    branchManager,
+    loanOfficer,
+    auditor,
+  };
+
+  static bool canViewLoans(String? raw) => loanViewers.contains(normalize(raw));
+
   /// True when the session is real and known (not signed out, not pending).
   static bool hasAccess(String? raw) => isAssignable(raw);
 

@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/haptics.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/view_toggle.dart';
 import 'borrower_loan_details_screen.dart';
 
@@ -43,6 +45,30 @@ class _LoansScreenState extends ConsumerState<LoansScreen> {
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
     final allLoans = ref.watch(loansProvider);
+
+    // A Storekeeper can reach this route through a saved tab, a browser back
+    // gesture or a link, even though the dock no longer offers it to him.
+    // `loans_read` (2026_10_20_01_rls_policies.sql:133-136) refuses his rows and
+    // the repository answers with an empty list, so without this guard he reads
+    // three zeros and the sentence "No borrower matches your search" — an
+    // apology that blames his typing for a door that was never his. The role,
+    // not the search box, is the fact worth printing.
+    final role = ref.watch(userRoleProvider);
+    if (!UserRoles.canViewLoans(role)) {
+      return Scaffold(
+        backgroundColor: AppTheme.canvas,
+        body: SafeArea(
+          child: EmptyState(
+            icon: Icons.lock_outline_rounded,
+            title: tr(locale, 'loans.lockedTitle'),
+            message: trf(
+                locale, 'loans.lockedBody', {'role': tr(locale, UserRoles.labelKey(role))}),
+            actionLabel: tr(locale, 'loans.lockedAction'),
+            onAction: () => context.go('/stock-room'),
+          ),
+        ),
+      );
+    }
 
     // Filter & Search
     final filteredLoans = allLoans.where((l) {

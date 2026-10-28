@@ -22,6 +22,10 @@ class _AppShellState extends ConsumerState<AppShell> {
   int _getCurrentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/home')) return 0;
+    // '/stock-room' before '/stock' on purpose: the prefix test is a bare
+    // startsWith, so the newer route would otherwise be claimed by the Stock
+    // tab and the highlight would sit under the wrong icon all day.
+    if (location.startsWith('/stock-room')) return 3;
     if (location.startsWith('/stock')) return 1;
     if (location.startsWith('/scan')) return 2;
     if (location.startsWith('/loans')) return 3;
@@ -625,6 +629,10 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   Widget _buildScaffold(BuildContext context, int currentIndex) {
+    // Which fourth door this role may open at all. See UserRoles.loanViewers:
+    // the database, not this line, is what actually protects borrower PII.
+    final canSeeLoans = UserRoles.canViewLoans(ref.watch(userRoleProvider));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
       body: widget.child,
@@ -696,11 +704,19 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
               ),
 
+              // The fourth door is the one a role cannot open. A Storekeeper is
+              // refused by loans_read, so handing him a Borrowers icon would be
+              // handing him an empty table; he gets the shelf his role can read.
               _buildNavItem(
-                icon: Icons.account_balance_wallet_rounded,
-                tooltip: tr(ref.watch(localeProvider), 'nav.loans'),
+                icon: canSeeLoans
+                    ? Icons.account_balance_wallet_rounded
+                    : Icons.inventory_2_rounded,
+                tooltip: tr(
+                  ref.watch(localeProvider),
+                  canSeeLoans ? 'nav.loans' : 'nav.stockroom',
+                ),
                 isSelected: currentIndex == 3,
-                onTap: () => context.go('/loans'),
+                onTap: () => context.go(canSeeLoans ? '/loans' : '/stock-room'),
               ),
               _buildNavItem(
                 icon: Icons.tune_rounded,

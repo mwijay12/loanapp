@@ -8,6 +8,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/stock/presentation/stock_screen.dart';
 import '../../features/loans/presentation/loans_screen.dart';
+import '../../features/stock/presentation/stock_room_screen.dart';
 import '../../features/reports/presentation/reports_screen.dart';
 import '../../features/account/presentation/account_screen.dart';
 import '../../features/ai/presentation/ai_screen.dart';
@@ -103,6 +104,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/loans',
             builder: (context, state) => const LoansScreen(),
+          ),
+          // The door a Storekeeper is shown instead of /loans. Not an alias and
+          // not a rename: it answers a different question using the tables his
+          // role can actually read, because loans_read excludes him.
+          GoRoute(
+            path: '/stock-room',
+            builder: (context, state) => const StockRoomScreen(),
           ),
           GoRoute(
             path: '/reports',

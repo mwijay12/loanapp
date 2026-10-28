@@ -415,6 +415,43 @@ class ApiService {
     }
   }
 
+  /// Handsets held at one branch in the given [statuses].
+  ///
+  /// `listStockUnits` above only asks for `in_stock`, so a Storekeeper wanting
+  /// to know which of *his* handsets are physically outside the shop had no
+  /// query to make. `product_units` is readable by every authenticated role
+  /// (2026_10_22_08_product_units.sql:93-98), which is why custody can be shown
+  /// to a Storekeeper while the borrower's identity in `loans` cannot.
+  ///
+  /// Returns the raw rows on purpose: the caller needs `imei`, `model`, `status`
+  /// and `received_at`, and a screen that has to import a realtime or supabase
+  /// type to read a shelf cannot be tested without a socket.
+  ///
+  /// There is no `product_name` column on this table — the description of a
+  /// handset is `model`, verified against information_schema before this was
+  /// written, because a select naming a column that does not exist does not
+  /// crash: it is caught below and returns an empty shelf.
+  Future<List<Map<String, dynamic>>> listBranchUnits({
+    required String branch,
+    required List<String> statuses,
+    int limit = 200,
+  }) async {
+    if (!isConfigured || statuses.isEmpty) return [];
+    try {
+      final rows = await client
+          .from('product_units')
+          .select('id, imei, sku, model, status, branch, received_at')
+          .eq('branch', branch)
+          .inFilter('status', statuses)
+          .order('received_at', ascending: false)
+          .limit(limit);
+      return List<Map<String, dynamic>>.from(rows);
+    } catch (e) {
+      _report('branch units', e);
+      return [];
+    }
+  }
+
   /// What arrived at one branch since [since], counted from the delivery and
   /// serial ledgers.
   ///

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:loan_inventory_app/core/constants/app_constants.dart';
 import 'package:loan_inventory_app/core/data/inventory_provider.dart';
 import 'package:loan_inventory_app/core/data/mock_lims_data.dart';
 import 'package:loan_inventory_app/core/l10n/greetings.dart';
@@ -193,6 +194,13 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            // The borrower list is a door loans_read opens only for a
+            // loan-viewing role, so this test states that precondition instead
+            // of relying on an unsigned-in session rendering customer rows.
+            userRoleProvider.overrideWith(
+              (ref) => UserRoleNotifier()
+                ..hydrateFromSession(UserRoles.branchManager),
+            ),
             loansProvider.overrideWith(
               (ref) => LoansNotifier([
                 LoanItem(

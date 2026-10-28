@@ -196,6 +196,10 @@ const Map<String, Map<String, String>> _dictionary = {
 
   'nav.inventory': {'en': 'Inventory', 'sw': 'Stoo'},
   'nav.loans': {'en': 'Loans', 'sw': 'Mikopo'},
+  // The door a Storekeeper gets instead of Loans. It is not a rename of
+  // nav.inventory: both words appear in the same dock for a Branch Manager, so
+  // sharing one key would put two icons under one name.
+  'nav.stockroom': {'en': 'Stock Room', 'sw': 'Chumba cha Stoo'},
   'nav.operations': {'en': 'Operations', 'sw': 'Uendeshaji'},
   'nav.scan': {'en': 'Scan', 'sw': 'Skani'},
 
@@ -460,6 +464,25 @@ const Map<String, Map<String, String>> _dictionary = {
   'loans.kpiActive': {'en': 'Active borrowers', 'sw': 'Wakopaji hai'},
   'loans.kpiOverdue': {'en': 'In arrears', 'sw': 'Wenye deni'},
   'loans.kpiOnSchedule': {'en': 'On schedule', 'sw': 'Kwa wakati'},
+  // Shown when loans_read refuses the signed-in role. The role is interpolated
+  // rather than hardcoded because the same screen is reached by a Storekeeper
+  // and by a Counter Cashier; naming the wrong one would be a second lie on top
+  // of the blank table this screen replaces.
+  'loans.lockedTitle': {
+    'en': 'Borrower files are not part of your role',
+    'sw': 'Faili za wakopaji si sehemu ya jukumu lako'
+  },
+  'loans.lockedBody': {
+    'en':
+        'Loan records hold customer details, so the database lets a {role} see '
+        'the handset a borrower is holding but not who they are. How you see '
+        'that same stock is under Stock Room.',
+    'sw':
+        'Rekodi za mikopo zina taarifa za wateja, kwa hivyo database inamruhusu '
+        '{role} kuona simu ambayo mkopaji anayo, lakini si kujua ni nani. Jinsi '
+        'unavyoiona stoo hiyo iko chini ya Chumba cha Stoo.'
+  },
+  'loans.lockedAction': {'en': 'Open Stock Room', 'sw': 'Fungua Chumba cha Stoo'},
   'loans.search': {
     'en': 'Search customer, phone or IMEI…',
     'sw': 'Tafuta mteja, simu au IMEI…',
