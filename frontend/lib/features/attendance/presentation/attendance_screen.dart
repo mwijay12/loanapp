@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/data/attendance_clock.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/services/app_permissions_service.dart';
@@ -12,6 +13,7 @@ import '../../../core/l10n/locale_provider.dart';
 import '../../../core/services/pdf_labels.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/live_greeting.dart' show eatNow;
 import '../../../core/widgets/ui_kit.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
@@ -25,7 +27,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
   late Timer _clockTimer;
   String _currentTime = '08:00:00';
   String _currentAmPm = 'AM';
-  final String _currentDate = 'Friday, 02 October 2026';
+  String _currentDate = attendanceLongDateLabel(DateTime.now());
   late TabController _tabController;
   bool _isCheckingGps = false;
 
@@ -40,7 +42,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
   }
 
   void _updateTime() {
-    final now = DateTime.now();
+    // The shop's clock, not the device's. This screen decides whether someone
+    // is on time, so it has to read the same timezone as the ledger it feeds.
+    final now = eatNow();
     final h = now.hour;
     final displayHour = h > 12 ? h - 12 : (h == 0 ? 12 : h);
     final m = now.minute.toString().padLeft(2, '0');
@@ -48,6 +52,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
     setState(() {
       _currentTime = '${displayHour.toString().padLeft(2, '0')}:$m:$s';
       _currentAmPm = h >= 12 ? 'PM' : 'AM';
+      _currentDate = attendanceLongDateLabel(DateTime.now());
     });
   }
 
@@ -114,7 +119,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
             staffName: activeStaff.name,
             role: activeStaff.role,
             branch: branch,
-            customTime: '$_currentTime $_currentAmPm',
           );
 
       if (!result.isConfigured) {
@@ -423,7 +427,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> with Single
     final attendanceLogs = ref.watch(attendanceProvider);
 
     // Look for active shift log for the current logged-in staff member
-    final todayLogs = attendanceLogs.where((l) => l.date.contains('Today') || l.date.contains('02 Oct')).toList();
+    final todayLabel = attendanceDateLabel(DateTime.now());
+    final todayLogs = attendanceLogs.where((l) => l.date == todayLabel).toList();
     final currentStaffRecord = todayLogs.cast<AttendanceRecord?>().firstWhere(
           (l) => l?.staffName == activeStaff.name,
           orElse: () => null,

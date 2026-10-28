@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_constants.dart';
+import 'attendance_clock.dart';
 import 'mock_lims_data.dart';
 import 'sales_provider.dart';
 
@@ -547,27 +548,29 @@ final todayTransactionsCountProvider =
 class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
   AttendanceNotifier() : super(List.from(MockLimsData.attendanceLogs));
 
+  /// Records a clock-in.
+  ///
+  /// [instant] defaults to the wall clock and exists so a test can punch in at
+  /// 22:16 UTC without waiting for it. Everything the row prints is derived
+  /// from [attendance_clock] so the ledger, the roster and the PDF agree.
   void clockIn({
     required String staffId,
     required String staffName,
     required String role,
     required String branch,
-    String? customTime,
+    DateTime? instant,
   }) {
-    final now = DateTime.now();
-    final timeStr = customTime ??
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
-    final isLate = now.hour > 8 || (now.hour == 8 && now.minute > 15);
+    final now = instant ?? DateTime.now();
     final record = AttendanceRecord(
       id: 'ATT-${now.millisecondsSinceEpoch.toString().substring(5)}',
       staffId: staffId,
       staffName: staffName,
       role: role,
       branch: branch,
-      date: 'Today, ${now.day} Oct ${now.year}',
-      clockInTime: timeStr,
+      date: attendanceDateLabel(now),
+      clockInTime: attendanceTimeLabel(now),
       clockOutTime: null,
-      status: isLate ? 'Late (${now.minute}m)' : 'Present',
+      status: attendanceStatusFor(now),
       shiftHours: 0.1,
       isGeofenceVerified: true,
       verifiedBy: 'Store GPS & Pin Validated',
@@ -589,16 +592,18 @@ class AttendanceNotifier extends StateNotifier<List<AttendanceRecord>> {
     ];
   }
 
-  void clockOut(String recordId) {
-    final now = DateTime.now();
-    final timeStr =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
+  void clockOut(String recordId, {DateTime? instant}) {
+    final now = instant ?? DateTime.now();
+    final timeStr = attendanceTimeLabel(now);
     state = [
       for (final r in state)
         if (r.id == recordId)
           r.copyWith(
             clockOutTime: timeStr,
             status: 'Completed',
+            // Still a placeholder: the row stores clock-in as display text, so
+            // hours worked cannot be derived from it. Needs a clock-in instant
+            // on AttendanceRecord before this can be computed.
             shiftHours: 8.5,
           )
         else
