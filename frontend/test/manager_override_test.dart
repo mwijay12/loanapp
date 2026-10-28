@@ -67,4 +67,24 @@ void main() {
       expect(none.message, contains('no database'));
     });
   });
+  group('the approval threshold', () {
+    // `loans_create` exempts `amount < threshold`; the app must therefore ask at
+    // exactly the threshold. The two were once `>` in Dart and `<` in SQL, so a
+    // loan of exactly TZS 1,000,000 looked fine on screen and was refused on insert.
+    test('a loan below the threshold needs no manager', () {
+      expect(SupabaseSource.loanNeedsApproval(999999), isFalse);
+    });
+
+    test('a loan at exactly the threshold needs one', () {
+      expect(SupabaseSource.loanNeedsApproval(1000000), isTrue);
+    });
+
+    test('so does a loan far above it', () {
+      expect(SupabaseSource.loanNeedsApproval(5000000), isTrue);
+    });
+
+    test('a cash sale is never a disbursement', () {
+      expect(SupabaseSource.loanNeedsApproval(0), isFalse);
+    });
+  });
 }

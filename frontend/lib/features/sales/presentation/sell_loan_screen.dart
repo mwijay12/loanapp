@@ -12,6 +12,7 @@ import '../../../core/theme/app_localizations.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/supabase_source.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/data/lims_repository.dart';
@@ -39,11 +40,6 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   String _selectedTransaction = 'LOAN'; // 'SELL' (Cash) or 'LOAN'
   final _formKey = GlobalKey<FormState>();
 
-  // P0: supervisor PIN is NOT hardcoded. Injected at build time
-  // (--dart-define=SUPERVISOR_PIN=...). Empty means high-value loans are
-  // blocked fail-closed until a server-side approval (P1/P2) exists.
-  static const String _supervisorPin = String.fromEnvironment('SUPERVISOR_PIN');
-
   int? _selectedHandsetId;
 
   // Borrower KYC Controllers
@@ -62,7 +58,6 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
 
   // Loan Financial Controllers
   late TextEditingController _depositController;
-  final _supervisorPinController = TextEditingController();
 
   // Cash Sale Controllers
   /// Stored as a code, not as a label.
@@ -174,7 +169,6 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     _guarantorRelationController.dispose();
     _guarantorNidaController.dispose();
     _depositController.dispose();
-    _supervisorPinController.dispose();
     _receiptPhoneController.dispose();
     super.dispose();
   }
@@ -276,7 +270,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     _ensureDepositInitialized(activePhone);
 
     final loanPrice = activePhone.loanPrice ?? (activePhone.price * 1.20).round();
-    final requiresSupervisor = _selectedTransaction == 'LOAN' && loanPrice > 1000000;
+    // The same predicate the database applies. `> 1000000` here against `< 1000000`
+    // there meant a loan of exactly one million looked approvable on screen and was
+    // then refused on insert - a disagreement only the customer would notice.
+    final requiresSupervisor =
+        _selectedTransaction == 'LOAN' && SupabaseSource.loanNeedsApproval(loanPrice.toDouble());
 
     final depositInt = int.tryParse(_depositController.text.replaceAll(',', '')) ?? (loanPrice * 0.25).round();
     final quote = LoanQuote.calculate(
@@ -1594,22 +1592,12 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'High-value financing (> TZS 1,000,000) mandates supervisor authorization PIN before disbursement.',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFFB45309)),
+            'Financing at or above TZS 1,000,000 needs a Branch Manager at this '
+            'counter. You will be asked for their PIN when you confirm — the amount, '
+            'the borrower and who approved it are written in the override log.',
+            style: TextStyle(fontSize: 11.5, color: Color(0xFFB45309), height: 1.4),
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _supervisorPinController,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: tr(_locale, 'sell.supervisorPin'),
-              prefixIcon: Icon(Icons.lock_outline_rounded, size: 18),
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
+
         ],
       ),
     );
@@ -1635,16 +1623,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
                     return;
                   }
 
-                  if (requiresSupervisor && (_supervisorPin.isEmpty || _supervisorPinController.text.trim() != _supervisorPin)) {
-                    LimsToast.show(
-                      context,
-                      _supervisorPin.isEmpty
-                          ? 'High-value loans need supervisor approval, which is not configured. Contact your administrator.'
-                          : 'Supervisor PIN required for loans > 1M.',
-                      isError: true,
-                    );
-                    return;
-                  }
+                  // No PIN is compared here any more. `loans_create` in Postgres
+                  // refuses an over-threshold loan without a token that
+                  // request_manager_override issued seconds ago, so the check that
+                  // used to live in this widget was the weakest version of a rule
+                  // the database now enforces for every client, including a curl.
                 }
 
                 _showOrderReviewDialog(context, phone, quote);

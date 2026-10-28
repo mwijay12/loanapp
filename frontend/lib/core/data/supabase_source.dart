@@ -34,6 +34,26 @@ class StockWrite {
   bool get saved => status == StockWriteStatus.saved;
 }
 
+/// What the database did with a loan.
+///
+/// Same four answers as [StockWriteStatus], because the same distinction matters
+/// most here: `unconfirmed` means the borrower may already be in the book, and
+/// booking them twice doubles a debt.
+enum LoanWriteStatus { saved, rejected, failed, unconfirmed, notConfigured }
+
+class LoanWrite {
+  const LoanWrite(this.status, {this.error, this.row});
+
+  final LoanWriteStatus status;
+  final String? error;
+
+  /// The stored row, id included, once it exists.
+  final Map<String, dynamic>? row;
+
+  bool get saved => status == LoanWriteStatus.saved;
+  int? get id => (row?['id'] as num?)?.toInt();
+}
+
 /// What the database did with a new catalogue row.
 enum ProductWriteStatus {
   saved,
@@ -409,6 +429,132 @@ class SupabaseSource {
       ApiService.lastBackendError = 'fetchOverrideAudit: $e';
       debugPrint('LIMS: could not read the override log -> $e');
       return const [];
+    }
+  }
+
+  /// True when a loan of [amount] needs a manager standing at the counter.
+  ///
+  /// Pure, so the rule the till applies and the rule `loans_create` applies can be
+  /// tested against the same number. The database's copy is
+  /// `public.loan_override_threshold()`; if the two ever disagree the database wins,
+  /// and this only decides whether to ask the manager before or after the refusal.
+  static bool loanNeedsApproval(double amount, {double threshold = loanApprovalThreshold}) =>
+      amount >= threshold;
+
+  /// The amount in force in the database as of this writing. Kept as a named
+  /// constant rather than scattered `1000000` literals so a change is one edit.
+  static const double loanApprovalThreshold = 1000000;
+
+  /// Books a loan. This is the credit book, so it is the one write that must not be
+  /// simulated.
+  ///
+  /// Until now no code path inserted into `loans` at all: `ApiService.createLoan`
+  /// existed with no callers and, on any error, returned
+  /// `{'id': DateTime.now().millisecondsSinceEpoch, ...data}` — a fabricated row that
+  /// looked like a saved borrower. A shop can survive losing a stock count for an
+  /// afternoon; it cannot survive losing the record of who owes it money, and every
+  /// "loan" taken on this build so far exists only in the memory of the device that
+  /// rang it. The 16 rows in `loans` are all seed data from 15 October.
+  ///
+  /// A loan at or above [loanApprovalThreshold] is refused by the database unless
+  /// [overrideToken] came from `request_manager_override` a moment ago — see
+  /// migration `2026_10_29_02_loan_disbursement_gate.sql`.
+  static Future<LoanWrite> createLoan({
+    required String loanNo,
+    required String borrowerName,
+    String? borrowerPhone,
+    String? nida,
+    String? location,
+    String? guarantorName,
+    String? guarantorPhone,
+    String? guarantorRelation,
+    required String itemName,
+    required double amount,
+    required int paidPercent,
+    required String dueInfo,
+    double deposit = 0,
+    double? weeklyInstallment,
+    int? installmentWeeks,
+    String? imei,
+    String? branchId,
+    String? overrideToken,
+    String status = 'current',
+  }) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const LoanWrite(LoanWriteStatus.notConfigured);
+    }
+    if (borrowerName.trim().isEmpty || amount <= 0) {
+      return const LoanWrite(LoanWriteStatus.rejected,
+          error: 'A loan needs a borrower and a financed amount above zero.');
+    }
+
+    final values = <String, dynamic>{
+      'loan_no': loanNo,
+      'borrower_name': borrowerName.trim(),
+      'item_name': itemName,
+      'amount': amount,
+      'paid_percent': paidPercent,
+      'due_info': dueInfo,
+      'status': status,
+      'phone': borrowerPhone,
+      'nida': nida,
+      'location': location,
+      'guarantor_name': guarantorName,
+      'guarantor_phone': guarantorPhone,
+      'guarantor_relation': guarantorRelation,
+      'imei': (imei ?? '').trim().isEmpty ? null : imei!.trim(),
+      'deposit': deposit,
+      'weekly_installment': weeklyInstallment,
+      'installment_weeks': installmentWeeks,
+      'branch_id': branchId,
+      'override_token': overrideToken,
+    };
+
+    final SupabaseQueryBuilder table;
+    try {
+      table = Supabase.instance.client.from('loans');
+    } catch (e) {
+      ApiService.lastBackendError = 'createLoan: $e';
+      debugPrint('LIMS: no client for createLoan -> $e');
+      return const LoanWrite(LoanWriteStatus.failed,
+          error: 'The database client is not ready.');
+    }
+
+    try {
+      final stored = await table.insert(values).select().single();
+      debugPrint('LIMS: booked loan ${stored['id']} ${stored['borrower_name']} '
+          '${stored['amount']}${overrideToken != null ? " (manager approved)" : ""}');
+      return LoanWrite(LoanWriteStatus.saved, row: Map<String, dynamic>.from(stored));
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'createLoan: $e';
+      debugPrint('LIMS: could not book loan $loanNo -> $e');
+      if ((e.code ?? '') == '42501') {
+        // The policy refused. Two different reasons look identical from here —
+        // amount over the threshold without a manager, and a role that may not
+        // book loans at all — so say both rather than guessing.
+        return const LoanWrite(
+          LoanWriteStatus.rejected,
+          error:
+              'The server refused this loan. Either it is above the approval limit '
+              'and needs a Branch Manager\'s PIN, or this role may not book loans.',
+        );
+      }
+      if ((e.code ?? '') == '23505' && e.message.contains('loan_no')) {
+        return LoanWrite(LoanWriteStatus.rejected,
+            error: 'Loan $loanNo is already on file. Do not book it twice.');
+      }
+      return LoanWrite(LoanWriteStatus.failed,
+          error:
+              'The server refused the loan (${e.code ?? 'no code'}): ${e.message}');
+    } catch (e) {
+      ApiService.lastBackendError = 'createLoan: $e';
+      debugPrint('LIMS: loan $loanNo unconfirmed -> $e');
+      return const LoanWrite(
+        LoanWriteStatus.unconfirmed,
+        error:
+            'The loan was sent but the database did not confirm it. Check the loan '
+            'list before booking it again — a double booking is a double debt.',
+      );
     }
   }
 

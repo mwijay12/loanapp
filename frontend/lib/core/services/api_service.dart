@@ -371,16 +371,11 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> createLoan(Map<String, dynamic> data) async {
-    try {
-      final response =
-          await client.from('loans').insert(data).select().single();
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      _report('backend call', e);
-      return {'id': DateTime.now().millisecondsSinceEpoch, ...data};
-    }
-  }
+  // There used to be a `createLoan` here. Nothing called it, and on any failure it
+  // returned `{'id': DateTime.now().millisecondsSinceEpoch, ...data}` - a borrower
+  // invented out of the clock. Writing the credit book now goes through
+  // SupabaseSource.createLoan, which answers saved / refused / unconfirmed and
+  // never hands back a row that does not exist.
 
   Future<List<Map<String, dynamic>>> getSales() async {
     try {

@@ -262,6 +262,19 @@ class MockLimsRepository implements LimsRepository {
         .toList();
   }
 
+  /// The uuid of the branch the till is currently pointed at.
+  ///
+  /// The app carries branch *names* in `activeBranchProvider` while the database
+  /// wants `branches.id`. Resolving it in one place keeps a loan, a sale and a
+  /// receipt from pointing at three different branches after a rename.
+  String? branchIdForActiveBranch(WidgetRef ref) {
+    final branchName = ref.read(activeBranchProvider);
+    for (final b in ref.read(branchesProvider)) {
+      if (b.name == branchName) return b.id;
+    }
+    return null;
+  }
+
   /// Writes a completed sale and reports what the ledger said.
   ///
   /// This used to return `void` and drop the result of the write on the floor,
@@ -275,15 +288,7 @@ class MockLimsRepository implements LimsRepository {
     required String kind,
     String? overrideToken,
   }) async {
-    final branchName = ref.read(activeBranchProvider);
-    final branches = ref.read(branchesProvider);
-    String? branchId;
-    for (final b in branches) {
-      if (b.name == branchName) {
-        branchId = b.id;
-        break;
-      }
-    }
+    final branchId = branchIdForActiveBranch(ref);
     final write = await ledger.write(
       receiptNo: result.receiptId,
       kind: kind,
@@ -482,6 +487,64 @@ class MockLimsRepository implements LimsRepository {
       paymentChannel: paymentChannel,
       timestamp: now,
     );
+
+    // Three things happen in this order, and the order is the point.
+    //
+    // 1. Ask a manager if the amount demands one. Below the threshold nobody is
+    //    interrupted; at or above it the PIN belongs to a real Branch Manager and
+    //    buys one token, because that is what the database will look for anyway.
+    // 2. Write the loan. This is the insert that never existed: `loans` has 16 rows,
+    //    all of them seed data from 15 October, because the only code that could
+    //    write there had no callers and invented a row id on failure. A lost stock
+    //    count is recoverable by Saturday; a lost borrower is not.
+    // 3. Write the sales row last, so a refused disbursement cannot leave money
+    //    "taken" for a loan nobody agreed to.
+    String? disbursementToken;
+    if (SupabaseConfig.isConfigured &&
+        SupabaseSource.loanNeedsApproval(quote.loanPrice.toDouble())) {
+      final approval = await promptManagerOverride(
+        ref.context,
+        action: 'disbursement',
+        detail: 'Financing ${quote.loanPrice} for $customerName · ${phone.name}',
+      );
+      if (!approval.isGranted) {
+        return sale.copyWith(
+          persistence: SalePersistence.failed,
+          errorMessage: approval.message,
+        );
+      }
+      disbursementToken = approval.token;
+    }
+
+    final booked = await SupabaseSource.createLoan(
+      loanNo: loanId,
+      borrowerName: customerName,
+      borrowerPhone: customerPhone,
+      nida: customerNida,
+      location: residence,
+      guarantorName: guarantorName,
+      guarantorPhone: guarantorPhone,
+      guarantorRelation: 'Guarantor / Kin',
+      itemName: phone.name,
+      amount: quote.loanPrice.toDouble(),
+      paidPercent: newLoan.paid,
+      dueInfo: newLoan.due,
+      deposit: quote.downPayment.toDouble(),
+      weeklyInstallment: quote.weeklyInstallment.toDouble(),
+      installmentWeeks: quote.tenureWeeks,
+      imei: phone.imei1 ?? phone.sku,
+      branchId: branchIdForActiveBranch(ref),
+      overrideToken: disbursementToken,
+    );
+
+    if (!booked.saved && booked.status != LoanWriteStatus.notConfigured) {
+      return sale.copyWith(
+        persistence: booked.status == LoanWriteStatus.unconfirmed
+            ? SalePersistence.unconfirmed
+            : SalePersistence.failed,
+        errorMessage: booked.error,
+      );
+    }
 
     final write = await _persistSale(ref, sale, phone, kind: 'loan');
 
