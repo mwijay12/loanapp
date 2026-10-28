@@ -39,8 +39,14 @@ class AppConstants {
   //
   // A production build MUST NOT set this flag. The branch is compiled out when
   // it is false, so a release APK cannot be talked into demo mode at runtime.
+  //
+  // Read from --dart-define rather than being hardcoded here, because a literal
+  // `false` in a shared constant is a coin flip away from being flipped to `true`
+  // for a screenshot and shipped. `bool.fromEnvironment` is evaluated at compile
+  // time, so an unset flag still folds the whole demo branch out of the binary
+  // exactly as before — there is no runtime cost and no runtime switch.
   // ---------------------------------------------------------------------
-  static const bool demoMode = false;
+  static const bool demoMode = bool.fromEnvironment('DEMO_MODE');
 
   static const String demoPassword = 'Demo@2026';
 
