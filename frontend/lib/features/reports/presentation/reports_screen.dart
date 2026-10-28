@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/sales_provider.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/services/pdf_labels.dart';
@@ -406,7 +407,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
   Widget build(BuildContext context) {
     final activeBranch = ref.watch(activeBranchProvider);
     final products = ref.watch(inventoryProvider);
-    final sortedProducts = [...products]..sort((a, b) => b.soldToday.compareTo(a.soldToday));
+
+    // "Sold today" is counted from the sales ledger, not read from
+    // `products.sold_today`. The column is a cache the sale trigger maintains, and
+    // on a morning with no sales it still carries yesterday's number until the next
+    // write moves it - so a report could rank a phone as today's best seller because
+    // of a sale it did not make. `sold_at` on each row is the fact.
+    final today = DateTime.now();
+    final soldTodayById = <int, int>{};
+    for (final r in ref.watch(salesProvider)) {
+      final at = r.soldAt;
+      if (at.year == today.year && at.month == today.month && at.day == today.day) {
+        final id = r.productId;
+        if (id != null) soldTodayById[id] = (soldTodayById[id] ?? 0) + 1;
+      }
+    }
+
+    final sortedProducts = [...products]
+      ..sort((a, b) =>
+          (soldTodayById[b.id] ?? 0).compareTo(soldTodayById[a.id] ?? 0));
     final topProducts = sortedProducts.take(4).toList();
 
     final loans = ref.watch(loansProvider);
@@ -583,7 +602,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   _buildLoanBookTab(totalLoans, totalCollected, collectionRate, overdueLoans, performingLoans),
 
                   // Tab 3: Inventory Asset
-                  _buildInventoryAssetTab(totalPhones, inventoryCost, inventoryRetail, topProducts),
+                  _buildInventoryAssetTab(totalPhones, inventoryCost, inventoryRetail, topProducts, soldTodayById),
                 ],
               ),
             ),
@@ -812,7 +831,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     );
   }
 
-  Widget _buildInventoryAssetTab(int totalPhones, int costVal, int retailVal, List<dynamic> topProducts) {
+  Widget _buildInventoryAssetTab(int totalPhones, int costVal, int retailVal,
+      List<dynamic> topProducts, Map<int, int> soldTodayById) {
     return ListView(
       physics: const ClampingScrollPhysics(),
       children: [
@@ -856,7 +876,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(p.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                          Text('${p.soldToday} sold today · In Stock: ${p.stock}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text(
+                            '${soldTodayById[p.id] ?? 0} sold today · In Stock: ${p.stock}',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
                         ],
                       ),
                     ),

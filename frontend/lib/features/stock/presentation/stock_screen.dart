@@ -2770,6 +2770,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   void _showAdjustStockModal(ProductItem p, bool isAdding) {
     final qtyCtrl = TextEditingController(text: '1');
     final reasonCtrl = TextEditingController();
+    // Delta or absolute. A count is not an adjustment: the shelf already holds the
+    // truth and the database is the one that is wrong. `asCount` used to be absent,
+    // so the only way to record "I counted 143" was to guess a +/- that landed there.
+    var countMode = false;
 
     showModalBottomSheet(
       context: context,
@@ -2786,7 +2790,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         ),
-        child: Column(
+        child: StatefulBuilder(
+          builder: (sheetCtx, setSheetState) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2802,13 +2807,33 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              isAdding ? 'Add Stock' : 'Reduce Stock',
+              countMode
+                  ? 'Count Stock'
+                  : (isAdding ? 'Add Stock' : 'Reduce Stock'),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.ink900,
               ),
             ),
+            Row(
+              children: [
+                Checkbox(
+                  value: countMode,
+                  onChanged: (v) => setSheetState(() => countMode = v ?? false),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setSheetState(() => countMode = !countMode),
+                    child: const Text(
+                      'I have counted the shelf - set this exact number',
+                      style: TextStyle(fontSize: 12, color: AppTheme.ink700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
             Text(
               p.name,
               style: const TextStyle(fontSize: 13, color: AppTheme.ink500),
@@ -2821,9 +2846,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     controller: qtyCtrl,
                     keyboardType: TextInputType.number,
                     autofocus: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: countMode ? 'Counted quantity' : 'Quantity',
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -2848,7 +2873,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     LimsToast.show(context, 'Enter a valid quantity', isError: true);
                     return;
                   }
-                  if (!isAdding && qty > p.stock) {
+                  if (!countMode && !isAdding && qty > p.stock) {
                     LimsToast.show(context, 'Cannot reduce more than current stock',
                         isError: true);
                     return;
@@ -2857,11 +2882,22 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   // What changed, not what the total should be. The call before this
                   // one passed `p.stock + qty` into a parameter that was then *added*
                   // again, so adding 1 to 24 units showed 49 on the till.
+                  final reason = reasonCtrl.text.trim();
                   final delta = isAdding ? qty : -qty;
-                  final write = await SupabaseSource.adjustStock(
-                    productId: p.id,
-                    delta: delta,
-                  );
+                  // The reason box used to be decoration: it reached the activity
+                  // list on this device and nowhere else. It is now sent with the
+                  // movement and lands in product_history beside the before/after.
+                  final write = countMode
+                      ? await SupabaseSource.setStockCount(
+                          productId: p.id,
+                          stock: qty,
+                          reason: reason.isEmpty ? 'Physical count' : reason,
+                        )
+                      : await SupabaseSource.adjustStock(
+                          productId: p.id,
+                          delta: delta,
+                          reason: reason.isEmpty ? null : reason,
+                        );
                   if (!mounted || !ctx.mounted) return;
 
                   if (!write.saved) {
@@ -2876,7 +2912,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     return;
                   }
 
-                  final newStock = write.stock ?? p.stock + delta;
+                  final newStock = write.stock ?? (countMode ? qty : p.stock + delta);
                   ref.read(inventoryProvider.notifier).setStockTotal(p.id, newStock);
 
                   ref.read(activitiesProvider.notifier).addActivity(
@@ -2900,7 +2936,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   Navigator.pop(ctx);
                   LimsToast.show(
                     context,
-                    'Stock updated: ${p.name} is now $newStock units',
+                    countMode
+                        ? 'Counted: ${p.name} is now $newStock units on the shelf'
+                        : 'Stock updated: ${p.name} is now $newStock units',
                     isSuccess: true,
                   );
                 },
@@ -2912,12 +2950,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(
-                  isAdding ? 'Confirm Add' : 'Confirm Reduction',
+                  countMode
+                      ? 'Confirm Count'
+                      : (isAdding ? 'Confirm Add' : 'Confirm Reduction'),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ),
           ],
+        ),
         ),
       ),
     );

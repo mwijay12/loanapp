@@ -641,6 +641,7 @@ class SupabaseSource {
   static Future<StockWrite> adjustStock({
     required int productId,
     required int delta,
+    String? reason,
   }) async {
     if (!SupabaseConfig.isConfigured) {
       return const StockWrite(StockWriteStatus.notConfigured);
@@ -650,62 +651,110 @@ class SupabaseSource {
           error: 'No quantity was given.');
     }
 
-    final SupabaseQueryBuilder row;
     try {
-      row = Supabase.instance.client.from('products');
-    } catch (e) {
-      ApiService.lastBackendError = 'adjustStock: $e';
-      debugPrint('LIMS: no client for stock adjust $productId -> $e');
-      return const StockWrite(StockWriteStatus.failed,
-          error: 'The database client is not ready.');
-    }
-
-    try {
-      final current = await row
-          .select('stock, min_stock')
-          .eq('id', productId)
-          .maybeSingle();
-      if (current == null) {
-        return StockWrite(StockWriteStatus.rejected,
-            error:
-                'Product $productId is not in the catalogue, so its stock cannot be changed.');
-      }
-
-      final now = (current['stock'] as num?)?.toInt() ?? 0;
-      final min = (current['min_stock'] as num?)?.toInt() ?? 0;
-      final next = now + delta;
-      if (next < 0) {
-        return StockWrite(
-          StockWriteStatus.rejected,
-          error:
-              'Only $now unit${now == 1 ? '' : 's'} of that product are on hand, so ${-delta} cannot be removed.',
-        );
-      }
-
-      await row.update({
-        'stock': next,
-        'status': next <= 0 ? 'out' : (next <= min ? 'low' : 'in'),
-      }).eq('id', productId);
-
-      debugPrint('LIMS: product $productId stock $now -> $next (delta $delta)');
-      return StockWrite(StockWriteStatus.saved, stock: next, previous: now);
+      // One statement in Postgres, so nothing is read, added and written back from
+      // here. The previous version selected the row, computed `now + delta` in Dart
+      // and PATCHed the sum: two movements in the same breath overwrote each other
+      // and one of them vanished. `adjust_product_stock` also checks the roles the
+      // `products_stock_write` policy checks, because SECURITY DEFINER walks past
+      // RLS and the function would otherwise be a side door.
+      final after = await Supabase.instance.client.rpc(
+        'adjust_product_stock',
+        params: {
+          'p_product_id': productId,
+          'p_delta': delta,
+          'p_reason': reason,
+        },
+      );
+      final stock = (after as num?)?.toInt();
+      debugPrint('LIMS: product $productId adjusted by $delta -> $stock');
+      return StockWrite(StockWriteStatus.saved, stock: stock);
     } on PostgrestException catch (e) {
       ApiService.lastBackendError = 'adjustStock: $e';
       debugPrint('LIMS: could not adjust stock on product $productId -> $e');
-      return StockWrite(StockWriteStatus.failed,
-          error:
-              'The server refused the stock change (${e.code ?? 'no code'}): ${e.message}');
+      return StockWrite(
+        switch (e.code) {
+          '42501' => StockWriteStatus.failed,
+          'P0002' => StockWriteStatus.rejected,
+          '22023' => StockWriteStatus.rejected,
+          _ => StockWriteStatus.failed,
+        },
+        error: switch (e.message) {
+          'stock_write_forbidden' =>
+            'This role may not change stock. A Branch Manager or Storekeeper can.',
+          'stock_product_unknown' =>
+            'That product is not in the catalogue, so its stock cannot be changed.',
+          'stock_delta_zero' => 'No quantity was given.',
+          final other =>
+            'The server refused the stock change (${e.code ?? 'no code'}): $other',
+        },
+      );
     } catch (e) {
-      // Same distinction recordSale makes: the request may have committed and the
-      // answer gone missing. Saying "not saved" here is how a delivery gets
-      // entered twice.
+      // The request may have committed with the answer lost. Saying "not saved" here
+      // is how a delivery gets entered twice, so it gets its own status.
       ApiService.lastBackendError = 'adjustStock: $e';
       debugPrint('LIMS: stock adjust on $productId unconfirmed -> $e');
       return const StockWrite(
         StockWriteStatus.unconfirmed,
-        error:
-            'The stock change was sent but the database did not confirm it. '
+        error: 'The stock change was sent but the database did not confirm it. '
             'Check the stock list before saving it again.',
+      );
+    }
+  }
+
+  /// Writes the number a person is looking at on the shelf.
+  ///
+  /// This is the answer to "the database says 166 and the carton says 143". No
+  /// replay of 47 old sales and no arithmetic can fix that; only a count can. The
+  /// previous figure is kept in `product_history` as a `count` event, so the change
+  /// has a name, a time and a reason next to it instead of looking like the
+  /// database changed its mind.
+  static Future<StockWrite> setStockCount({
+    required int productId,
+    required int stock,
+    String? reason,
+  }) async {
+    if (!SupabaseConfig.isConfigured) {
+      return const StockWrite(StockWriteStatus.notConfigured);
+    }
+    if (stock < 0) {
+      return const StockWrite(StockWriteStatus.rejected,
+          error: 'A counted quantity cannot be below zero.');
+    }
+
+    try {
+      final after = await Supabase.instance.client.rpc(
+        'set_product_stock',
+        params: {
+          'p_product_id': productId,
+          'p_stock': stock,
+          'p_reason': reason,
+        },
+      );
+      final saved = (after as num?)?.toInt();
+      debugPrint('LIMS: product $productId counted to $saved');
+      return StockWrite(StockWriteStatus.saved, stock: saved);
+    } on PostgrestException catch (e) {
+      ApiService.lastBackendError = 'setStockCount: $e';
+      debugPrint('LIMS: could not set the count on product $productId -> $e');
+      return StockWrite(
+        e.code == '42501' ? StockWriteStatus.failed : StockWriteStatus.rejected,
+        error: switch (e.message) {
+          'stock_write_forbidden' =>
+            'This role may not record a count. A Branch Manager or Storekeeper can.',
+          'stock_count_invalid' => 'A counted quantity cannot be below zero.',
+          'stock_product_unknown' => 'That product is not in the catalogue.',
+          final other =>
+            'The server refused the count (${e.code ?? 'no code'}): $other',
+        },
+      );
+    } catch (e) {
+      ApiService.lastBackendError = 'setStockCount: $e';
+      debugPrint('LIMS: count on $productId unconfirmed -> $e');
+      return const StockWrite(
+        StockWriteStatus.unconfirmed,
+        error: 'The count was sent but the database did not confirm it. '
+            'Look at the stock list before entering it again.',
       );
     }
   }
