@@ -6,7 +6,13 @@ plugins {
 
 android {
     namespace = "com.example.loan_inventory_app"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned rather than inherited: `flutter.compileSdkVersion` resolves to 34
+    // on this SDK, and `flutter_plugin_android_lifecycle` — pulled in through
+    // image_picker — now publishes AAR metadata requiring compileSdk >= 35.
+    // Gradle fails the release build at :image_picker_android:checkReleaseAarMetadata
+    // before any Dart is compiled. compileSdk only controls which APIs are
+    // available to compile against; targetSdk (runtime behaviour) is untouched.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
