@@ -102,4 +102,21 @@ begin
 end
 $$;
 
+-- What this file CANNOT prove, learned the hard way on 2026-10-31
+-- ----------------------------------------------------------------------------
+-- Every assertion above passed on the day instant updates were broken. The shop's
+-- phones were published, their policies were correct, the publication and the
+-- replication slot were healthy in `pg_stat_replication` — and a subscribed client
+-- still received zero events, because the tables' registration in
+-- `supabase_realtime` had gone stale on the Realtime side.
+--
+-- Catalog membership is a declaration, not a delivery. The only test that means
+-- anything is: subscribe, write, and see whether the frame arrives.
+--
+--   python3 tools/verify_realtime.py        # 10 checks, real writes, self-cleaning
+--
+-- If that reports frames missing while this file is green, run
+--   backend/supabase/maintenance/realtime_publication_refresh.sql
+-- and re-run both.
+
 select 'realtime_assertions: all checks passed' as result;

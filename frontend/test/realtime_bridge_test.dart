@@ -428,4 +428,95 @@ void main() {
       expect(bridge.isStarted, isFalse);
     });
   });
+
+  group('quiet feed watchdog', () {
+    // Why this group exists: on 2026-10-31 this project's Realtime was subscribed,
+    // reporting `ok`, and delivering nothing at all — nine tables published, a
+    // replication connection streaming, zero frames. Every client-side signal said
+    // healthy while the screen sat on numbers that never moved. The bridge has to
+    // stop treating "subscribed" as proof of life.
+    test('a socket that says live but delivers nothing still re-reads the tables',
+        () async {
+      var resyncs = 0;
+      final bridge = RealtimeBridge(
+        socket: FakeSocket(),
+        onRow: (_) async {},
+        onResync: () async => resyncs++,
+        resyncDebounce: const Duration(milliseconds: 2),
+        quietReconcileAfter: const Duration(milliseconds: 20),
+      );
+      addTearDown(bridge.stop);
+      await bridge.start();
+
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+
+      expect(bridge.isLive, isTrue,
+          reason: 'the feed never reported a problem — that is the point');
+      expect(bridge.eventsApplied, 0);
+      expect(bridge.quietReconcileCount, greaterThan(0),
+          reason: 'a live-but-silent feed must not be trusted indefinitely');
+      expect(resyncs, greaterThan(0));
+    });
+
+    test('rows that keep arriving are their own proof of life', () async {
+      var resyncs = 0;
+      final socket = FakeSocket();
+      final bridge = RealtimeBridge(
+        socket: socket,
+        onRow: (_) async {},
+        onResync: () async => resyncs++,
+        quietReconcileAfter: const Duration(milliseconds: 30),
+      );
+      addTearDown(bridge.stop);
+      await bridge.start();
+
+      for (var i = 0; i < 8; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        socket.emit(inserted('products', {'id': i}));
+        await tick();
+      }
+
+      expect(bridge.eventsApplied, 8);
+      expect(resyncs, 0,
+          reason: 'a flowing feed needs no polling; the watchdog is not a poller');
+    });
+
+    test('a socket that is down is not polled', () async {
+      // Recovery from a dead socket belongs to _handleAvailability, which refetches
+      // on the way back up. Polling a network that is off is how three devices in a
+      // shop end up hammering a database that cannot answer.
+      var resyncs = 0;
+      final bridge = RealtimeBridge(
+        socket: FakeSocket(goLiveOnOpen: false),
+        onRow: (_) async {},
+        onResync: () async => resyncs++,
+        quietReconcileAfter: const Duration(milliseconds: 20),
+      );
+      addTearDown(bridge.stop);
+      await bridge.start();
+
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+
+      expect(bridge.isLive, isFalse);
+      expect(bridge.quietReconcileCount, 0);
+      expect(resyncs, 0);
+    });
+
+    test('stopping cancels the watchdog', () async {
+      final bridge = RealtimeBridge(
+        socket: FakeSocket(),
+        onRow: (_) async {},
+        onResync: () async {},
+        quietReconcileAfter: const Duration(milliseconds: 20),
+      );
+      await bridge.start();
+      await bridge.stop();
+      final before = bridge.quietReconcileCount;
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(bridge.quietReconcileCount, before,
+          reason: 'a stopped bridge must not keep timers alive');
+    });
+  });
 }

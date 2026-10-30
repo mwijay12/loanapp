@@ -127,6 +127,7 @@ class RealtimeBridge {
     required this.onResync,
     this.tables = kLiveTables,
     this.resyncDebounce = const Duration(milliseconds: 400),
+    this.quietReconcileAfter = const Duration(seconds: 60),
   });
 
   final LiveSocket socket;
@@ -142,6 +143,26 @@ class RealtimeBridge {
   final List<String> tables;
   final Duration resyncDebounce;
 
+  /// Ceiling on how long a socket that claims to be live may go without either a
+  /// frame or a completed re-read before the app stops trusting the claim.
+  ///
+  /// Not hypothetical. On 2026-10-31 this project sat in exactly this
+  /// state: `pg_publication_tables` listed all nine tables, the Phoenix join answered
+  /// `ok`, `pg_stat_replication` showed `realtime_replication_connection` streaming —
+  /// and yet a subscriber received nothing whatsoever, for any write. The fix was
+  /// server-side (re-registering the tables in `supabase_realtime`; see
+  /// `backend/supabase/maintenance/realtime_publication_refresh.sql`), but nothing in
+  /// a client can know that from the inside, because every signal it gets says
+  /// healthy. `realtime_client` documents the mode in its own source: *"a channel that
+  /// reports `subscribed` yet delivers nothing"*.
+  ///
+  /// A silent feed is the worst failure this feature can have, because it is
+  /// indistinguishable from a quiet shop: the pill reads `Live` and the numbers simply
+  /// never move — the exact complaint that started this work. The watchdog cannot
+  /// repair the feed. What it can do is refuse to let the screen be less trustworthy
+  /// than a manual reload.
+  final Duration quietReconcileAfter;
+
   /// How many unapplied rows the queue may hold before it is abandoned in favour
   /// of a reload. Generous: a 40-line stock receipt is normal traffic, and a
   /// queue this long means the merge path itself has stopped making progress.
@@ -154,6 +175,7 @@ class RealtimeBridge {
   bool _resyncOwed = false;
   Future<void>? _inFlight;
   Timer? _resyncTimer;
+  Timer? _watchdog;
   final List<LiveChange> _pending = <LiveChange>[];
   bool _applying = false;
   int _applied = 0;
@@ -161,12 +183,22 @@ class RealtimeBridge {
   int _resyncs = 0;
   DateTime? _lastEventAt;
 
+  /// The last moment the feed proved it was carrying data: a frame delivered, or a
+  /// re-read completed. A quiet shop and a dead feed look identical from the pill, so
+  /// this is the only thing that tells them apart.
+  DateTime? _lastProofAt;
+  int _quietReconciles = 0;
+
   /// True while events can be expected. Drives the header pill.
   bool get isLive => _live;
   DateTime? get lastEventAt => _lastEventAt;
   int get eventsApplied => _applied;
   int get eventsDropped => _dropped;
   int get resyncCount => _resyncs;
+
+  /// How many times the app re-read the tables because a "live" socket went quiet.
+  int get quietReconcileCount => _quietReconciles;
+  DateTime? get lastProofAt => _lastProofAt;
   bool get isStarted => _started;
 
   /// Subscribes to every allowed table. Returns false when the socket refused to
@@ -202,7 +234,42 @@ class RealtimeBridge {
       debugPrint('LIMS realtime: could not subscribe -> $e');
       return false;
     }
+    // The host has just loaded the snapshot this subscription continues from, so
+    // "now" counts as proof and the first reconcile cannot fire before a full quiet
+    // interval has actually passed.
+    _lastProofAt = DateTime.now();
+    _startWatchdog();
     return _live;
+  }
+
+  /// Re-reads the tables when a live feed has gone quiet.
+  ///
+  /// Deliberately narrow, in three ways. It does nothing while the socket is down:
+  /// that path already recovers in [_handleAvailability], and polling a network that
+  /// is off is how three devices in a shop end up hammering a database that cannot
+  /// answer. It does nothing when a re-read is already owed or in flight, so a quiet
+  /// hour costs one read per interval and never a pile-up. And it does nothing while
+  /// frames are arriving, because a delivered row is better evidence than a timer.
+  void _startWatchdog() {
+    _watchdog?.cancel();
+    if (quietReconcileAfter <= Duration.zero) return;
+    _watchdog = Timer.periodic(quietReconcileAfter, (_) {
+      if (!_live || _stopping) return;
+      if (_resyncOwed || _inFlight != null) return;
+      final last = _lastProofAt;
+      if (last != null &&
+          DateTime.now().difference(last) < quietReconcileAfter) {
+        return;
+      }
+      _quietReconciles++;
+      if (_quietReconciles == 1 && _applied == 0) {
+        // The signature of the 2026-10-31 failure: subscribed, never delivered one
+        // row. Worth one line in the log, and only one.
+        debugPrint('LIMS realtime: subscribed but not one frame in '
+            '${quietReconcileAfter.inSeconds}s — falling back to periodic reads.');
+      }
+      scheduleResync();
+    });
   }
 
   Future<void> stop() async {
@@ -210,6 +277,8 @@ class RealtimeBridge {
     _stopping = true;
     _resyncTimer?.cancel();
     _resyncTimer = null;
+    _watchdog?.cancel();
+    _watchdog = null;
     _live = false;
     // Rows that never got applied are not "dropped" in the sense the pill warns
     // about — this host is going away, and the next one loads a fresh snapshot.
@@ -281,6 +350,7 @@ class RealtimeBridge {
 
   void _handleRow(LiveChange change) {
     _lastEventAt = change.committedAt ?? DateTime.now();
+    _lastProofAt = DateTime.now();
 
     final key = change.rowKey;
     if (key == null) {
@@ -367,6 +437,7 @@ class RealtimeBridge {
     try {
       await onResync();
       _resyncs++;
+      _lastProofAt = DateTime.now();
     } catch (e) {
       // The snapshot on screen is now known-stale. Try once more rather than
       // leaving a wrong number that looks authoritative.
