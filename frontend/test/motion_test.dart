@@ -120,4 +120,111 @@ void main() {
     ));
     expect(find.text('166'), findsOneWidget);
   });
+  group('MetricText', () {
+    // The reason this widget exists at all. A counting figure changes length on the
+    // way up, and in a row of KPI tiles that makes the neighbours jitter - the one
+    // outcome that turns a count-up into a defect. The slot is sized by the answer,
+    // so the box must not move.
+    testWidgets('keeps its box the same size while counting', (tester) async {
+      await tester.pumpWidget(_host(
+        Align(
+          alignment: Alignment.topLeft,
+          child: MetricText(
+            display: 'TZS 4.85M',
+            value: 4850000,
+            // Deliberately length-changing, the way `formatTzsCompact` is: an
+            // intermediate figure is spelled "TZS 1,715,893" while the answer is
+            // "TZS 4.85M". A format that happened to be the same width at every step
+            // would let a missing sizer pass this test, which is the same as having
+            // no test.
+            format: (v) => v >= 4000000
+                ? 'TZS 4.85M'
+                : 'TZS ${v.toStringAsFixed(0)}',
+            style: const TextStyle(fontSize: 20),
+          ),
+        ),
+      ));
+
+      final early = tester.getSize(find.byType(MetricText));
+      await tester.pump(const Duration(milliseconds: 200));
+      final mid = tester.getSize(find.byType(MetricText));
+      await tester.pumpAndSettle();
+      final late = tester.getSize(find.byType(MetricText));
+
+      expect(mid, early);
+      expect(late, early);
+    });
+
+    testWidgets('announces the final value, not the frames', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_host(
+        Align(
+          alignment: Alignment.topLeft,
+          child: MetricText(
+            display: '266',
+            value: 266,
+            format: (v) => v.toInt().toString(),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Mid-tween the visible text is a smaller number. The announced label is the
+      // settled answer, because a screen reader repeating a moving figure every frame
+      // is worse than no animation at all.
+      final node = tester.getSemantics(find.byType(MetricText));
+      expect(node.label, '266');
+
+      handle.dispose();
+    });
+
+    testWidgets('reduce motion renders the answer directly', (tester) async {
+      await tester.pumpWidget(_host(
+        MetricText(
+          display: 'TZS 4.85M',
+          value: 4850000,
+          format: (v) => 'TZS ${(v / 1000000).toStringAsFixed(2)}M',
+        ),
+        reduce: true,
+      ));
+      expect(find.text('TZS 4.85M'), findsWidgets);
+    });
+  });
+
+  group('Pressable', () {
+    testWidgets('taps through to the callback', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(_host(
+        Pressable(
+          onTap: () => taps++,
+          child: const SizedBox(width: 120, height: 48),
+        ),
+      ));
+      await tester.tap(find.byType(Pressable));
+      await tester.pump();
+      expect(taps, 1);
+    });
+
+    testWidgets('a disabled control does not move and is announced disabled',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_host(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: Pressable(
+            semanticLabel: 'Count mode',
+            child: SizedBox(width: 120, height: 48),
+          ),
+        ),
+      ));
+      // Nothing to press, so nothing scales: feedback for an action that cannot
+      // happen is worse than no feedback, because it teaches the user to distrust it.
+      expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1.0);
+      expect(
+        tester.getSemantics(find.byType(Pressable)).label,
+        contains('Count mode'),
+      );
+      handle.dispose();
+    });
+  });
 }
