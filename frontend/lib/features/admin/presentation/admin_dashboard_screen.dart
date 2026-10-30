@@ -13,6 +13,8 @@ import '../../../core/widgets/ui_kit.dart';
 import '../../../core/data/analytics.dart';
 import '../../../core/data/branch_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
+import '../../../core/motion/motion.dart';
+import '../../../core/motion/motion_widgets.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String? initialTab;
@@ -403,6 +405,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: _buildKpiCard(
                 label: tr(ref.watch(localeProvider), 'admin.revenueToday'),
                 value: formatTzsCompact(todaySales),
+                numeric: todaySales,
+                format: (v) => formatTzsCompact(v.toInt()),
+                arrivalIndex: 0,
                 trend: _yesterdayTrendText(),
                 trendColor: _yesterdayDelta == null
                     ? AppTheme.ink500
@@ -419,6 +424,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: _buildKpiCard(
                 label: tr(ref.watch(localeProvider), 'admin.activeBranches'),
                 value: '$_activeBranchCount',
+                numeric: _activeBranchCount,
+                format: (v) => v.toInt().toString(),
+                arrivalIndex: 1,
                 trend: tr(ref.watch(localeProvider), 'admin.branchesOpen'),
                 icon: Icons.storefront_rounded,
                 color: AppTheme.brand600,
@@ -434,6 +442,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: _buildKpiCard(
                 label: tr(ref.watch(localeProvider), 'admin.loansOutstanding'),
                 value: LimsFormatters.currencyCompact(activeLoansTotal),
+                numeric: activeLoansTotal,
+                format: LimsFormatters.currencyCompact,
+                arrivalIndex: 2,
                 trend: '$_overdueLoans ${tr(ref.watch(localeProvider), 'admin.overdue')}',
                 trendColor: _overdueLoans > 0
                     ? const Color(0xFFE11D48)
@@ -448,6 +459,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: _buildKpiCard(
                 label: tr(ref.watch(localeProvider), 'admin.alerts'),
                 value: '${lowStockCount + _overdueLoans}',
+                numeric: lowStockCount + _overdueLoans,
+                format: (v) => v.toInt().toString(),
+                arrivalIndex: 3,
                 trend: lowStockCount + _overdueLoans == 0
                     ? tr(ref.watch(localeProvider), 'admin.nothingPending')
                     : tr(ref.watch(localeProvider), 'admin.needsReview'),
@@ -1863,28 +1877,55 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           children: [
             for (var i = 0; i < series.points.length; i++)
               Expanded(
-                child: Text(
-                  series.points[i].label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: _selectedBar == i
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                    color: _selectedBar == i
+                child: TweenAnimationBuilder<Color?>(
+                  duration: Motion.d(context, Motion.state),
+                  curve: Motion.standard,
+                  tween: ColorTween(
+                    end: _selectedBar == i
                         ? AppTheme.brand600
                         : AppTheme.ink500,
+                  ),
+                  builder: (_, Color? c, __) => Text(
+                    series.points[i].label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: _selectedBar == i
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      color: c ?? AppTheme.ink500,
+                    ),
                   ),
                 ),
               ),
           ],
         ),
         const SizedBox(height: 10),
-        _buildBarDetail(selected),
+        // The figures under the chart change entirely on a tap. In place they blink;
+        // keyed on the selection they cross-fade, which reads as "this is that day's
+        // panel" instead of "the text below me was edited".
+        FadeSwap(
+          alignment: Alignment.topLeft,
+          child: KeyedSubtree(
+            key: ValueKey<String>('bar-detail-${selected?.label ?? 'none'}'),
+            child: _buildBarDetail(selected),
+          ),
+        ),
       ],
     );
   }
 
+  /// One bar.
+  ///
+  /// The bars already grew, but every one of them started on the same frame, so a
+  /// week of sales arrived as a single block of pixels. Sequenced left to right the
+  /// eye travels the shape - which is the one thing a bar chart is for. The value of
+  /// the selected bar rides above it instead of only appearing underneath, so the
+  /// tap answers the bar that was tapped rather than a line further down the card.
+  ///
+  /// The 16px label slot is always there, animated only in opacity. Making it appear
+  /// by adding height would move the bars themselves, and a chart whose baseline
+  /// shifts when you touch it feels broken rather than responsive.
   Widget _bar(RevenuePoint p, int index, int peak, {required bool isSelected}) {
     final double frac = peak <= 0 ? 0.06 : (p.value / peak).clamp(0.06, 1.0);
     // A zero-sales day still draws a stub, so a gap is visible as a gap rather
@@ -1903,20 +1944,34 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         key: ValueKey<String>('revbar-$index'),
         behavior: HitTestBehavior.opaque,
         onTap: () => setState(() => _selectedBar = isSelected ? null : index),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            tween: Tween(begin: 0, end: frac),
-            builder: (_, h, __) => Container(
-              height: (96 * h).clamp(4.0, 96.0),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(7),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            GrowFraction(
+              value: frac,
+              delay: Motion.delayFor(
+                context,
+                index,
+                each: const Duration(milliseconds: 40),
+              ),
+              builder: (h) => Container(
+                height: (96 * h).clamp(4.0, 96.0),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(isSelected ? 9 : 7),
+                  boxShadow: isSelected
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x331B6EF3),
+                            blurRadius: 12,
+                            offset: Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -2034,7 +2089,46 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     required Color color,
     required Color bg,
     Color? trendColor,
+    num? numeric,
+    String Function(num value)? format,
+    int arrivalIndex = 0,
   }) {
+    return Entrance(
+      // Four tiles landing on the same frame read as one grey event. Four arriving
+      // 55ms apart read as the page settling, and the eye lands on the first - which
+      // is why the revenue tile is index 0 wherever it appears.
+      delay: Motion.delayFor(context, arrivalIndex),
+      child: _buildKpiCardBody(
+        label: label,
+        value: value,
+        trend: trend,
+        icon: icon,
+        color: color,
+        bg: bg,
+        trendColor: trendColor,
+        numeric: numeric,
+        format: format,
+      ),
+    );
+  }
+
+  Widget _buildKpiCardBody({
+    required String label,
+    required String value,
+    required String trend,
+    required IconData icon,
+    required Color color,
+    required Color bg,
+    Color? trendColor,
+    num? numeric,
+    String Function(num value)? format,
+  }) {
+    final counting = numeric != null && format != null && Motion.enabled(context);
+    const valueStyle = TextStyle(
+      fontSize: 16.5,
+      fontWeight: FontWeight.w800,
+      color: AppTheme.ink900,
+    );
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -2070,14 +2164,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16.5,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.ink900,
-            ),
-          ),
+          // The figure counts up to the string the screen would have printed. When
+          // there is no number to animate toward - a formatted date, "3 of 5" - the
+          // original Text is used untouched rather than a tween toward a guess.
+          if (counting)
+            CountUp(
+              value: numeric,
+              builder: (v) => Text(format(v), style: valueStyle),
+            )
+          else
+            Text(value, style: valueStyle),
           const SizedBox(height: 4),
           Text(
             trend,

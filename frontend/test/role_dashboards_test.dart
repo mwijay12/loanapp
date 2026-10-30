@@ -93,6 +93,14 @@ Future<void> _pump(
     ),
   );
   await tester.pump(const Duration(milliseconds: 400));
+  // The dashboard now arrives: sections rise 55ms apart and a figure counts to its
+  // value. A single 400ms pump therefore used to catch a tile showing a number on its
+  // way up, which made "the totals it shows are the shared ledgers" fail for the
+  // wrong reason - it was asserting a mid-flight frame, not a wrong total. Settling
+  // keeps the assertion about the figure, which is what the test is for. Motion is
+  // covered separately in motion_test.dart, where the animation itself is the thing
+  // under test.
+  await tester.pumpAndSettle();
 }
 
 /// The role homes scroll inside the shared [DashPage] shell, which is a

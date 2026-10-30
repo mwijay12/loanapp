@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/l10n/greetings.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/widgets/person_avatar.dart';
+import '../../../core/motion/motion.dart';
+import '../../../core/motion/motion_widgets.dart';
 
 /// The shared vocabulary for the role home screens.
 ///
@@ -83,7 +85,17 @@ class DashPage extends StatelessWidget {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 118),
                 sliver: SliverList(
-                  delegate: SliverChildListDelegate(children),
+                  // Every dashboard in the app is assembled here, so the arrival is
+                  // described once. Sections rise 55ms apart and the cap in
+                  // Motion.delayFor keeps a long page from queueing its last card
+                  // two seconds after its first.
+                  delegate: SliverChildListDelegate([
+                    for (var i = 0; i < children.length; i++)
+                      Entrance(
+                        delay: Motion.delayFor(context, i),
+                        child: children[i],
+                      ),
+                  ]),
                 ),
               ),
             ],
@@ -1607,6 +1619,10 @@ class DashStatPair extends StatelessWidget {
     required this.rightTint,
     required this.rightColor,
     this.onRightTap,
+    this.leftNumeric,
+    this.rightNumeric,
+    this.leftFormat,
+    this.rightFormat,
   });
 
   final IconData leftIcon;
@@ -1615,6 +1631,19 @@ class DashStatPair extends StatelessWidget {
   final Color leftTint;
   final Color leftColor;
   final VoidCallback? onLeftTap;
+
+  /// When supplied, the figure counts up instead of appearing. Optional per side:
+  /// a tile whose value is a date or a ratio keeps the plain text it already had,
+  /// because animating toward something the caller could not name as a number is how
+  /// a metric ends up lying on its way to the truth.
+  final num? leftNumeric;
+  final num? rightNumeric;
+
+  /// Per side, because the two tiles of one pair rarely speak the same unit: an
+  /// officer's pair is a count of loans next to a percentage. One shared formatter
+  /// would have to be wrong about one of them.
+  final String Function(num value)? leftFormat;
+  final String Function(num value)? rightFormat;
 
   final IconData rightIcon;
   final String rightLabel;
@@ -1632,6 +1661,8 @@ class DashStatPair extends StatelessWidget {
             icon: leftIcon,
             label: leftLabel,
             value: leftValue,
+            numeric: leftNumeric,
+            format: leftFormat,
             tint: leftTint,
             color: leftColor,
             onTap: onLeftTap,
@@ -1643,6 +1674,8 @@ class DashStatPair extends StatelessWidget {
             icon: rightIcon,
             label: rightLabel,
             value: rightValue,
+            numeric: rightNumeric,
+            format: rightFormat,
             tint: rightTint,
             color: rightColor,
             onTap: onRightTap,
@@ -1659,6 +1692,8 @@ class DashStatPair extends StatelessWidget {
     required Color tint,
     required Color color,
     VoidCallback? onTap,
+    num? numeric,
+    String Function(num value)? format,
   }) {
     return InkWell(
       onTap: onTap,
@@ -1693,16 +1728,10 @@ class DashStatPair extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                maxLines: 1,
-                style: const TextStyle(
-                  fontSize: 19,
-                  height: 1.1,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  color: DashPalette.ink,
-                ),
+              child: _DashStatValue(
+                display: value,
+                numeric: numeric,
+                format: format ?? _wholeNumber,
               ),
             ),
             const SizedBox(height: 3),
@@ -1721,5 +1750,42 @@ class DashStatPair extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _wholeNumber(num v) => v.toInt().toString();
+
+/// The figure inside a [DashStatPair] tile.
+///
+/// Lives in its own widget so the counting branch and the plain branch cannot drift
+/// apart in style - the number that animates and the number that does not must be the
+/// same text at the same size, or switching a screen to CountUp becomes a visual
+/// change as well as a motion one.
+class _DashStatValue extends StatelessWidget {
+  const _DashStatValue({
+    required this.display,
+    required this.numeric,
+    required this.format,
+  });
+
+  final String display;
+  final num? numeric;
+  final String Function(num value) format;
+
+  static const _style = TextStyle(
+    fontSize: 19,
+    height: 1.1,
+    fontWeight: FontWeight.w800,
+    letterSpacing: -0.5,
+    color: DashPalette.ink,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final n = numeric;
+    if (n == null || !Motion.enabled(context)) {
+      return Text(display, maxLines: 1, style: _style);
+    }
+    return CountUp(value: n, builder: (v) => Text(format(v), maxLines: 1, style: _style));
   }
 }
