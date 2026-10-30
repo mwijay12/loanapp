@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/live_data.dart';
 import '../services/realtime_bridge.dart';
 import 'ui_kit.dart';
+import '../motion/motion.dart';
 
 /// The header pill: what the rows on screen are, and a way to make them newer.
 ///
@@ -104,7 +105,7 @@ class _LiveStatusPillState extends ConsumerState<LiveStatusPill> {
               const SizedBox(width: 3),
               Flexible(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
+                  duration: Motion.d(context, const Duration(milliseconds: 220)),
                   child: Text(
                     dataSourceLabel(state),
                     key: ValueKey(dataSourceLabel(state)),

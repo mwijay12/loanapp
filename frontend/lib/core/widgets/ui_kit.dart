@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/app_theme.dart';
+import '../motion/motion.dart';
+import '../motion/motion_widgets.dart';
 
 /// Shared premium surfaces.
 ///
@@ -223,6 +225,16 @@ class StatTile extends StatelessWidget {
   final String? delta;
   final bool deltaPositive;
 
+  /// When given, [value] counts up to this figure instead of appearing.
+  ///
+  /// Optional and deliberately separate from [value]: the string stays the thing the
+  /// screen shows, so a tile that formats something odd - "3 of 5", "—" - keeps
+  /// working untouched. Only callers that actually hold a number pass it, because a
+  /// count-up that animates toward a value it cannot compute is a fake number
+  /// wearing a real animation.
+  final num? numeric;
+  final String Function(num value)? format;
+
   const StatTile({
     super.key,
     required this.label,
@@ -232,6 +244,8 @@ class StatTile extends StatelessWidget {
     this.foreground = AppTheme.iconGreen,
     this.delta,
     this.deltaPositive = true,
+    this.numeric,
+    this.format,
   });
 
   @override
@@ -280,14 +294,10 @@ class StatTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.5,
-            ),
+          _StatValue(
+            display: value,
+            numeric: numeric,
+            format: format ?? LimsFormatters.formatNumber,
           ),
           const SizedBox(height: 1),
           Text(
@@ -668,6 +678,17 @@ class LimsBottomSheet extends StatelessWidget {
   }) {
     return showModalBottomSheet<T>(
       context: context,
+      // One timing for every sheet in the app, and an asymmetric one: a sheet should
+      // arrive with a little overshoot and leave promptly. Leaving with the same ease
+      // it arrived with is what makes a modal feel heavy.
+      // `MediaQuery.disableAnimations` collapses both to zero here as well, so the
+      // OS switch reaches Material's own routes and not only our widgets.
+      sheetAnimationStyle: AnimationStyle(
+        duration: Motion.d(context, const Duration(milliseconds: 330)),
+        curve: Motion.emphasized,
+        reverseDuration: Motion.d(context, Motion.state),
+        reverseCurve: Motion.standard,
+      ),
       isScrollControlled: isScrollControlled,
       isDismissible: isDismissible,
       enableDrag: enableDrag,
@@ -1191,6 +1212,38 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The number inside a [StatTile]: static text, or the same text counting up.
+class _StatValue extends StatelessWidget {
+  const _StatValue({
+    required this.display,
+    required this.numeric,
+    required this.format,
+  });
+
+  final String display;
+  final num? numeric;
+  final String Function(num value) format;
+
+  static const _style = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w800,
+    color: AppTheme.textPrimary,
+    letterSpacing: -0.5,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final n = numeric;
+    if (n == null || !Motion.enabled(context)) {
+      return Text(display, style: _style);
+    }
+    return CountUp(
+      value: n,
+      builder: (v) => Text(format(v), style: _style),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import '../motion/motion.dart';
 
 /// LIMS design system.
 ///
@@ -218,6 +219,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+
       fontFamily: _fontFamily,
       colorScheme: scheme,
       scaffoldBackgroundColor: canvas,
@@ -748,17 +750,26 @@ class LimsPageTransitionsBuilder extends PageTransitionsBuilder {
   ) {
     final curved = CurvedAnimation(
       parent: animation,
-      curve: Curves.easeOutCubic,
+      curve: Motion.standard,
       reverseCurve: Curves.easeInCubic,
     );
+
+    // The page being covered is driven by `secondaryAnimation`, and until now it sat
+    // completely still while the new one arrived. A couple of percent of scale on it
+    // is what turns two flat rectangles swapping into one surface lifting another -
+    // the cheapest depth in the app, because nothing extra is painted.
+    final recede = Tween<double>(begin: 1.0, end: 0.985).animate(
+      CurvedAnimation(parent: secondaryAnimation, curve: Motion.standard),
+    );
+
     return FadeTransition(
       opacity: curved,
       child: SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(0, 0.035),
+          begin: const Offset(0.008, 0.035),
           end: Offset.zero,
         ).animate(curved),
-        child: child,
+        child: ScaleTransition(scale: recede, child: child),
       ),
     );
   }

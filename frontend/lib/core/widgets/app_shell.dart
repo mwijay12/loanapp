@@ -5,6 +5,8 @@ import '../l10n/locale_provider.dart';
 import '../l10n/strings.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
+import '../motion/motion.dart';
+import '../motion/motion_widgets.dart';
 import '../theme/app_theme.dart';
 import '../services/live_data.dart';
 import 'session_guard.dart';
@@ -635,7 +637,17 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
-      body: widget.child,
+      // The tabs of this app are siblings, not a stack. The theme's push transition
+      // is right for going *into* a till or a borrower, and wrong for moving sideways
+      // between Home and Stock - it says "you have gone deeper" when nothing got
+      // deeper. Keyed on the path so a rebuild of the same tab (a Realtime row
+      // landing, a language switch) does not replay the transition.
+      body: FadeSwap(
+        child: KeyedSubtree(
+          key: ValueKey<String>(GoRouterState.of(context).uri.path),
+          child: widget.child,
+        ),
+      ),
 
       // Floating Premium Bottom Navigation Dock (Icon-only, no text clutter)
       bottomNavigationBar: SafeArea(
@@ -743,8 +755,8 @@ class _AppShellState extends ConsumerState<AppShell> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
+          duration: Motion.d(context, Motion.state),
+          curve: Motion.standard,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFFE9F2FF) : Colors.transparent,
@@ -754,17 +766,25 @@ class _AppShellState extends ConsumerState<AppShell> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 23,
-                color: isSelected
-                    ? const Color(0xFF1B6EF3)
-                    : const Color(0xFF64748B),
+              // The selected glyph grows a little. Colour alone is easy to miss on
+              // a bright shop floor under glass; size is not.
+              AnimatedScale(
+                scale: isSelected ? 1.08 : 1.0,
+                duration: Motion.d(context, Motion.state),
+                curve: Motion.emphasized,
+                child: Icon(
+                  icon,
+                  size: 23,
+                  color: isSelected
+                      ? const Color(0xFF1B6EF3)
+                      : const Color(0xFF64748B),
+                ),
               ),
-              const SizedBox(height: 3),
+
               AnimatedScale(
                 scale: isSelected ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
+                duration: Motion.d(context, Motion.state),
+                curve: Motion.emphasized,
                 child: Container(
                   width: 4,
                   height: 4,

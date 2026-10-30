@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/motion/motion.dart';
 
 enum AiState { idle, thinking, typing, happy, error }
 
@@ -45,7 +46,12 @@ class _AiAssistantCardState extends ConsumerState<AiAssistantCard>
     super.initState();
     _initAnimations();
     _startMessageRotation();
-    _scheduleNextBlink();
+    // The loops start in didChangeDependencies, not here: whether to run them is a
+    // question about the platform's reduce-motion setting, and reading an inherited
+    // widget from initState is an error. It also means the card now stops repainting
+    // for someone who asked it not to move, instead of pulsing forever behind a
+    // static picture.
+    _loopsStarted = false;
   }
 
   void _initAnimations() {
@@ -68,7 +74,7 @@ class _AiAssistantCardState extends ConsumerState<AiAssistantCard>
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..repeat(reverse: true);
+    );
     _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -76,7 +82,20 @@ class _AiAssistantCardState extends ConsumerState<AiAssistantCard>
     _dotsController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
-    )..repeat();
+    );
+  }
+
+  bool _loopsStarted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loopsStarted) return;
+    _loopsStarted = true;
+    if (!Motion.enabled(context)) return;
+    _pulseController.repeat(reverse: true);
+    if (_currentState == AiState.thinking) _dotsController.repeat();
+    _scheduleNextBlink();
   }
 
   void _scheduleNextBlink() {
@@ -156,7 +175,7 @@ class _AiAssistantCardState extends ConsumerState<AiAssistantCard>
     setState(() {
       _currentState = AiState.thinking;
     });
-    _dotsController.repeat();
+    if (Motion.enabled(context)) _dotsController.repeat();
     _stateTimer = Timer(const Duration(milliseconds: 800), () {
       if (mounted) {
         context.push('/ai');
