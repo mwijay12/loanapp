@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../motion/motion_widgets.dart';
 import '../theme/app_theme.dart';
 import 'ui_kit.dart';
 
@@ -11,6 +12,14 @@ class MetricCard extends StatelessWidget {
   final Color? iconColor;
   final VoidCallback? onTap;
 
+  /// The number behind [value], when the caller has one.
+  ///
+  /// Optional per call site on purpose: a card holding a date or a "3 of 5" stays
+  /// plain text. A count-up needs a real number to travel toward - anything else is a
+  /// decoration standing where a read-out should be.
+  final num? numeric;
+  final String Function(num value)? format;
+
   const MetricCard({
     super.key,
     required this.label,
@@ -18,6 +27,8 @@ class MetricCard extends StatelessWidget {
     this.icon,
     this.iconColor,
     this.onTap,
+    this.numeric,
+    this.format,
   });
 
   @override
@@ -41,16 +52,10 @@ class MetricCard extends StatelessWidget {
             ),
             const SizedBox(height: 11),
           ],
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.5,
-            ),
+          _Value(
+            display: value,
+            numeric: numeric,
+            format: format ?? LimsFormatters.formatNumber,
           ),
           const SizedBox(height: 2),
           Text(
@@ -67,5 +72,44 @@ class MetricCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// The figure in a [MetricCard].
+///
+/// One style for both states: a tile that animates and a tile that does not must be
+/// the same text at the same size, or turning motion on becomes a layout change as
+/// well as a motion change - and the user would find it even though a test would not.
+class _Value extends StatelessWidget {
+  const _Value({
+    required this.display,
+    required this.numeric,
+    required this.format,
+  });
+
+  final String display;
+  final num? numeric;
+  final String Function(num value) format;
+
+  static const _style = TextStyle(
+    fontSize: 23,
+    fontWeight: FontWeight.w800,
+    color: AppTheme.textPrimary,
+    letterSpacing: -0.5,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final n = numeric;
+    if (n == null) {
+      return Text(
+        display,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: _style,
+      );
+    }
+    return MetricText(
+        display: display, value: n, format: format, style: _style);
   }
 }

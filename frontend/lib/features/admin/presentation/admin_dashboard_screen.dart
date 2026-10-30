@@ -238,8 +238,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              tr(ref.watch(localeProvider),
-                                  'admin.tabNetwork'),
+                              tr(ref.watch(localeProvider), 'admin.tabNetwork'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -365,8 +364,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               const SizedBox(height: 8),
               Text(
                 trf(ref.watch(localeProvider), 'admin.noAccessBody', {
-                  'role': UserRoles.label(
-                      UserRoles.normalize(currentRole) ?? ''),
+                  'role':
+                      UserRoles.label(UserRoles.normalize(currentRole) ?? ''),
                 }),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -445,7 +444,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 numeric: activeLoansTotal,
                 format: LimsFormatters.currencyCompact,
                 arrivalIndex: 2,
-                trend: '$_overdueLoans ${tr(ref.watch(localeProvider), 'admin.overdue')}',
+                trend:
+                    '$_overdueLoans ${tr(ref.watch(localeProvider), 'admin.overdue')}',
                 trendColor: _overdueLoans > 0
                     ? const Color(0xFFE11D48)
                     : AppTheme.ink500,
@@ -519,7 +519,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       ),
                       Text(
                         'Record cleaning, food, or operational expenses',
-                        style: TextStyle(fontSize: 11.5, color: Color(0xFFDC2626)),
+                        style:
+                            TextStyle(fontSize: 11.5, color: Color(0xFFDC2626)),
                       ),
                     ],
                   ),
@@ -622,7 +623,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                             borderRadius: BorderRadius.circular(9),
                           ),
                           child: Text(
-                            tr(ref.watch(localeProvider),
+                            tr(
+                                ref.watch(localeProvider),
                                 r == RevenueRange.week
                                     ? 'admin.rangeWeek'
                                     : 'admin.rangeMonth'),
@@ -785,8 +787,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           ),
           child: alerts.isEmpty
               ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 18),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle_outline_rounded,
@@ -805,65 +807,65 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   ),
                 )
               : Column(
-            children: alerts.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final a = entry.value;
-              final isLast = idx == alerts.length - 1;
+                  children: alerts.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final a = entry.value;
+                    final isLast = idx == alerts.length - 1;
 
-              return InkWell(
-                onTap: () => _showAlertActionModal(context, a),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    border: isLast
-                        ? null
-                        : const Border(
-                            bottom: BorderSide(color: Color(0xFFF1F5F9))),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
+                    return InkWell(
+                      onTap: () => _showAlertActionModal(context, a),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: a['bg'] as Color,
-                          borderRadius: BorderRadius.circular(10),
+                          border: isLast
+                              ? null
+                              : const Border(
+                                  bottom: BorderSide(color: Color(0xFFF1F5F9))),
                         ),
-                        child: Icon(a['icon'] as IconData,
-                            size: 18, color: a['color'] as Color),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              a['title'] as String,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.ink900,
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: a['bg'] as Color,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(a['icon'] as IconData,
+                                  size: 18, color: a['color'] as Color),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    a['title'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.ink900,
+                                    ),
+                                  ),
+                                  Text(
+                                    a['sub'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.ink500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              a['sub'] as String,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.ink500,
-                              ),
-                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 12, color: Color(0xFFCBD5E1)),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded,
-                          size: 12, color: Color(0xFFCBD5E1)),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+                    );
+                  }).toList(),
                 ),
         ),
       ],
@@ -1605,7 +1607,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            thumbColor: WidgetStatePropertyAll( AppTheme.brand600),
+            thumbColor: WidgetStatePropertyAll(AppTheme.brand600),
           ),
         ],
       ),
@@ -1722,9 +1724,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   // could be assigned to a branch that no picker or sales query
                   // ever matched.
                   items: [
-                    for (final b in ref
-                        .watch(branchesProvider)
-                        .where((b) => b.active))
+                    for (final b
+                        in ref.watch(branchesProvider).where((b) => b.active))
                       DropdownMenuItem(value: b.name, child: Text(b.name)),
                     if (!ref
                         .watch(branchesProvider)
@@ -1736,7 +1737,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     if (v != null) setModalState(() => selectedBranch = v);
                   },
                   decoration: InputDecoration(
-                    labelText: tr(ref.read(localeProvider), 'adm.assignedBranch'),
+                    labelText:
+                        tr(ref.read(localeProvider), 'adm.assignedBranch'),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
@@ -1766,8 +1768,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     onPressed: () {
                       final name = nameCtrl.text.trim();
                       if (name.isEmpty) {
-                        LimsToast.show(
-                            context,
+                        LimsToast.show(context,
                             tr(ref.read(localeProvider), 'adm.nameRequired'),
                             isError: true);
                         return;
@@ -1823,7 +1824,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-
   /// The bar chart. Each bar is a real day (or week, in month view) and tapping it
   /// opens that period's figures underneath. Before this, the bars were seven
   /// fixed heights: pressing Monday could not show Monday, because there was no
@@ -1844,9 +1844,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       );
     }
 
-    final peak = series.points
-        .map((p) => p.value)
-        .fold<int>(0, (a, b) => a > b ? a : b);
+    final peak =
+        series.points.map((p) => p.value).fold<int>(0, (a, b) => a > b ? a : b);
     final selected = (_selectedBar != null &&
             _selectedBar! >= 0 &&
             _selectedBar! < series.points.length)
@@ -1881,18 +1880,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   duration: Motion.d(context, Motion.state),
                   curve: Motion.standard,
                   tween: ColorTween(
-                    end: _selectedBar == i
-                        ? AppTheme.brand600
-                        : AppTheme.ink500,
+                    end:
+                        _selectedBar == i ? AppTheme.brand600 : AppTheme.ink500,
                   ),
                   builder: (_, Color? c, __) => Text(
                     series.points[i].label,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 9.5,
-                      fontWeight: _selectedBar == i
-                          ? FontWeight.w800
-                          : FontWeight.w600,
+                      fontWeight:
+                          _selectedBar == i ? FontWeight.w800 : FontWeight.w600,
                       color: c ?? AppTheme.ink500,
                     ),
                   ),
@@ -1936,43 +1933,44 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ? const Color(0xFFE2E8F0)
             : (p.isPeak ? AppTheme.brand400 : AppTheme.brand200));
 
-    return Semantics(
-      button: true,
+    // Pressable rather than a bare GestureDetector: the admin screen is used on a PC
+    // all day, so a bar should answer a mouse hovering it and a keyboard tabbing to
+    // it, not only a finger. It carries the button and selected semantics itself, so
+    // the wrapper that used to supply them is replaced rather than doubled.
+    return Pressable(
+      key: ValueKey<String>('revbar-$index'),
+      semanticLabel: '${p.label} ${formatTzsCompact(p.value)}',
       selected: isSelected,
-      label: '${p.label} ${formatTzsCompact(p.value)}',
-      child: GestureDetector(
-        key: ValueKey<String>('revbar-$index'),
-        behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _selectedBar = isSelected ? null : index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            GrowFraction(
-              value: frac,
-              delay: Motion.delayFor(
-                context,
-                index,
-                each: const Duration(milliseconds: 40),
-              ),
-              builder: (h) => Container(
-                height: (96 * h).clamp(4.0, 96.0),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(isSelected ? 9 : 7),
-                  boxShadow: isSelected
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x331B6EF3),
-                            blurRadius: 12,
-                            offset: Offset(0, 3),
-                          ),
-                        ]
-                      : null,
-                ),
+      onTap: () => setState(() => _selectedBar = isSelected ? null : index),
+      scale: 0.985,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          GrowFraction(
+            value: frac,
+            delay: Motion.delayFor(
+              context,
+              index,
+              each: const Duration(milliseconds: 40),
+            ),
+            builder: (h) => Container(
+              height: (96 * h).clamp(4.0, 96.0),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(isSelected ? 9 : 7),
+                boxShadow: isSelected
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x331B6EF3),
+                          blurRadius: 12,
+                          offset: Offset(0, 3),
+                        ),
+                      ]
+                    : null,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2052,7 +2050,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 Text(
                   '${tr(locale, 'admin.was')} ${formatTzsCompact(p.previousValue)}'
                   ' · ${p.previousLabel}',
-                  style: const TextStyle(fontSize: 10.5, color: AppTheme.ink500),
+                  style:
+                      const TextStyle(fontSize: 10.5, color: AppTheme.ink500),
                 ),
               Text(
                 deltaText,
@@ -2071,12 +2070,28 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   String _longDate(DateTime d) {
     const days = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-      'Friday', 'Saturday', 'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
     ];
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${days[d.weekday - 1]}, ${d.day} ${months[d.month]}';
   }
@@ -2123,7 +2138,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     num? numeric,
     String Function(num value)? format,
   }) {
-    final counting = numeric != null && format != null && Motion.enabled(context);
+    final counting =
+        numeric != null && format != null && Motion.enabled(context);
     const valueStyle = TextStyle(
       fontSize: 16.5,
       fontWeight: FontWeight.w800,
@@ -2168,9 +2184,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           // there is no number to animate toward - a formatted date, "3 of 5" - the
           // original Text is used untouched rather than a tween toward a guess.
           if (counting)
-            CountUp(
+            MetricText(
+              display: value,
               value: numeric,
-              builder: (v) => Text(format(v), style: valueStyle),
+              format: format,
+              style: valueStyle,
             )
           else
             Text(value, style: valueStyle),

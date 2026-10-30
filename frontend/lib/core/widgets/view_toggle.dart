@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings.dart';
 import '../services/haptics.dart';
 import '../theme/app_theme.dart';
+import '../motion/motion.dart';
 
 /// How a collection is drawn: one row per item, or cards in a two-column grid.
 enum CollectionView { list, grid }
@@ -24,6 +25,10 @@ class ViewToggle extends StatelessWidget {
   final ValueChanged<CollectionView> onChanged;
   final Locale locale;
 
+  /// Both segments are this wide; the sliding pill reads the same number, so the two
+  /// cannot drift apart when a label or an icon changes size.
+  static const double _segmentWidth = 32;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -41,20 +46,41 @@ class ViewToggle extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          _Segment(
-            icon: Icons.view_agenda_rounded,
-            label: tr(locale, 'view.list'),
-            selected: view == CollectionView.list,
-            onTap: () => _pick(CollectionView.list),
+          // One pill that travels, instead of two backgrounds toggling. The control
+          // stays one object with a position, so the eye can follow where the
+          // selection went - which is the entire point of a two-choice switch.
+          AnimatedPositioned(
+            duration: Motion.d(context, Motion.state),
+            curve: Motion.emphasized,
+            left: view == CollectionView.list ? 0 : _segmentWidth,
+            top: 0,
+            child: Container(
+              width: _segmentWidth,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppTheme.brand600,
+                borderRadius: BorderRadius.circular(9),
+              ),
+            ),
           ),
-          _Segment(
-            icon: Icons.grid_view_rounded,
-            label: tr(locale, 'view.grid'),
-            selected: view == CollectionView.grid,
-            onTap: () => _pick(CollectionView.grid),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Segment(
+                icon: Icons.view_agenda_rounded,
+                label: tr(locale, 'view.list'),
+                selected: view == CollectionView.list,
+                onTap: () => _pick(CollectionView.list),
+              ),
+              _Segment(
+                icon: Icons.grid_view_rounded,
+                label: tr(locale, 'view.grid'),
+                selected: view == CollectionView.grid,
+                onTap: () => _pick(CollectionView.grid),
+              ),
+            ],
           ),
         ],
       ),
@@ -91,14 +117,13 @@ class _Segment extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(9),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          width: 32,
+          duration: Motion.d(context, Motion.state),
+          curve: Motion.standard,
+          width: ViewToggle._segmentWidth,
           height: 30,
-          decoration: BoxDecoration(
-            color: selected ? AppTheme.brand600 : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-          ),
+          // The fill moved to the pill in ViewToggle; this only cross-fades the glyph,
+          // which has to change colour as the pill arrives or the icon disappears into
+          // a brand-blue square for a frame.
           child: Icon(
             icon,
             size: 17,

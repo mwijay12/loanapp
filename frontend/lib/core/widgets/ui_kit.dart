@@ -721,7 +721,8 @@ class LimsBottomSheet extends StatelessWidget {
       child: Container(
         decoration: const BoxDecoration(
           color: AppTheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.rXl)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppTheme.rXl)),
           boxShadow: AppTheme.shadowLg,
         ),
         child: SafeArea(
@@ -783,7 +784,8 @@ class LimsBottomSheet extends StatelessWidget {
                       ],
                       if (showClose)
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20, color: AppTheme.ink500),
+                          icon: const Icon(Icons.close_rounded,
+                              size: 20, color: AppTheme.ink500),
                           visualDensity: VisualDensity.compact,
                           onPressed: () => Navigator.pop(context),
                         ),
@@ -900,32 +902,46 @@ class LimsButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTheme.rMd),
           ),
           elevation: 0,
+          // Press feedback should be quicker than a state change - see Motion. Left to
+          // the framework default the button animates on its own schedule, which is
+          // the same scattering this system exists to stop.
+          animationDuration: Motion.d(context, Motion.state),
         ),
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 20),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+        // Swapping a label for a spinner is a state change, and it happens at the
+        // exact moment the user is watching this button most. A cross-fade of 120ms
+        // keeps the button the same object instead of a blink.
+        child: AnimatedSwitcher(
+          duration: Motion.d(context, Motion.tap),
+          switchInCurve: Motion.standard,
+          switchOutCurve: Motion.inOut,
+          child: isLoading
+              ? const SizedBox(
+                  key: ValueKey('busy'),
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-                ],
-              ),
+                )
+              : Row(
+                  key: const ValueKey('label'),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 20),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -939,7 +955,8 @@ class LimsValidators {
   static bool isValidImei(String? imei) {
     if (imei == null) return false;
     final clean = imei.replaceAll(RegExp(r'\s+'), '');
-    if (clean.length != 15 || !RegExp(r'^\d{15}$').hasMatch(clean)) return false;
+    if (clean.length != 15 || !RegExp(r'^\d{15}$').hasMatch(clean))
+      return false;
 
     int sum = 0;
     for (int i = 0; i < 15; i++) {
@@ -1036,7 +1053,9 @@ class LimsToast {
     final effectiveIcon = icon ??
         (isError
             ? Icons.error_outline_rounded
-            : (isSuccess ? Icons.check_circle_rounded : Icons.notifications_active_rounded));
+            : (isSuccess
+                ? Icons.check_circle_rounded
+                : Icons.notifications_active_rounded));
 
     late final OverlayEntry entry;
     entry = OverlayEntry(
@@ -1093,7 +1112,8 @@ class _TopToastWidget extends StatefulWidget {
   State<_TopToastWidget> createState() => _TopToastWidgetState();
 }
 
-class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProviderStateMixin {
+class _TopToastWidgetState extends State<_TopToastWidget>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<Offset> _offsetAnim;
   late final Animation<double> _fadeAnim;
@@ -1139,7 +1159,8 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
             child: GestureDetector(
               onTap: _dismiss,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: widget.bgColor,
                   borderRadius: BorderRadius.circular(16),
@@ -1182,13 +1203,16 @@ class _TopToastWidgetState extends State<_TopToastWidget> with SingleTickerProvi
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
                           backgroundColor: Colors.white.withOpacity(0.25),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           minimumSize: Size.zero,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
                         child: Text(
                           widget.actionLabel!,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 12),
                         ),
                       ),
                     ],
@@ -1238,12 +1262,8 @@ class _StatValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final n = numeric;
-    if (n == null || !Motion.enabled(context)) {
-      return Text(display, style: _style);
-    }
-    return CountUp(
-      value: n,
-      builder: (v) => Text(format(v), style: _style),
-    );
+    if (n == null) return Text(display, style: _style);
+    return MetricText(
+        display: display, value: n, format: format, style: _style);
   }
 }

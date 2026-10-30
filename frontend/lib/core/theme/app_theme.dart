@@ -56,7 +56,8 @@ class AppTheme {
   static const Color ink400 = Color(0xFF94A3B8);
   static const Color ink300 = Color(0xFFCBD5E1);
 
-  static const Color canvas = Color(0xFFF2F7FE); // Prototype soft blue-grey canvas
+  static const Color canvas =
+      Color(0xFFF2F7FE); // Prototype soft blue-grey canvas
   static const Color surfaceMuted = Color(0xFFF8FAFC);
 
   static const Color background = canvas;
@@ -186,36 +187,35 @@ class AppTheme {
   static const String _fontFamily = 'Roboto';
 
   static ThemeData get lightTheme {
-    final ColorScheme scheme =
-        ColorScheme.fromSeed(
-          seedColor: brand600,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: brand600,
-          onPrimary: Colors.white,
-          primaryContainer: brand100,
-          onPrimaryContainer: brand800,
-          secondary: accent500,
-          onSecondary: Colors.white,
-          secondaryContainer: pastelLavender,
-          onSecondaryContainer: const Color(0xFF2E1065),
-          error: errorColor,
-          onError: Colors.white,
-          errorContainer: errorLight,
-          onErrorContainer: const Color(0xFF881337),
-          surface: surface,
-          onSurface: ink900,
-          surfaceContainerLowest: surface,
-          surfaceContainerLow: surfaceMuted,
-          surfaceContainer: canvas,
-          surfaceContainerHigh: const Color(0xFFE2E8F0),
-          surfaceContainerHighest: const Color(0xFFCBD5E1),
-          onSurfaceVariant: textSecondary,
-          outline: border,
-          outlineVariant: divider,
-          inverseSurface: ink900,
-          onInverseSurface: const Color(0xFFF8FAFC),
-        );
+    final ColorScheme scheme = ColorScheme.fromSeed(
+      seedColor: brand600,
+      brightness: Brightness.light,
+    ).copyWith(
+      primary: brand600,
+      onPrimary: Colors.white,
+      primaryContainer: brand100,
+      onPrimaryContainer: brand800,
+      secondary: accent500,
+      onSecondary: Colors.white,
+      secondaryContainer: pastelLavender,
+      onSecondaryContainer: const Color(0xFF2E1065),
+      error: errorColor,
+      onError: Colors.white,
+      errorContainer: errorLight,
+      onErrorContainer: const Color(0xFF881337),
+      surface: surface,
+      onSurface: ink900,
+      surfaceContainerLowest: surface,
+      surfaceContainerLow: surfaceMuted,
+      surfaceContainer: canvas,
+      surfaceContainerHigh: const Color(0xFFE2E8F0),
+      surfaceContainerHighest: const Color(0xFFCBD5E1),
+      onSurfaceVariant: textSecondary,
+      outline: border,
+      outlineVariant: divider,
+      inverseSurface: ink900,
+      onInverseSurface: const Color(0xFFF8FAFC),
+    );
 
     return ThemeData(
       useMaterial3: true,
@@ -282,9 +282,13 @@ class AppTheme {
           disabledForegroundColor: Colors.white,
           elevation: 0,
           shadowColor: Colors.transparent,
+          // Press feedback timed by the motion system rather than by the framework's
+          // own default. Same number today; the point is that there is one number.
+          animationDuration: Motion.state,
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
           textStyle: const TextStyle(
             fontFamily: _fontFamily,
             fontSize: 15.5,
@@ -301,7 +305,8 @@ class AppTheme {
           surfaceTintColor: Colors.transparent,
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
           textStyle: const TextStyle(
             fontFamily: _fontFamily,
             fontSize: 15.5,
@@ -318,7 +323,8 @@ class AppTheme {
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           side: const BorderSide(color: border, width: 1.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
           textStyle: const TextStyle(
             fontFamily: _fontFamily,
             fontSize: 15.5,
@@ -342,7 +348,8 @@ class AppTheme {
         filled: true,
         fillColor: surfaceMuted,
         isDense: false,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: _inputBorder(border),
         enabledBorder: _inputBorder(border),
         disabledBorder: _inputBorder(divider),
@@ -370,9 +377,23 @@ class AppTheme {
         errorStyle: const TextStyle(
           fontFamily: _fontFamily,
           fontSize: 12.5,
+          height: 1.4,
           fontWeight: FontWeight.w600,
           color: errorColor,
         ),
+        // Same size and line height as errorStyle, deliberately. A field showing a
+        // hint and then failing validation replaces one line with the other; if the
+        // two styles differ in height the field moves under the keyboard while the
+        // user is reading the message. Matching them makes the swap a colour change
+        // instead of a jump.
+        helperStyle: TextStyle(
+          fontFamily: _fontFamily,
+          fontSize: 12.5,
+          height: 1.4,
+          fontWeight: FontWeight.w500,
+          color: textTertiary,
+        ),
+        helperMaxLines: 2,
         prefixIconColor: ink400,
         suffixIconColor: ink400,
         counterStyle: const TextStyle(fontSize: 11.5, color: textTertiary),

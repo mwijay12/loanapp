@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../motion/motion.dart';
 
 class PrimaryActionButton extends StatelessWidget {
   final String label;
@@ -29,13 +30,16 @@ class PrimaryActionButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor ?? (isDestructive ? AppTheme.errorColor : AppTheme.primaryColor),
+          backgroundColor: backgroundColor ??
+              (isDestructive ? AppTheme.errorColor : AppTheme.primaryColor),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          // Same press timing as every other control in the app.
+          animationDuration: Motion.d(context, Motion.state),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

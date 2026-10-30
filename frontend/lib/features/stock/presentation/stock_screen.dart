@@ -15,6 +15,7 @@ import '../../../core/data/product_art.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../../../core/data/supabase_source.dart';
 import '../../../core/widgets/view_toggle.dart';
+import '../../../core/motion/motion_widgets.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
@@ -26,6 +27,7 @@ class StockScreen extends ConsumerStatefulWidget {
 class _StockScreenState extends ConsumerState<StockScreen> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
+
   /// Rows or cards. Held per visit: the stock list is a browsing surface, and a
   /// remembered preference is one more thing to explain when it disagrees with
   /// what the counter expects to see.
@@ -44,7 +46,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     return sourceList.where((p) {
       if (_selectedFilter == 'phones' && p.cat != 'phones') return false;
       if (_selectedFilter == 'acc' && p.cat != 'acc') return false;
-      if (_selectedFilter == 'low' && p.status != 'low' && p.status != 'out') return false;
+      if (_selectedFilter == 'low' && p.status != 'low' && p.status != 'out')
+        return false;
       if (_selectedFilter == 'loan' && p.onLoan < 1) return false;
 
       if (_searchQuery.isNotEmpty) {
@@ -102,7 +105,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFD4E0F0), width: 1.2),
+                          border: Border.all(
+                              color: const Color(0xFFD4E0F0), width: 1.2),
                           boxShadow: const [
                             BoxShadow(
                               color: Color(0x140F3478),
@@ -129,7 +133,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: const Icon(Icons.edit_rounded, color: Colors.white, size: 12),
+                            child: const Icon(Icons.edit_rounded,
+                                color: Colors.white, size: 12),
                           ),
                         ),
                       ),
@@ -169,7 +174,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 _showEditPhotoModal(p);
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE9F2FF),
                                   borderRadius: BorderRadius.circular(6),
@@ -177,7 +183,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.photo_camera_rounded, size: 12, color: AppTheme.brand600),
+                                    const Icon(Icons.photo_camera_rounded,
+                                        size: 12, color: AppTheme.brand600),
                                     const SizedBox(width: 4),
                                     Text(
                                       tr(locale, 'stock.editPhoto'),
@@ -202,7 +209,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
               // 3 Stats
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F9FF),
                   borderRadius: BorderRadius.circular(16),
@@ -212,9 +220,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildDetailStat(p.shortPrice, 'Retail price'),
-                    Container(width: 1, height: 28, color: const Color(0xFFD4E0F0)),
+                    Container(
+                        width: 1, height: 28, color: const Color(0xFFD4E0F0)),
                     _buildDetailStat('${p.stock}', 'In stock'),
-                    Container(width: 1, height: 28, color: const Color(0xFFD4E0F0)),
+                    Container(
+                        width: 1, height: 28, color: const Color(0xFFD4E0F0)),
                     _buildDetailStat('${p.onLoan}', 'On loan'),
                   ],
                 ),
@@ -342,12 +352,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         context.push('/sell-loan?type=SELL&model=${p.name}');
                       },
                       icon: const Icon(Icons.point_of_sale_rounded, size: 16),
-                      label: Text(tr(locale, 'stock.sellCash'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      label: Text(tr(locale, 'stock.sellCash'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.brand600,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                     ),
@@ -360,12 +373,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         context.push('/sell-loan?type=LOAN&model=${p.name}');
                       },
                       icon: const Icon(Icons.assignment_ind_rounded, size: 16),
-                      label: Text(tr(locale, 'stock.issueLoan'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      label: Text(tr(locale, 'stock.issueLoan'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7C5CFC),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                     ),
@@ -379,7 +395,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       // a full history for a handset nobody selected.
                       final serial = p.imei1;
                       if (serial == null || serial.isEmpty) {
-                        LimsToast.show(context, tr(locale, 'stock.noSerialOnFile'));
+                        LimsToast.show(
+                            context, tr(locale, 'stock.noSerialOnFile'));
                         return;
                       }
                       context.push('/imei-inspector?imei=$serial');
@@ -392,7 +409,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
-                      child: const Icon(Icons.shield_rounded, color: AppTheme.brand600, size: 20),
+                      child: const Icon(Icons.shield_rounded,
+                          color: AppTheme.brand600, size: 20),
                     ),
                   ),
                 ],
@@ -453,7 +471,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               Switch(
                 value: current.onOffer,
                 onChanged: (value) => _setOffer(ref, p, value),
-                thumbColor: WidgetStatePropertyAll( const Color(0xFFD97706)),
+                thumbColor: WidgetStatePropertyAll(const Color(0xFFD97706)),
               ),
             ],
           ),
@@ -479,14 +497,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
     switch (outcome) {
       case OfferSaveOutcome.saved:
-        LimsToast.show(context, tr(locale, 'stock.offerSaved'), isSuccess: true);
+        LimsToast.show(context, tr(locale, 'stock.offerSaved'),
+            isSuccess: true);
       case OfferSaveOutcome.notConfigured:
         // Demo and offline builds have no ledger. The choice holds for this
         // session and says so.
         LimsToast.show(context, tr(locale, 'stock.offerSession'));
       case OfferSaveOutcome.migrationMissing:
         ref.read(inventoryProvider.notifier).setOffer(p.id, previous);
-        LimsToast.show(context, tr(locale, 'stock.offerMigration'), isError: true);
+        LimsToast.show(context, tr(locale, 'stock.offerMigration'),
+            isError: true);
       case OfferSaveOutcome.failed:
         ref.read(inventoryProvider.notifier).setOffer(p.id, previous);
         LimsToast.show(context, tr(locale, 'stock.offerFailed'), isError: true);
@@ -796,31 +816,36 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'title': 'Natural Titanium Pro',
         'sub': 'iPhone 15 Pro Max',
         'asset': null,
-        'url': 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80',
+        'url':
+            'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80',
       },
       {
         'title': 'Titanium Gray',
         'sub': 'Galaxy S24 Ultra',
         'asset': null,
-        'url': 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
+        'url':
+            'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
       },
       {
         'title': 'Midnight Black',
         'sub': 'Redmi / Camon',
         'asset': null,
-        'url': 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
+        'url':
+            'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80',
       },
       {
         'title': 'AirPods Pro White',
         'sub': 'Accessories',
         'asset': null,
-        'url': 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&auto=format&fit=crop&q=80',
+        'url':
+            'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&auto=format&fit=crop&q=80',
       },
       {
         'title': 'Silver Laptop',
         'sub': 'Computers & Laptops',
         'asset': null,
-        'url': 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop&q=80',
+        'url':
+            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop&q=80',
       },
     ];
 
@@ -859,7 +884,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             ? Image.network(
                                 selectedUrl!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _buildFallbackIcon(p, 48),
+                                errorBuilder: (_, __, ___) =>
+                                    _buildFallbackIcon(p, 48),
                               )
                             : _buildFallbackIcon(p, 48)),
                   ),
@@ -885,12 +911,18 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 isSuccess: true);
                           }
                         },
-                        icon: const Icon(Icons.camera_alt_rounded, size: 16, color: AppTheme.brand600),
-                        label: const Text('Take photo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
+                        icon: const Icon(Icons.camera_alt_rounded,
+                            size: 16, color: AppTheme.brand600),
+                        label: const Text('Take photo',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.brand600)),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFCEE1FE)),
                           padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -911,12 +943,18 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 isSuccess: true);
                           }
                         },
-                        icon: const Icon(Icons.photo_library_rounded, size: 16, color: AppTheme.brand600),
-                        label: const Text('Upload photo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.brand600)),
+                        icon: const Icon(Icons.photo_library_rounded,
+                            size: 16, color: AppTheme.brand600),
+                        label: const Text('Upload photo',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.brand600)),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFCEE1FE)),
                           padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -935,7 +973,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.cloud_done_rounded, color: Color(0xFF16A34A), size: 18),
+                      const Icon(Icons.cloud_done_rounded,
+                          color: Color(0xFF16A34A), size: 18),
                       SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -943,12 +982,19 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           children: [
                             Text(
                               'Supabase Storage · WebP Compression (Auto-Sync)',
-                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+                              style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF15803D)),
                             ),
                             SizedBox(height: 2),
                             Text(
-                              tr(ref.read(localeProvider), 'stock.compressNote'),
-                              style: TextStyle(fontSize: 11, color: Color(0xFF166534), height: 1.35),
+                              tr(ref.read(localeProvider),
+                                  'stock.compressNote'),
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF166534),
+                                  height: 1.35),
                             ),
                           ],
                         ),
@@ -977,8 +1023,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (_, idx) {
                       final item = presetPhotos[idx];
-                      final isCurrentAsset = item['asset'] != null && selectedAsset == item['asset'];
-                      final isCurrentUrl = item['url'] != null && selectedUrl == item['url'];
+                      final isCurrentAsset = item['asset'] != null &&
+                          selectedAsset == item['asset'];
+                      final isCurrentUrl =
+                          item['url'] != null && selectedUrl == item['url'];
                       final isChosen = isCurrentAsset || isCurrentUrl;
 
                       return InkWell(
@@ -999,10 +1047,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           width: 86,
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: isChosen ? const Color(0xFFEBF3FF) : Colors.white,
+                            color: isChosen
+                                ? const Color(0xFFEBF3FF)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isChosen ? AppTheme.brand600 : const Color(0xFFE2E8F0),
+                              color: isChosen
+                                  ? AppTheme.brand600
+                                  : const Color(0xFFE2E8F0),
                               width: isChosen ? 2 : 1,
                             ),
                           ),
@@ -1018,16 +1070,22 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: item['asset'] != null
-                                    ? Image.asset(item['asset']!, fit: BoxFit.contain)
-                                    : Image.network(item['url']!, fit: BoxFit.cover),
+                                    ? Image.asset(item['asset']!,
+                                        fit: BoxFit.contain)
+                                    : Image.network(item['url']!,
+                                        fit: BoxFit.cover),
                               ),
                               const SizedBox(height: 5),
                               Text(
                                 item['title'] as String,
                                 style: TextStyle(
                                   fontSize: 9.5,
-                                  fontWeight: isChosen ? FontWeight.w800 : FontWeight.w600,
-                                  color: isChosen ? AppTheme.brand600 : AppTheme.ink900,
+                                  fontWeight: isChosen
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                                  color: isChosen
+                                      ? AppTheme.brand600
+                                      : AppTheme.ink900,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1062,21 +1120,26 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             selectedAsset = null;
                           });
                         },
-                        style: const TextStyle(fontSize: 13, color: AppTheme.ink900),
+                        style: const TextStyle(
+                            fontSize: 13, color: AppTheme.ink900),
                         decoration: InputDecoration(
                           hintText: 'https://images.unsplash.com/...',
-                          hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9AA8BF)),
+                          hintStyle: const TextStyle(
+                              fontSize: 12, color: Color(0xFF9AA8BF)),
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 11),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE2E8F0)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.brand600, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: AppTheme.brand600, width: 1.5),
                           ),
                         ),
                       ),
@@ -1093,10 +1156,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         backgroundColor: const Color(0xFFEBF3FF),
                         foregroundColor: AppTheme.brand600,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('View', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                      child: const Text('View',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -1120,18 +1187,17 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       if (!write.saved) {
                         LimsToast.show(
                           context,
-                          write.error ??
-                              'Picha haijahifadhiwa. Jaribu tena.',
+                          write.error ?? 'Picha haijahifadhiwa. Jaribu tena.',
                           isError: true,
                         );
                         return;
                       }
 
                       ref.read(inventoryProvider.notifier).updateProductImage(
-                        p.id,
-                        imageAsset: selectedAsset,
-                        imageUrl: selectedUrl,
-                      );
+                            p.id,
+                            imageAsset: selectedAsset,
+                            imageUrl: selectedUrl,
+                          );
                       Navigator.pop(ctx);
                       LimsToast.show(
                         context,
@@ -1139,12 +1205,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       );
                     },
                     icon: const Icon(Icons.check_circle_rounded, size: 18),
-                    label: Text(tr(ref.read(localeProvider), 'stock.savePhoto'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    label: Text(tr(ref.read(localeProvider), 'stock.savePhoto'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 14)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
                     ),
                   ),
@@ -1208,12 +1277,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     onPressed: _showAddPhoneModal,
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: const Text('Add Phone',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 13)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(0, 40),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
@@ -1240,17 +1311,24 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 children: [
-                  const Icon(Icons.search_rounded, size: 20, color: Color(0xFF9AA8BF)),
+                  const Icon(Icons.search_rounded,
+                      size: 20, color: Color(0xFF9AA8BF)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.ink900),
+                      style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.ink900),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: 'Search phones, SKUs…',
-                        hintStyle: TextStyle(fontSize: 13, color: Color(0xFF9AA8BF), fontWeight: FontWeight.w500),
+                        hintStyle: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF9AA8BF),
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -1282,12 +1360,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     borderRadius: BorderRadius.circular(99),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
                         color: isSelected ? AppTheme.brand600 : Colors.white,
                         borderRadius: BorderRadius.circular(99),
                         border: Border.all(
-                          color: isSelected ? AppTheme.brand600 : const Color(0xFFE2E8F0),
+                          color: isSelected
+                              ? AppTheme.brand600
+                              : const Color(0xFFE2E8F0),
                         ),
                         boxShadow: isSelected
                             ? [
@@ -1454,8 +1535,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF7E6),
                             borderRadius: BorderRadius.circular(6),
-                            border:
-                                Border.all(color: const Color(0xFFFDE68A)),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1517,7 +1597,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       SnackBar(
                         behavior: SnackBarBehavior.floating,
                         duration: const Duration(seconds: 1),
-                        content: Text(p.fav ? 'Added to favorites' : 'Removed from favorites'),
+                        content: Text(p.fav
+                            ? 'Added to favorites'
+                            : 'Removed from favorites'),
                       ),
                     );
                   },
@@ -1525,9 +1607,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(6),
                     child: Icon(
-                      p.fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      p.fav
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
                       size: 18,
-                      color: p.fav ? const Color(0xFFF43F5E) : const Color(0xFFCBD5E1),
+                      color: p.fav
+                          ? const Color(0xFFF43F5E)
+                          : const Color(0xFFCBD5E1),
                     ),
                   ),
                 ),
@@ -1732,7 +1818,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   Widget _buildHeroImage(ProductItem p) {
     // Premium e-commerce feel: Prefer filling the area, unless it's a transparent product asset
     final isTransparentAsset = p.imageAsset != null && p.imageAsset!.isNotEmpty;
-    
+
     return Container(
       color: const Color(0xFFF8FAFC),
       padding: isTransparentAsset ? const EdgeInsets.all(12) : EdgeInsets.zero,
@@ -1928,7 +2014,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     String condition = 'Brand New Sealed (Box Halisi)';
     String colorName = 'Light Blue';
     String? selectedAsset;
-    String? selectedImageUrl = 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80';
+    String? selectedImageUrl =
+        'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80';
 
     final presetModels = [
       {
@@ -1955,7 +2042,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         'cash': '2450000',
         'loan': '2950000',
         'asset': null,
-        'url': 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
+        'url':
+            'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&auto=format&fit=crop&q=80',
       },
       {
         'chip': 'Tecno Camon 30',
@@ -2005,8 +2093,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
-            final buying = double.tryParse(buyingCtrl.text.replaceAll(',', '')) ?? 290000;
-            final selling = double.tryParse(cashPriceCtrl.text.replaceAll(',', '')) ?? 380000;
+            final buying =
+                double.tryParse(buyingCtrl.text.replaceAll(',', '')) ?? 290000;
+            final selling =
+                double.tryParse(cashPriceCtrl.text.replaceAll(',', '')) ??
+                    380000;
             final profit = selling - buying;
             final margin = selling > 0 ? (profit / selling) * 100 : 0.0;
 
@@ -2068,7 +2159,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: AppTheme.ink500),
+                        icon: const Icon(Icons.close_rounded,
+                            color: AppTheme.ink500),
                         visualDensity: VisualDensity.compact,
                         onPressed: () => Navigator.pop(ctx),
                       ),
@@ -2081,7 +2173,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         // Quick Setup Presets
                         const Row(
                           children: [
-                            Icon(Icons.bolt_rounded, size: 16, color: Color(0xFFEAB308)),
+                            Icon(Icons.bolt_rounded,
+                                size: 16, color: Color(0xFFEAB308)),
                             SizedBox(width: 5),
                             Expanded(
                               child: Text(
@@ -2103,10 +2196,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: presetModels.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 8),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 8),
                             itemBuilder: (context, idx) {
                               final preset = presetModels[idx];
-                              final isSelected = nameCtrl.text == preset['name'];
+                              final isSelected =
+                                  nameCtrl.text == preset['name'];
                               return InkWell(
                                 onTap: () {
                                   setModalState(() {
@@ -2116,21 +2211,29 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     ram = preset['ram'] as String;
                                     colorName = preset['color'] as String;
                                     buyingCtrl.text = preset['cost'] as String;
-                                    cashPriceCtrl.text = preset['cash'] as String;
-                                    loanPriceCtrl.text = preset['loan'] as String;
+                                    cashPriceCtrl.text =
+                                        preset['cash'] as String;
+                                    loanPriceCtrl.text =
+                                        preset['loan'] as String;
                                     selectedAsset = preset['asset'];
                                     selectedImageUrl = preset['url'];
                                   });
-                                  LimsToast.show(context, '${preset['name']} details filled in.');
+                                  LimsToast.show(context,
+                                      '${preset['name']} details filled in.');
                                 },
                                 borderRadius: BorderRadius.circular(99),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 7),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFFEBF3FF) : const Color(0xFFF8FAFC),
+                                    color: isSelected
+                                        ? const Color(0xFFEBF3FF)
+                                        : const Color(0xFFF8FAFC),
                                     borderRadius: BorderRadius.circular(99),
                                     border: Border.all(
-                                      color: isSelected ? AppTheme.brand600 : const Color(0xFFE2E8F0),
+                                      color: isSelected
+                                          ? AppTheme.brand600
+                                          : const Color(0xFFE2E8F0),
                                       width: isSelected ? 1.5 : 1,
                                     ),
                                   ),
@@ -2140,15 +2243,21 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       Icon(
                                         Icons.smartphone_rounded,
                                         size: 14,
-                                        color: isSelected ? AppTheme.brand600 : AppTheme.ink500,
+                                        color: isSelected
+                                            ? AppTheme.brand600
+                                            : AppTheme.ink500,
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
                                         preset['chip'] as String,
                                         style: TextStyle(
                                           fontSize: 11.5,
-                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                          color: isSelected ? AppTheme.brand600 : AppTheme.ink700,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          color: isSelected
+                                              ? AppTheme.brand600
+                                              : AppTheme.ink700,
                                         ),
                                       ),
                                     ],
@@ -2181,7 +2290,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                                      border: Border.all(
+                                          color: const Color(0xFFCBD5E1)),
                                       boxShadow: const [
                                         BoxShadow(
                                           color: Color(0x0C0F3478),
@@ -2191,25 +2301,36 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       ],
                                     ),
                                     clipBehavior: Clip.antiAlias,
-                                    child: selectedAsset != null && selectedAsset!.isNotEmpty
-                                        ? Image.asset(selectedAsset!, fit: BoxFit.contain)
-                                        : (selectedImageUrl != null && selectedImageUrl!.isNotEmpty
+                                    child: selectedAsset != null &&
+                                            selectedAsset!.isNotEmpty
+                                        ? Image.asset(selectedAsset!,
+                                            fit: BoxFit.contain)
+                                        : (selectedImageUrl != null &&
+                                                selectedImageUrl!.isNotEmpty
                                             ? Image.network(
                                                 selectedImageUrl!,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => const Center(
-                                                  child: Icon(Icons.smartphone_rounded, size: 28, color: AppTheme.brand600),
+                                                errorBuilder: (_, __, ___) =>
+                                                    const Center(
+                                                  child: Icon(
+                                                      Icons.smartphone_rounded,
+                                                      size: 28,
+                                                      color: AppTheme.brand600),
                                                 ),
                                               )
                                             : const Center(
-                                                child: Icon(Icons.smartphone_rounded, size: 28, color: AppTheme.brand600),
+                                                child: Icon(
+                                                    Icons.smartphone_rounded,
+                                                    size: 28,
+                                                    color: AppTheme.brand600),
                                               )),
                                   ),
                                   const SizedBox(width: 12),
                                   // Photo action buttons
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Picha ya Simu (Phone Photo)',
@@ -2221,7 +2342,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          tr(ref.read(localeProvider), 'stock.photoHint'),
+                                          tr(ref.read(localeProvider),
+                                              'stock.photoHint'),
                                           style: TextStyle(
                                             fontSize: 10.5,
                                             color: AppTheme.ink500,
@@ -2234,30 +2356,49 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                             Expanded(
                                               child: InkWell(
                                                 onTap: () async {
-                                                  final url = await _pickAndUploadProductPhoto(
-                                                      ImageSource.camera);
+                                                  final url =
+                                                      await _pickAndUploadProductPhoto(
+                                                          ImageSource.camera);
                                                   if (url == null) return;
                                                   setModalState(() {
                                                     selectedAsset = null;
                                                     selectedImageUrl = url;
                                                   });
                                                 },
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                                 child: Container(
-                                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(vertical: 6),
                                                   decoration: BoxDecoration(
                                                     color: Colors.white,
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: const Color(
+                                                            0xFFCBD5E1)),
                                                   ),
                                                   child: const Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: [
-                                                      Icon(Icons.camera_alt_rounded, size: 13, color: AppTheme.brand600),
+                                                      Icon(
+                                                          Icons
+                                                              .camera_alt_rounded,
+                                                          size: 13,
+                                                          color: AppTheme
+                                                              .brand600),
                                                       SizedBox(width: 4),
                                                       Text(
                                                         'Take photo',
-                                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+                                                        style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: AppTheme
+                                                                .brand600),
                                                       ),
                                                     ],
                                                   ),
@@ -2268,30 +2409,49 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                             Expanded(
                                               child: InkWell(
                                                 onTap: () async {
-                                                  final url = await _pickAndUploadProductPhoto(
-                                                      ImageSource.gallery);
+                                                  final url =
+                                                      await _pickAndUploadProductPhoto(
+                                                          ImageSource.gallery);
                                                   if (url == null) return;
                                                   setModalState(() {
                                                     selectedAsset = null;
                                                     selectedImageUrl = url;
                                                   });
                                                 },
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                                 child: Container(
-                                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(vertical: 6),
                                                   decoration: BoxDecoration(
                                                     color: Colors.white,
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: const Color(
+                                                            0xFFCBD5E1)),
                                                   ),
                                                   child: const Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: [
-                                                      Icon(Icons.photo_library_rounded, size: 13, color: AppTheme.brand600),
+                                                      Icon(
+                                                          Icons
+                                                              .photo_library_rounded,
+                                                          size: 13,
+                                                          color: AppTheme
+                                                              .brand600),
                                                       SizedBox(width: 4),
                                                       Text(
                                                         'Upload photo',
-                                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.brand600),
+                                                        style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: AppTheme
+                                                                .brand600),
                                                       ),
                                                     ],
                                                   ),
@@ -2308,20 +2468,26 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               const SizedBox(height: 8),
                               // Supabase WebP optimization indicator
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF0FDF4),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                                  border: Border.all(
+                                      color: const Color(0xFFBBF7D0)),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.cloud_done_rounded, color: Color(0xFF16A34A), size: 13),
+                                    Icon(Icons.cloud_done_rounded,
+                                        color: Color(0xFF16A34A), size: 13),
                                     SizedBox(width: 5),
                                     Expanded(
                                       child: Text(
                                         'Supabase WebP (74KB) Auto-Sync · 1GB ya bure inabeba simu 13,900+',
-                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF15803D)),
                                       ),
                                     ),
                                   ],
@@ -2343,10 +2509,23 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Brand',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
-                                items: ['Samsung', 'Apple', 'Xiaomi', 'Tecno', 'Infinix', 'itel', 'Oppo']
-                                    .map((b) => DropdownMenuItem(value: b, child: Text(b, style: const TextStyle(fontSize: 13))))
+                                items: [
+                                  'Samsung',
+                                  'Apple',
+                                  'Xiaomi',
+                                  'Tecno',
+                                  'Infinix',
+                                  'itel',
+                                  'Oppo'
+                                ]
+                                    .map((b) => DropdownMenuItem(
+                                        value: b,
+                                        child: Text(b,
+                                            style:
+                                                const TextStyle(fontSize: 13))))
                                     .toList(),
                                 onChanged: (v) {
                                   if (v != null) setModalState(() => brand = v);
@@ -2361,7 +2540,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Model Name',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2378,13 +2558,25 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Storage',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 10),
                                 ),
-                                items: ['64GB', '128GB', '256GB', '512GB', '1TB']
-                                    .map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12))))
+                                items: [
+                                  '64GB',
+                                  '128GB',
+                                  '256GB',
+                                  '512GB',
+                                  '1TB'
+                                ]
+                                    .map((s) => DropdownMenuItem(
+                                        value: s,
+                                        child: Text(s,
+                                            style:
+                                                const TextStyle(fontSize: 12))))
                                     .toList(),
                                 onChanged: (v) {
-                                  if (v != null) setModalState(() => storage = v);
+                                  if (v != null)
+                                    setModalState(() => storage = v);
                                 },
                               ),
                             ),
@@ -2395,10 +2587,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'RAM',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 10),
                                 ),
                                 items: ['4GB', '6GB', '8GB', '12GB', '16GB']
-                                    .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 12))))
+                                    .map((r) => DropdownMenuItem(
+                                        value: r,
+                                        child: Text(r,
+                                            style:
+                                                const TextStyle(fontSize: 12))))
                                     .toList(),
                                 onChanged: (v) {
                                   if (v != null) setModalState(() => ram = v);
@@ -2413,7 +2610,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Color',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2427,13 +2625,19 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Condition / Device Grade',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
                           ),
                           items: [
                             'Brand New Sealed (Box Halisi)',
                             'Open Box (Mpya iliyofunguliwa)',
                             'Refurbished Grade A (Kama Mpya)',
-                          ].map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13)))).toList(),
+                          ]
+                              .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c,
+                                      style: const TextStyle(fontSize: 13))))
+                              .toList(),
                           onChanged: (v) {
                             if (v != null) setModalState(() => condition = v);
                           },
@@ -2452,25 +2656,36 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Expanded(
                                     child: Text(
                                       'IMEI ya Kila Kifaa',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppTheme.ink900),
+                                      style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppTheme.ink900),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Flexible(
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFE7F8F0),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: const Text('Luhn Validated', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF12B76A))),
+                                      child: const Text('Luhn Validated',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF12B76A))),
                                     ),
                                   ),
                                 ],
@@ -2480,9 +2695,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 controller: imei1Ctrl,
                                 decoration: const InputDecoration(
                                   labelText: 'Primary IMEI 1 (15 digits)',
-                                  prefixIcon: Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppTheme.brand600),
+                                  prefixIcon: Icon(
+                                      Icons.qr_code_scanner_rounded,
+                                      size: 20,
+                                      color: AppTheme.brand600),
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
                                   // There used to be a button here that wrote a
                                   // serial built from the current timestamp into
                                   // the field. A serial identifies one physical
@@ -2494,9 +2713,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               TextFormField(
                                 controller: imei2Ctrl,
                                 decoration: const InputDecoration(
-                                  labelText: 'Secondary IMEI 2 (Dual SIM Anti-Bypass)',
+                                  labelText:
+                                      'Secondary IMEI 2 (Dual SIM Anti-Bypass)',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
                                 ),
                               ),
                             ],
@@ -2516,7 +2737,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   labelText: 'Cost Price',
                                   prefixText: 'TZS ',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2530,7 +2752,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   labelText: 'Cash Retail',
                                   prefixText: 'TZS ',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2543,7 +2766,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   labelText: 'Loan Price',
                                   prefixText: 'TZS ',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2553,9 +2777,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
                         // Margin calculation pill (inspired by billing app)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: profit >= 0 ? const Color(0xFFE7F8F0) : const Color(0xFFFFEDF1),
+                            color: profit >= 0
+                                ? const Color(0xFFE7F8F0)
+                                : const Color(0xFFFFEDF1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -2569,7 +2796,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: profit >= 0 ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                                    color: profit >= 0
+                                        ? const Color(0xFF12B76A)
+                                        : const Color(0xFFF43F5E),
                                   ),
                                 ),
                               ),
@@ -2583,7 +2812,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
-                                    color: profit >= 0 ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
+                                    color: profit >= 0
+                                        ? const Color(0xFF12B76A)
+                                        : const Color(0xFFF43F5E),
                                   ),
                                 ),
                               ),
@@ -2602,7 +2833,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Initial Quantity',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2613,7 +2845,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Supplier',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
                               ),
                             ),
@@ -2628,7 +2861,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         final imei1 = imei1Ctrl.text.trim();
-                        if (imei1.isNotEmpty && !LimsValidators.isValidImei(imei1)) {
+                        if (imei1.isNotEmpty &&
+                            !LimsValidators.isValidImei(imei1)) {
                           LimsToast.show(
                             context,
                             'IMEI 1 is invalid ($imei1). Must be 15 digits passing GSMA Luhn checksum.',
@@ -2640,10 +2874,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         // These used to fall back to TZS 380,000, 5 units and
                         // TZS 300,000 when the fields were blank, so an empty form
                         // saved a priced handset. Now a blank field stops the save.
-                        final price = int.tryParse(cashPriceCtrl.text.replaceAll(',', ''));
+                        final price = int.tryParse(
+                            cashPriceCtrl.text.replaceAll(',', ''));
                         final qty = int.tryParse(qtyCtrl.text);
-                        final cost = int.tryParse(buyingCtrl.text.replaceAll(',', ''));
-                        final loanP = int.tryParse(loanPriceCtrl.text.replaceAll(',', ''));
+                        final cost =
+                            int.tryParse(buyingCtrl.text.replaceAll(',', ''));
+                        final loanP = int.tryParse(
+                            loanPriceCtrl.text.replaceAll(',', ''));
                         if (nameCtrl.text.trim().isEmpty ||
                             price == null ||
                             price <= 0 ||
@@ -2671,7 +2908,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         final hasPickedUrl = pickedUrl.isNotEmpty;
                         final resolvedAsset =
                             selectedAsset ?? (hasPickedUrl ? null : brandAsset);
-                        final resolvedUrl = resolvedAsset == null ? pickedUrl : null;
+                        final resolvedUrl =
+                            resolvedAsset == null ? pickedUrl : null;
 
                         final newItem = ProductItem(
                           // Postgres owns the id. It used to be
@@ -2683,9 +2921,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           // id is now ignored — `products.id` is a sequence and the
                           // stored row comes back with the real one.
                           id: 0,
-                          name: '$brand ${nameCtrl.text.trim().isEmpty ? "Handset" : nameCtrl.text.trim()}',
+                          name:
+                              '$brand ${nameCtrl.text.trim().isEmpty ? "Handset" : nameCtrl.text.trim()}',
                           variant: '$storage · $colorName',
-                          sku: '${brand.substring(0, brand.length >= 2 ? 2 : 1).toUpperCase()}-${storage.replaceAll("GB", "")}-$colorName',
+                          sku:
+                              '${brand.substring(0, brand.length >= 2 ? 2 : 1).toUpperCase()}-${storage.replaceAll("GB", "")}-$colorName',
                           price: price,
                           stock: qty,
                           min: 3,
@@ -2696,7 +2936,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           onLoan: 0,
                           brand: brand,
                           imei1: imei1.isNotEmpty ? imei1 : null,
-                          imei2: imei2Ctrl.text.trim().isNotEmpty ? imei2Ctrl.text.trim() : null,
+                          imei2: imei2Ctrl.text.trim().isNotEmpty
+                              ? imei2Ctrl.text.trim()
+                              : null,
                           costPrice: cost,
                           loanPrice: loanP,
                           imageAsset: resolvedAsset,
@@ -2705,7 +2947,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
                         // The database answers before the shelf moves. Every toast
                         // from here on describes a row that exists in `products`.
-                        final write = await SupabaseSource.createProduct(newItem);
+                        final write =
+                            await SupabaseSource.createProduct(newItem);
                         // Both contexts: this State may have been popped, and the
                         // sheet's own `ctx` is what Navigator.pop is called on.
                         if (!mounted || !ctx.mounted) return;
@@ -2728,15 +2971,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         // show the handset twice and count its stock twice.
                         ref.read(inventoryProvider.notifier).mergeRow(stored);
                         ref.read(activitiesProvider.notifier).addActivity(
-                          ActivityItem(
-                            icon: Icons.inventory_2_rounded,
-                            iconColor: AppTheme.brand600,
-                            bgColor: AppTheme.brand100,
-                            title: 'Stock Intake: ${stored.name}',
-                            description: '$qty units received · ${LimsFormatters.currency(stored.price)}',
-                            time: 'Just now',
-                          ),
-                        );
+                              ActivityItem(
+                                icon: Icons.inventory_2_rounded,
+                                iconColor: AppTheme.brand600,
+                                bgColor: AppTheme.brand100,
+                                title: 'Stock Intake: ${stored.name}',
+                                description:
+                                    '$qty units received · ${LimsFormatters.currency(stored.price)}',
+                                time: 'Just now',
+                              ),
+                            );
 
                         Navigator.pop(ctx);
                         LimsToast.show(
@@ -2748,13 +2992,16 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                         );
                       },
                       icon: const Icon(Icons.check_circle_rounded, size: 20),
-                      label: const Text('Save & Intake to Inventory', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                      label: const Text('Save & Intake to Inventory',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.brand600,
                         foregroundColor: Colors.white,
                         minimumSize: const Size(0, 48),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
                   ),
@@ -2792,173 +3039,187 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ),
         child: StatefulBuilder(
           builder: (sheetCtx, setSheetState) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              countMode
-                  ? 'Count Stock'
-                  : (isAdding ? 'Add Stock' : 'Reduce Stock'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.ink900,
-              ),
-            ),
-            Row(
-              children: [
-                Checkbox(
-                  value: countMode,
-                  onChanged: (v) => setSheetState(() => countMode = v ?? false),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setSheetState(() => countMode = !countMode),
-                    child: const Text(
-                      'I have counted the shelf - set this exact number',
-                      style: TextStyle(fontSize: 12, color: AppTheme.ink700),
-                    ),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(99),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              p.name,
-              style: const TextStyle(fontSize: 13, color: AppTheme.ink500),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: qtyCtrl,
-                    keyboardType: TextInputType.number,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: countMode ? 'Counted quantity' : 'Quantity',
-                      border: const OutlineInputBorder(),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                countMode
+                    ? 'Count Stock'
+                    : (isAdding ? 'Add Stock' : 'Reduce Stock'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink900,
+                ),
+              ),
+              Row(
+                children: [
+                  Checkbox(
+                    value: countMode,
+                    onChanged: (v) =>
+                        setSheetState(() => countMode = v ?? false),
+                  ),
+                  Expanded(
+                    child: Pressable(
+                      semanticLabel: 'Count mode',
+                      selected: countMode,
+                      // A label that toggles a checkbox is a control, so it should
+                      // behave like one under a mouse and a keyboard as well as a
+                      // finger. The Checkbox beside it stays the accessible switch;
+                      // this is the same action, not a second one to discover.
+                      onTap: () => setSheetState(() => countMode = !countMode),
+                      child: const Text(
+                        'I have counted the shelf - set this exact number',
+                        style: TextStyle(fontSize: 12, color: AppTheme.ink700),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
-                hintText: 'e.g. Supplier intake, Correction, Damaged...',
-                border: OutlineInputBorder(),
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final qty = int.tryParse(qtyCtrl.text) ?? 0;
-                  if (qty <= 0) {
-                    LimsToast.show(context, 'Enter a valid quantity', isError: true);
-                    return;
-                  }
-                  if (!countMode && !isAdding && qty > p.stock) {
-                    LimsToast.show(context, 'Cannot reduce more than current stock',
-                        isError: true);
-                    return;
-                  }
+              const SizedBox(height: 6),
+              Text(
+                p.name,
+                style: const TextStyle(fontSize: 13, color: AppTheme.ink500),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: qtyCtrl,
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: countMode ? 'Counted quantity' : 'Quantity',
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Reason (optional)',
+                  hintText: 'e.g. Supplier intake, Correction, Damaged...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final qty = int.tryParse(qtyCtrl.text) ?? 0;
+                    if (qty <= 0) {
+                      LimsToast.show(context, 'Enter a valid quantity',
+                          isError: true);
+                      return;
+                    }
+                    if (!countMode && !isAdding && qty > p.stock) {
+                      LimsToast.show(
+                          context, 'Cannot reduce more than current stock',
+                          isError: true);
+                      return;
+                    }
 
-                  // What changed, not what the total should be. The call before this
-                  // one passed `p.stock + qty` into a parameter that was then *added*
-                  // again, so adding 1 to 24 units showed 49 on the till.
-                  final reason = reasonCtrl.text.trim();
-                  final delta = isAdding ? qty : -qty;
-                  // The reason box used to be decoration: it reached the activity
-                  // list on this device and nowhere else. It is now sent with the
-                  // movement and lands in product_history beside the before/after.
-                  final write = countMode
-                      ? await SupabaseSource.setStockCount(
-                          productId: p.id,
-                          stock: qty,
-                          reason: reason.isEmpty ? 'Physical count' : reason,
-                        )
-                      : await SupabaseSource.adjustStock(
-                          productId: p.id,
-                          delta: delta,
-                          reason: reason.isEmpty ? null : reason,
+                    // What changed, not what the total should be. The call before this
+                    // one passed `p.stock + qty` into a parameter that was then *added*
+                    // again, so adding 1 to 24 units showed 49 on the till.
+                    final reason = reasonCtrl.text.trim();
+                    final delta = isAdding ? qty : -qty;
+                    // The reason box used to be decoration: it reached the activity
+                    // list on this device and nowhere else. It is now sent with the
+                    // movement and lands in product_history beside the before/after.
+                    final write = countMode
+                        ? await SupabaseSource.setStockCount(
+                            productId: p.id,
+                            stock: qty,
+                            reason: reason.isEmpty ? 'Physical count' : reason,
+                          )
+                        : await SupabaseSource.adjustStock(
+                            productId: p.id,
+                            delta: delta,
+                            reason: reason.isEmpty ? null : reason,
+                          );
+                    if (!mounted || !ctx.mounted) return;
+
+                    if (!write.saved) {
+                      // Nothing on the shelf moves. The old code reported success for a
+                      // change that never left the device.
+                      LimsToast.show(
+                        context,
+                        write.error ??
+                            'The stock change was not saved. The number you see is still the old one.',
+                        isError: true,
+                      );
+                      return;
+                    }
+
+                    final newStock =
+                        write.stock ?? (countMode ? qty : p.stock + delta);
+                    ref
+                        .read(inventoryProvider.notifier)
+                        .setStockTotal(p.id, newStock);
+
+                    ref.read(activitiesProvider.notifier).addActivity(
+                          ActivityItem(
+                            icon: isAdding
+                                ? Icons.add_circle_rounded
+                                : Icons.remove_circle_rounded,
+                            iconColor: isAdding
+                                ? const Color(0xFF12B76A)
+                                : const Color(0xFFF43F5E),
+                            bgColor: isAdding
+                                ? const Color(0xFFE7F8F0)
+                                : const Color(0xFFFFF1F2),
+                            title: isAdding ? 'Stock Added' : 'Stock Reduced',
+                            description:
+                                '${isAdding ? "+" : "-"}$qty units of ${p.name} · ${reasonCtrl.text.isEmpty ? (isAdding ? "Manual add" : "Manual reduction") : reasonCtrl.text}',
+                            time: 'Just now',
+                          ),
                         );
-                  if (!mounted || !ctx.mounted) return;
 
-                  if (!write.saved) {
-                    // Nothing on the shelf moves. The old code reported success for a
-                    // change that never left the device.
+                    Navigator.pop(ctx);
                     LimsToast.show(
                       context,
-                      write.error ??
-                          'The stock change was not saved. The number you see is still the old one.',
-                      isError: true,
+                      countMode
+                          ? 'Counted: ${p.name} is now $newStock units on the shelf'
+                          : 'Stock updated: ${p.name} is now $newStock units',
+                      isSuccess: true,
                     );
-                    return;
-                  }
-
-                  final newStock = write.stock ?? (countMode ? qty : p.stock + delta);
-                  ref.read(inventoryProvider.notifier).setStockTotal(p.id, newStock);
-
-                  ref.read(activitiesProvider.notifier).addActivity(
-                        ActivityItem(
-                          icon: isAdding
-                              ? Icons.add_circle_rounded
-                              : Icons.remove_circle_rounded,
-                          iconColor: isAdding
-                              ? const Color(0xFF12B76A)
-                              : const Color(0xFFF43F5E),
-                          bgColor: isAdding
-                              ? const Color(0xFFE7F8F0)
-                              : const Color(0xFFFFF1F2),
-                          title: isAdding ? 'Stock Added' : 'Stock Reduced',
-                          description:
-                              '${isAdding ? "+" : "-"}$qty units of ${p.name} · ${reasonCtrl.text.isEmpty ? (isAdding ? "Manual add" : "Manual reduction") : reasonCtrl.text}',
-                          time: 'Just now',
-                        ),
-                      );
-
-                  Navigator.pop(ctx);
-                  LimsToast.show(
-                    context,
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isAdding
+                        ? const Color(0xFF12B76A)
+                        : const Color(0xFFF43F5E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
                     countMode
-                        ? 'Counted: ${p.name} is now $newStock units on the shelf'
-                        : 'Stock updated: ${p.name} is now $newStock units',
-                    isSuccess: true,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isAdding ? const Color(0xFF12B76A) : const Color(0xFFF43F5E),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: Text(
-                  countMode
-                      ? 'Confirm Count'
-                      : (isAdding ? 'Confirm Add' : 'Confirm Reduction'),
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                        ? 'Confirm Count'
+                        : (isAdding ? 'Confirm Add' : 'Confirm Reduction'),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

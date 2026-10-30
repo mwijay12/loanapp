@@ -148,7 +148,8 @@ class _StickyHomeHeader extends SliverPersistentHeaderDelegate {
   final double minExtent;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     final span = maxExtent - minExtent;
     final t = span <= 0 ? 0.0 : (shrinkOffset / span).clamp(0.0, 1.0);
 
@@ -280,7 +281,8 @@ class _StickyHomeHeader extends SliverPersistentHeaderDelegate {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              tr(header.locale, salutationKeyAt(DateTime.now())),
+                              tr(header.locale,
+                                  salutationKeyAt(DateTime.now())),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -1783,9 +1785,15 @@ class _DashStatValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final n = numeric;
-    if (n == null || !Motion.enabled(context)) {
-      return Text(display, maxLines: 1, style: _style);
-    }
-    return CountUp(value: n, builder: (v) => Text(format(v), maxLines: 1, style: _style));
+    if (n == null) return Text(display, maxLines: 1, style: _style);
+    // MetricText, not a bare counter: the figure keeps its final width while it
+    // counts (so the tiles beside it do not jitter) and assistive tech is told the
+    // answer once instead of every frame of the tween.
+    return MetricText(
+      display: display,
+      value: n,
+      format: format,
+      style: _style,
+    );
   }
 }
