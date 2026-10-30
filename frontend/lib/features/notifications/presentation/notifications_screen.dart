@@ -425,9 +425,21 @@ class NotificationDetailScreen extends ConsumerWidget {
           SizedBox(
             height: 48,
             child: FilledButton.icon(
+              // The notice is a plain MaterialPageRoute, but the destination is
+              // a go_router page. Mixing the two in one gesture is what made
+              // this button unreliable: `context.push` resolved the router from
+              // a context whose route had just been popped, so the push often
+              // went nowhere and the button looked dead.
+              //
+              // So: take the router first, close the notice, and only then move.
+              // The router call is deferred one frame so it re-plans the stack
+              // after the notice has actually gone, instead of racing the pop.
               onPressed: () {
-                Navigator.pop(context);
-                context.push(n.route);
+                final router = GoRouter.of(context);
+                Navigator.of(context).pop();
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  router.go(n.route);
+                });
               },
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
               label: Text(tr(locale, 'notif.open')),

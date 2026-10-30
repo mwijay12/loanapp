@@ -68,6 +68,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
   /// them. The label is now rendered from the code at display time.
   String _cashPaymentChannel = 'cash';
   final _receiptPhoneController = TextEditingController();
+  final _cardNumberController = TextEditingController();
 
   int _installmentWeeks = 8;
   // Unchecked on purpose. A pre-ticked signature box is not consent, and a
@@ -170,6 +171,7 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
     _guarantorNidaController.dispose();
     _depositController.dispose();
     _receiptPhoneController.dispose();
+    _cardNumberController.dispose();
     super.dispose();
   }
 
@@ -825,15 +827,36 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
 
           TextFormField(
             controller: _receiptPhoneController,
-            keyboardType: TextInputType.phone,
+            keyboardType: TextInputType.number,
+            inputFormatters: LimsValidators.phoneFormatters,
             decoration: InputDecoration(
               labelText: tr(_locale, 'sell.customerPhone'),
               prefixIcon: Icon(Icons.phone_iphone_rounded, size: 20),
               border: OutlineInputBorder(),
               contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              helperText: tr(_locale, 'sell.phoneHelp'),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? tr(_locale, 'sell.errPhone') : null,
+            validator: (v) => LimsValidators.validatePhone10(v),
           ),
+          // A card payment has a card number. Asking for it only when the channel
+          // says card keeps the form honest: a cash sale never shows a PAN field.
+          if (_cashPaymentChannel == 'card') ...[
+            SizedBox(height: 12),
+            TextFormField(
+              controller: _cardNumberController,
+              keyboardType: TextInputType.number,
+              inputFormatters: LimsValidators.cardFormatters,
+              decoration: InputDecoration(
+                labelText: tr(_locale, 'sell.cardNumber'),
+                prefixIcon: Icon(Icons.credit_card_rounded, size: 20),
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                helperText: tr(_locale, 'sell.cardHelp'),
+              ),
+              validator: (v) => LimsValidators.validateCardNumber(v),
+            ),
+          ],
         ],
       ),
     );
@@ -1038,25 +1061,32 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _phoneController,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: LimsValidators.phoneFormatters,
                   decoration: const InputDecoration(
                     labelText: 'Primary Repayment Phone',
                     prefixIcon: Icon(Icons.phone_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter primary phone' : null,
+                  validator: (v) => LimsValidators.validatePhone10(v,
+                      label: 'Primary phone'),
                 ),
               ),
               SizedBox(width: 10),
               Expanded(
                 child: TextFormField(
                   controller: _altPhoneController,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: LimsValidators.phoneFormatters,
                   decoration: const InputDecoration(
                     labelText: 'Alternative Contact Phone',
                     prefixIcon: Icon(Icons.chat_bubble_outline_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
+                  // Optional, but if given it still has to be a real number.
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? null
+                      : LimsValidators.validatePhone10(v, label: 'Alt phone'),
                 ),
               ),
             ],
@@ -1170,13 +1200,15 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _guarantorPhoneController,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: LimsValidators.phoneFormatters,
                   decoration: InputDecoration(
                     labelText: tr(_locale, 'sell.guarantorPhone'),
                     prefixIcon: Icon(Icons.phone_android_rounded, size: 18),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter guarantor phone' : null,
+                  validator: (v) => LimsValidators.validatePhone10(v,
+                      label: 'Guarantor phone'),
                 ),
               ),
               SizedBox(width: 10),
@@ -1842,7 +1874,11 @@ class _SellLoanScreenState extends ConsumerState<SellLoanScreen> {
           phone: phone,
           customerName: 'Cash Customer (${_receiptPhoneController.text.trim()})',
           customerPhone: _receiptPhoneController.text.trim(),
-          paymentChannel: _cashPaymentChannel,
+          // A full card number is not a thing to keep. The channel records that
+          // it was a card and the last four, which is enough to match a slip.
+          paymentChannel: _cashPaymentChannel == 'card'
+              ? 'card ••••${LimsValidators.last4(_cardNumberController.text)}'
+              : _cashPaymentChannel,
         );
       }
     } catch (e) {

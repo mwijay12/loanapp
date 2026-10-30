@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/app_theme.dart';
@@ -1001,6 +1002,58 @@ class LimsValidators {
       return 'Enter valid TZ phone (+2557... or 07.../06...)';
     }
     return null;
+  }
+
+  /// What a phone field accepts.
+  ///
+  /// Ten digits and nothing more. The receipt phone field used to take any
+  /// number of digits, so "079094747488899" was typed in, passed the old
+  /// "is it empty" check, and then failed validation with the sale blocked and
+  /// no way to see why. A field that cannot hold the wrong number is better than
+  /// an error message after the fact.
+  static final List<TextInputFormatter> phoneFormatters = [
+    FilteringTextInputFormatter.digitsOnly,
+    LengthLimitingTextInputFormatter(10),
+  ];
+
+  /// A card number is 16 digits; the field should stop there rather than accept
+  /// 20 and complain later.
+  static final List<TextInputFormatter> cardFormatters = [
+    FilteringTextInputFormatter.digitsOnly,
+    LengthLimitingTextInputFormatter(16),
+  ];
+
+  /// Exactly ten digits, starting 0, on a Tanzanian mobile prefix (06 vodacom/
+  /// ttcl, 07 the rest of the market).
+  static String? validatePhone10(String? value, {String? label}) {
+    final clean = (value ?? '').trim().replaceAll(RegExp(r'[\s-]'), '');
+    if (clean.isEmpty) {
+      return label == null ? 'Phone number is required' : '$label is required';
+    }
+    if (clean.length != 10) {
+      return 'Use 10 digits, starting 0 (${clean.length} entered)';
+    }
+    if (!RegExp(r'^0[67]\d{8}$').hasMatch(clean)) {
+      return 'That is not a Tanzanian mobile number (0 followed by 6 or 7)';
+    }
+    return null;
+  }
+
+  /// 16 digits, and deliberately not Luhn-checked against a bank: the shop is
+  /// not authorising the card here, it is recording which method was used.
+  static String? validateCardNumber(String? value) {
+    final clean = (value ?? '').trim().replaceAll(RegExp(r'[\s-]'), '');
+    if (clean.isEmpty) return 'Enter the card number, or pick another channel';
+    if (clean.length != 16) {
+      return 'A card number is 16 digits (${clean.length} entered)';
+    }
+    return null;
+  }
+
+  /// The last four digits, which is all a receipt should ever carry.
+  static String last4(String value) {
+    final clean = value.trim().replaceAll(RegExp(r'[\s-]'), '');
+    return clean.length <= 4 ? clean : clean.substring(clean.length - 4);
   }
 
   /// 20-digit Tanzania NIDA national ID

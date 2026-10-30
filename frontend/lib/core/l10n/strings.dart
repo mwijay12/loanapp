@@ -914,6 +914,18 @@ const Map<String, Map<String, String>> _dictionary = {
     'en': 'Please enter the customer phone',
     'sw': 'Weka simu ya mteja'
   },
+  'sell.phoneHelp': {
+    'en': '10 digits, starting with 0',
+    'sw': 'Tarakimu 10, kuanzia na 0',
+  },
+  'sell.cardNumber': {
+    'en': 'Card number (16 digits)',
+    'sw': 'Namba ya kadi (tarakimu 16)',
+  },
+  'sell.cardHelp': {
+    'en': 'Only the last four are kept, for the receipt',
+    'sw': 'Tarakimu nne za mwisho pekee ndizo zinahifadhiwa, kwa risiti',
+  },
   'sell.errAddress': {
     'en': 'Please enter the residential address',
     'sw': 'Weka anuani ya makazi',
