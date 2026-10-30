@@ -14,6 +14,7 @@ import '../../../core/data/notifications_provider.dart';
 import '../../../core/data/product_art.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/clay.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../core/widgets/phone_deals_carousel.dart';
@@ -708,6 +709,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 iconBg: const Color(0xFFF3E8FF),
                                 iconColor: const Color(0xFF7C3AED),
                                 title: 'Admin Hub',
+                                asset: 'assets/images/icon_shield_3d.png',
                                 subtitle: 'HQ Control & Staff',
                                 onTap: () => context.push('/admin'),
                               ),
@@ -719,6 +721,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 iconBg: const Color(0xFFE0EDFE),
                                 iconColor: const Color(0xFF1E60F2),
                                 title: 'Stock Audits',
+                                asset: 'assets/images/icon_box_3d.png',
                                 subtitle: 'Verify IMEI Balance',
                                 onTap: () => context.push('/admin'),
                               ),
@@ -734,6 +737,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 iconBg: const Color(0xFFE0F2FE),
                                 iconColor: const Color(0xFF0284C7),
                                 title: 'Transfers',
+                                asset: 'assets/images/icon_truck_3d.png',
                                 subtitle: 'Between Hubs',
                                 onTap: () => context.push('/transfer'),
                               ),
@@ -745,6 +749,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 iconBg: const Color(0xFFDCFCE7),
                                 iconColor: const Color(0xFF16A34A),
                                 title: 'Margins',
+                                asset: 'assets/images/icon_chart_3d.png',
                                 subtitle: 'Profit Analysis',
                                 onTap: () => context.push('/reports'),
                               ),
@@ -762,6 +767,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     iconBg: const Color(0xFFE0EDFE),
                                     iconColor: const Color(0xFF1E60F2),
                                     title: 'Sales Audit',
+                                asset: 'assets/images/icon_chart_3d.png',
                                     subtitle: 'Reconcile Tills',
                                     onTap: () => context.push('/reports'),
                                   ),
@@ -773,6 +779,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     iconBg: const Color(0xFFFEF3F2),
                                     iconColor: const Color(0xFFD92D20),
                                     title: 'Supervisor PIN',
+                                asset: 'assets/images/icon_shield_3d.png',
                                     subtitle: 'Discount Overrides',
                                     onTap: () =>
                                         _showSupervisorPinDialog(context),
@@ -789,6 +796,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     iconBg: const Color(0xFFE0F2FE),
                                     iconColor: const Color(0xFF0284C7),
                                     title: 'Branch Stock',
+                                asset: 'assets/images/icon_box_3d.png',
                                     subtitle: 'Cabinet & Safe Buffer',
                                     onTap: () => context.push('/stock'),
                                   ),
@@ -800,6 +808,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     iconBg: const Color(0xFFDCFCE7),
                                     iconColor: const Color(0xFF16A34A),
                                     title: 'Staff Shifts',
+                                asset: 'assets/images/icon_store_3d.png',
                                     subtitle: 'Attendance Roster',
                                     onTap: () => context.push('/attendance'),
                                   ),
@@ -831,6 +840,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         iconBg: const Color(0xFFDCFCE7),
                                         iconColor: const Color(0xFF16A34A),
                                         title: 'Credit Review',
+                                asset: 'assets/images/icon_shield_3d.png',
                                         subtitle: 'Approve Tier 1 & 2',
                                         onTap: () => context.go('/loans'),
                                       ),
@@ -846,6 +856,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         iconBg: const Color(0xFFEFF6FF),
                                         iconColor: AppTheme.brand600,
                                         title: 'Hardware Inspector',
+                                asset: 'assets/images/icon_scanner_3d.png',
                                         subtitle: 'Verify Phone IMEI',
                                         onTap: () => context.push('/scan'),
                                       ),
@@ -858,6 +869,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         iconBg: const Color(0xFFFEF08A),
                                         iconColor: const Color(0xFFCA8A04),
                                         title: 'Collections',
+                                asset: 'assets/images/icon_credit_3d.png',
                                         subtitle: 'Overdue Queue',
                                         onTap: () => context.go('/loans'),
                                       ),
@@ -875,6 +887,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFE0EDFE),
                                             iconColor: const Color(0xFF1E60F2),
                                             title: 'Receive PO',
+                                asset: 'assets/images/icon_box_3d.png',
                                             subtitle: 'Supplier IMEI Intake',
                                             onTap: () =>
                                                 context.push('/receive'),
@@ -887,6 +900,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFF3E8FF),
                                             iconColor: const Color(0xFF7C3AED),
                                             title: 'IMEI Scanner',
+                                asset: 'assets/images/icon_scanner_3d.png',
                                             subtitle: 'Barcode Inspection',
                                             onTap: () =>
                                                 context.push('/scan'),
@@ -903,6 +917,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFE0F2FE),
                                             iconColor: const Color(0xFF0284C7),
                                             title: 'Transfers',
+                                asset: 'assets/images/icon_truck_3d.png',
                                             subtitle: 'Dispatch & Waybills',
                                             onTap: () =>
                                                 context.push('/transfer'),
@@ -915,6 +930,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFDCFCE7),
                                             iconColor: const Color(0xFF16A34A),
                                             title: 'Physical Count',
+                                asset: 'assets/images/icon_store_3d.png',
                                             subtitle: 'Cabinet Audits',
                                             onTap: () => context.push('/stock'),
                                           ),
@@ -932,6 +948,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFE0EDFE),
                                             iconColor: const Color(0xFF1E60F2),
                                             title: 'New POS Sale',
+                                asset: 'assets/images/icon_pos_3d.png',
                                             subtitle: 'Cash or Loan Checkout',
                                             onTap: () =>
                                                 context.push('/sell-loan'),
@@ -944,6 +961,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFF3E8FF),
                                             iconColor: const Color(0xFF7C3AED),
                                             title: 'Customer Directory',
+                                asset: 'assets/images/icon_credit_3d.png',
                                             subtitle: 'View Profiles & Status',
                                             onTap: () => context.go('/loans'),
                                           ),
@@ -959,6 +977,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFE0F2FE),
                                             iconColor: const Color(0xFF0284C7),
                                             title: 'Scan Cabinet',
+                                asset: 'assets/images/icon_scanner_3d.png',
                                             subtitle: 'Check Stock Ready',
                                             onTap: () =>
                                                 context.push('/scan'),
@@ -972,6 +991,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             iconBg: const Color(0xFFDCFCE7),
                                             iconColor: const Color(0xFF16A34A),
                                             title: 'Clock Shift',
+                                asset: 'assets/images/icon_store_3d.png',
                                             subtitle: 'Till Log & Drawer',
                                             onTap: () =>
                                                 context.push('/attendance'),
@@ -2911,6 +2931,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ------------------------------------------------------------- Bento Action Cards (2x2 Grid)
+  /// One hub action.
+  ///
+  /// Two things were wrong with this card and both showed on screen: the icon
+  /// and the chevron left about 90px for the words, so "Customer Directory"
+  /// arrived as "Customer D...", and a flat Material glyph sat next to 3D renders
+  /// everywhere else in the app. The height is fixed at 88 so a title that wraps
+  /// to two lines does not make its neighbour in the row taller than it.
   Widget _buildBentoActionCard({
     required IconData icon,
     required Color iconBg,
@@ -2918,68 +2945,83 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    String? asset,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
+    return SizedBox(
+      height: 88,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x080F3478),
-              blurRadius: 14,
-              offset: Offset(0, 3),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: iconColor.withValues(alpha: 0.14)),
+              boxShadow: [
+                BoxShadow(
+                  color: iconColor.withValues(alpha: 0.10),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(11, 10, 8, 10),
+              child: Row(
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                  if (asset != null)
+                    Clay3DIcon(asset: asset, tint: iconColor, size: 36)
+                  else
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: iconBg,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 19),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            height: 1.15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.1,
+                            color: Color(0xFF0F172A),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 15, color: Color(0xFFCBD5E1)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 16, color: Color(0xFFCBD5E1)),
-          ],
+          ),
         ),
       ),
     );

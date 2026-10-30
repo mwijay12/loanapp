@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/greetings.dart';
 import '../../../core/l10n/strings.dart';
+import '../../../core/widgets/clay.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/motion/motion.dart';
 import '../../../core/motion/motion_widgets.dart';
@@ -1044,9 +1045,15 @@ class DashAction {
     required this.sub,
     this.route,
     this.onTap,
+    this.art,
   });
 
   final IconData icon;
+
+  /// The 3D render for this action, when one exists. The glyph is the fallback,
+  /// not the default: a flat Material icon beside a rendered object is the tell
+  /// that one of them was an afterthought.
+  final String? art;
   final Color tint;
   final Color iconColor;
   final String title;
@@ -1110,15 +1117,18 @@ class _DashActionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: action.tint,
-                borderRadius: BorderRadius.circular(12),
+            if (action.art != null)
+              Clay3DIcon(asset: action.art!, tint: action.iconColor, size: 36)
+            else
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: action.tint,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(action.icon, size: 19, color: action.iconColor),
               ),
-              child: Icon(action.icon, size: 19, color: action.iconColor),
-            ),
             const SizedBox(width: 9),
             Expanded(
               child: Column(
@@ -1127,11 +1137,11 @@ class _DashActionTile extends StatelessWidget {
                 children: [
                   Text(
                     action.title,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.2,
+                      fontSize: 12.5,
+                      height: 1.15,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.2,
                       color: DashPalette.ink,
@@ -1140,11 +1150,11 @@ class _DashActionTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     action.sub,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 10.5,
-                      height: 1.2,
+                      height: 1.25,
                       fontWeight: FontWeight.w500,
                       color: DashPalette.muted,
                     ),
