@@ -9,8 +9,25 @@ class LimsBreakpoints {
   static const double tablet = 720;
   static const double desktop = 1024;
 
+  /// Below this the app is a phone: floating bottom dock, one column.
+  ///
+  /// At and above it, the dock is replaced by a persistent sidebar — a bottom bar
+  /// on a 1920px window is the single clearest "this is a phone app stretched"
+  /// signal, and it also steals 64px of height from content that has plenty of
+  /// width to spare.
+  static const double rail = 900;
+
   /// Upana wa juu wa content katikati (tablet/desktop) ili isiendelee kunyoosha.
-  static const double maxContentWidth = 640;
+  ///
+  /// 640 was chosen when the whole app was boxed into a 430px phone frame, so the
+  /// number never had to be exercised. On a real 1440px window it produced a
+  /// narrow column with ~500px of empty page either side. 1240 keeps a line of
+  /// text readable (the column is still ~half of 2560) while letting tables,
+  /// card grids and charts use a desktop's width.
+  static const double maxContentWidth = 1240;
+
+  /// Width of the desktop sidebar, including its own padding.
+  static const double railWidth = 248;
 }
 
 extension ResponsiveContext on BuildContext {
@@ -21,6 +38,9 @@ extension ResponsiveContext on BuildContext {
   bool get isPhone => screenWidth < LimsBreakpoints.phone;
   bool get isTablet => screenWidth >= LimsBreakpoints.tablet;
   bool get isDesktop => screenWidth >= LimsBreakpoints.desktop;
+
+  /// Wide enough for the sidebar instead of the bottom dock.
+  bool get isRail => screenWidth >= LimsBreakpoints.rail;
 
   /// Padding ya ukurasa inayobadilika kulingana na upana — hakuna overflow
   /// kwenye simu ndogo (320dp), na nafasi nzuri kwenye tablet.
@@ -39,6 +59,17 @@ extension ResponsiveContext on BuildContext {
     if (isDesktop) return desktop;
     if (isTablet) return tablet;
     return phone;
+  }
+
+  /// Horizontal padding for a page, scaled for wide windows.
+  ///
+  /// A sidebar already separates content from the window edge, so a desktop page
+  /// needs less inner padding than a phone does, not more.
+  EdgeInsets get desktopPagePadding {
+    if (isSmallPhone) return const EdgeInsets.symmetric(horizontal: 12);
+    if (isRail) return const EdgeInsets.symmetric(horizontal: 32);
+    if (isTablet) return const EdgeInsets.symmetric(horizontal: 28);
+    return const EdgeInsets.symmetric(horizontal: 18);
   }
 }
 

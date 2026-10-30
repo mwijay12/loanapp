@@ -201,6 +201,8 @@ const Map<String, Map<String, String>> _dictionary = {
   // sharing one key would put two icons under one name.
   'nav.stockroom': {'en': 'Stock Room', 'sw': 'Chumba cha Stoo'},
   'nav.operations': {'en': 'Operations', 'sw': 'Uendeshaji'},
+  'nav.reports': {'en': 'Reports', 'sw': 'Ripoti'},
+  'nav.console': {'en': 'Branch Console', 'sw': 'Dashibodi ya Tawi'},
   'nav.scan': {'en': 'Scan', 'sw': 'Skani'},
 
   // --------------------------------------------------------------------- login

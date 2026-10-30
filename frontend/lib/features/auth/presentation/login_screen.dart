@@ -8,6 +8,8 @@ import '../../../core/data/inventory_provider.dart';
 import '../../../core/services/app_permissions_service.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/brand_mark.dart';
+import '../../../core/widgets/responsive.dart';
 import '../../../core/widgets/ui_kit.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -63,7 +65,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final rawRole = user['role'];
       final role = UserRoles.normalize(rawRole is String ? rawRole : null);
       final nameValue = user['name'];
-      final name = nameValue is String && nameValue.isNotEmpty ? nameValue : 'User';
+      final name =
+          nameValue is String && nameValue.isNotEmpty ? nameValue : 'User';
       if (role == null || role == UserRoles.pending) {
         throw StateError('Server returned no usable role. Access denied.');
       }
@@ -81,12 +84,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.read(activeBranchProvider.notifier).adoptAssignedBranch(branch);
       final avatarValue = user['avatar'];
       ref.read(signedInAvatarProvider.notifier).state =
-          avatarValue is String && avatarValue.trim().isNotEmpty ? avatarValue : null;
+          avatarValue is String && avatarValue.trim().isNotEmpty
+              ? avatarValue
+              : null;
       // Routing is on the canonical role, not on a substring of the label.
       // The old `role.toLowerCase().contains('admin')` test sent a Branch
       // Manager to /home and would have sent an 'Auditor' anywhere it liked.
-      final landsOnAdmin = role == UserRoles.superAdmin ||
-          role == UserRoles.branchManager;
+      final landsOnAdmin =
+          role == UserRoles.superAdmin || role == UserRoles.branchManager;
       if (landsOnAdmin) {
         context.go('/admin');
       } else {
@@ -94,12 +99,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       LimsToast.show(
         context,
-        landsOnAdmin ? 'Welcome to Admin Console, $name' : 'Welcome back, $name',
+        landsOnAdmin
+            ? 'Welcome to Admin Console, $name'
+            : 'Welcome back, $name',
         isSuccess: true,
       );
     } catch (e) {
       if (!mounted) return;
-      final msg = e is StateError ? e.message : 'Login failed. Check connection and try again.';
+      final msg = e is StateError
+          ? e.message
+          : 'Login failed. Check connection and try again.';
       LimsToast.show(context, msg, isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -108,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final Widget form = Scaffold(
       backgroundColor: AppTheme.canvas,
       body: SafeArea(
         child: Center(
@@ -134,7 +143,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.smartphone_rounded, color: Colors.white, size: 22),
+                      child: const Icon(Icons.smartphone_rounded,
+                          color: Colors.white, size: 22),
                     ),
                     const SizedBox(width: 10),
                     const Text(
@@ -209,46 +219,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               _passCtrl.text = AppConstants.demoPassword;
                             },
                             child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 5,
-                                  child: Text(
-                                    entry.value['role'] ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.ink700,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 5,
+                                    child: Text(
+                                      entry.value['role'] ?? '',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.ink700,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Expanded(
-                                  flex: 7,
-                                  child: Text(
-                                    entry.key,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 10.5,
-                                      color: AppTheme.ink500,
+                                  Expanded(
+                                    flex: 7,
+                                    child: Text(
+                                      entry.key,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        color: AppTheme.ink500,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Text(
-                                  'USE',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.9,
-                                    color: AppTheme.brand600,
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'USE',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.9,
+                                      color: AppTheme.brand600,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                             ),
                           ),
                       ],
@@ -287,9 +298,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         Checkbox(
                           value: _rememberMe,
-                          onChanged: (v) => setState(() => _rememberMe = v ?? true),
+                          onChanged: (v) =>
+                              setState(() => _rememberMe = v ?? true),
                           activeColor: AppTheme.brand600,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4)),
                         ),
                         Text(
                           tr(ref.watch(localeProvider), 'login.remember'),
@@ -328,18 +341,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: AppTheme.brand600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),
                     child: _isLoading
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.2, color: Colors.white),
                           )
                         : const Text(
                             'Log in',
-                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                                fontSize: 14.5, fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),
@@ -350,6 +366,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       ),
     );
+
+    // On a wide window the form sits beside a brand panel instead of floating
+    // alone in the middle of an empty page. The split is a layout decision only:
+    // the same form widget, the same controllers, the same submit path.
+    if (MediaQuery.sizeOf(context).width < LimsBreakpoints.rail) return form;
+    return _LoginSplit(form: form, locale: ref.watch(localeProvider));
   }
 
   Widget _buildInputField({
@@ -380,15 +402,143 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: TextField(
               controller: controller,
               obscureText: obscure,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.ink900),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.ink900),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: hint,
-                hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9AA8BF)),
+                hintStyle:
+                    const TextStyle(fontSize: 13, color: Color(0xFF9AA8BF)),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The wide-screen login: brand panel on the left, form on the right.
+class _LoginSplit extends StatelessWidget {
+  const _LoginSplit({required this.form, required this.locale});
+
+  final Widget form;
+  final Locale locale;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppTheme.canvas,
+      child: Row(
+        children: [
+          Expanded(flex: 11, child: _BrandPanel(locale: locale)),
+          Expanded(
+            flex: 9,
+            child: Center(
+              child: ConstrainedBox(
+                // A form is read, not scanned: 460 keeps the eye on one short line
+                // even on a 2560px monitor.
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: form,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandPanel extends StatelessWidget {
+  const _BrandPanel({required this.locale});
+
+  final Locale locale;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: AppTheme.brandGradient),
+      child: Stack(
+        children: [
+          // Two soft discs instead of a blur: they give the flat gradient depth at
+          // no shader cost, and they never touch text contrast.
+          Positioned(
+            top: -90,
+            right: -70,
+            child: _Disc(size: 320, opacity: 0.10),
+          ),
+          Positioned(
+            bottom: -120,
+            left: -60,
+            child: _Disc(size: 380, opacity: 0.07),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(48),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const BrandLockup(
+                    size: 54, vertical: true, showTagline: true, onDark: true),
+                const SizedBox(height: 34),
+                Text(
+                  tr(locale, 'login.welcome'),
+                  style: TextStyle(
+                    fontSize: 30,
+                    height: 1.18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Text(
+                    tr(locale, 'login.subtitle'),
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.84),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Text(
+                  AppConstants.companyName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: Colors.white.withValues(alpha: 0.66),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Disc extends StatelessWidget {
+  const _Disc({required this.size, required this.opacity});
+
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: opacity),
       ),
     );
   }

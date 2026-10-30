@@ -9,6 +9,8 @@ import '../motion/motion.dart';
 import '../motion/motion_widgets.dart';
 import '../theme/app_theme.dart';
 import '../services/live_data.dart';
+import 'brand_mark.dart';
+import 'responsive.dart';
 import 'session_guard.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -31,6 +33,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     if (location.startsWith('/stock')) return 1;
     if (location.startsWith('/scan')) return 2;
     if (location.startsWith('/loans')) return 3;
+    // Sidebar-only doors (5, 6). The phone dock has five slots and does not use
+    // these; they exist so the desktop nav can highlight a screen it actually
+    // offers. Returning 0 for /reports is why the sidebar used to sit on "Home"
+    // while the header said "Financial Reports".
+    if (location.startsWith('/reports')) return 5;
+    if (location.startsWith('/admin')) return 6;
     return 0;
   }
 
@@ -635,19 +643,64 @@ class _AppShellState extends ConsumerState<AppShell> {
     // the database, not this line, is what actually protects borrower PII.
     final canSeeLoans = UserRoles.canViewLoans(ref.watch(userRoleProvider));
 
+    // The tabs of this app are siblings, not a stack. The theme's push transition
+    // is right for going *into* a till or a borrower, and wrong for moving sideways
+    // between Home and Stock - it says "you have gone deeper" when nothing got
+    // deeper. Keyed on the path so a rebuild of the same tab (a Realtime row
+    // landing, a language switch) does not replay the transition.
+    final page = FadeSwap(
+      child: KeyedSubtree(
+        key: ValueKey<String>(GoRouterState.of(context).uri.path),
+        child: widget.child,
+      ),
+    );
+
+    // Desktop: a sidebar and the window's real width. Below 900px the floating
+    // dock stays, because a rail on a 700px tablet takes width the content needs.
+    // A bottom dock on a 1920px screen was the clearest tell that this was a phone
+    // build wearing a bigger window.
+    if (MediaQuery.sizeOf(context).width >= LimsBreakpoints.rail) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF4F7FC),
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ShellSidebar(
+              locale: ref.watch(localeProvider),
+              role: ref.watch(userRoleProvider),
+              currentIndex: currentIndex,
+              canSeeLoans: canSeeLoans,
+              onHome: () => context.go('/home'),
+              onStock: () => context.go('/stock'),
+              onScan: () => context.push('/scan'),
+              onFourth: () =>
+                  context.go(canSeeLoans ? '/loans' : '/stock-room'),
+              onMore: () => _openMoreSheet(context, ref),
+              onReports: () => context.go('/reports'),
+              onAdmin: () => context.go('/admin'),
+              canSeeAdmin:
+                  ref.watch(userRoleProvider) == UserRoles.branchManager ||
+                      ref.watch(userRoleProvider) == UserRoles.superAdmin,
+            ),
+            Expanded(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: LimsBreakpoints.maxContentWidth,
+                  ),
+                  child: page,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
-      // The tabs of this app are siblings, not a stack. The theme's push transition
-      // is right for going *into* a till or a borrower, and wrong for moving sideways
-      // between Home and Stock - it says "you have gone deeper" when nothing got
-      // deeper. Keyed on the path so a rebuild of the same tab (a Realtime row
-      // landing, a language switch) does not replay the transition.
-      body: FadeSwap(
-        child: KeyedSubtree(
-          key: ValueKey<String>(GoRouterState.of(context).uri.path),
-          child: widget.child,
-        ),
-      ),
+      body: page,
 
       // Floating Premium Bottom Navigation Dock (Icon-only, no text clutter)
       bottomNavigationBar: SafeArea(
@@ -791,6 +844,295 @@ class _AppShellState extends ConsumerState<AppShell> {
                   decoration: const BoxDecoration(
                     color: Color(0xFF1B6EF3),
                     shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The desktop navigation surface.
+///
+/// Same five doors as the phone dock, with labels — a desktop has the room, and
+/// an icon-only rail at 1440px is a phone dock turned sideways. Hover is
+/// honoured because a mouse user expects it: the pointer is a cursor there, not
+/// a thumb.
+class _ShellSidebar extends StatelessWidget {
+  const _ShellSidebar({
+    required this.locale,
+    required this.role,
+    required this.currentIndex,
+    required this.canSeeLoans,
+    required this.onHome,
+    required this.onStock,
+    required this.onScan,
+    required this.onFourth,
+    required this.onMore,
+    required this.onReports,
+    required this.onAdmin,
+    required this.canSeeAdmin,
+  });
+
+  final Locale locale;
+  final String role;
+  final int currentIndex;
+  final bool canSeeLoans;
+  final VoidCallback onHome;
+  final VoidCallback onStock;
+  final VoidCallback onScan;
+  final VoidCallback onFourth;
+  final VoidCallback onMore;
+  final VoidCallback onReports;
+  final VoidCallback onAdmin;
+  final bool canSeeAdmin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: LimsBreakpoints.railWidth,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: Color(0xFFE6ECF5))),
+      ),
+      child: SafeArea(
+        right: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 22, 20, 20),
+              child: BrandLockup(size: 38, showTagline: true),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Divider(height: 1, color: Color(0xFFEDF2F9)),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+                children: [
+                  _SideItem(
+                    icon: Icons.grid_view_rounded,
+                    label: tr(locale, 'nav.home'),
+                    selected: currentIndex == 0,
+                    onTap: onHome,
+                  ),
+                  _SideItem(
+                    icon: Icons.inventory_2_rounded,
+                    label: tr(locale, 'nav.inventory'),
+                    selected: currentIndex == 1,
+                    onTap: onStock,
+                  ),
+                  // The fourth door is the one a role cannot open. A Storekeeper
+                  // is refused by loans_read, so handing him a Borrowers entry
+                  // would be handing him an empty table.
+                  _SideItem(
+                    icon: canSeeLoans
+                        ? Icons.account_balance_wallet_rounded
+                        : Icons.inventory_2_rounded,
+                    label:
+                        tr(locale, canSeeLoans ? 'nav.loans' : 'nav.stockroom'),
+                    selected: currentIndex == 3,
+                    onTap: onFourth,
+                  ),
+                  _SideItem(
+                    icon: Icons.assessment_rounded,
+                    label: tr(locale, 'nav.reports'),
+                    selected: currentIndex == 5,
+                    onTap: onReports,
+                  ),
+                  // Role-gated: a Cashier opening the Branch Console would be
+                  // refused by the database anyway, and an entry that only ever
+                  // says "no" is worse than an entry that is not there.
+                  if (canSeeAdmin)
+                    _SideItem(
+                      icon: Icons.insights_rounded,
+                      label: tr(locale, 'nav.console'),
+                      selected: currentIndex == 6,
+                      onTap: onAdmin,
+                    ),
+                  _SideItem(
+                    icon: Icons.tune_rounded,
+                    label: tr(locale, 'nav.operations'),
+                    selected: false,
+                    onTap: onMore,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _SideScanButton(label: tr(locale, 'scan.title')),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+              child: Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFF4FD),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_user_rounded,
+                        size: 16, color: AppTheme.brand700),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      role,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SideItem extends StatefulWidget {
+  const _SideItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_SideItem> createState() => _SideItemState();
+}
+
+class _SideItemState extends State<_SideItem> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = widget.selected;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        child: Semantics(
+          button: true,
+          selected: selected,
+          label: widget.label,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: Motion.d(context, Motion.state),
+              curve: Motion.standard,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppTheme.brand600.withValues(alpha: 0.10)
+                    : (_hover ? const Color(0xFFF4F7FC) : Colors.transparent),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.icon,
+                    size: 20,
+                    color: selected ? AppTheme.brand700 : AppTheme.ink500,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w600,
+                        color: selected ? AppTheme.brand700 : AppTheme.ink700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SideScanButton extends StatefulWidget {
+  const _SideScanButton({required this.label});
+
+  final String label;
+
+  @override
+  State<_SideScanButton> createState() => _SideScanButtonState();
+}
+
+class _SideScanButtonState extends State<_SideScanButton> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: () => context.push('/scan'),
+        child: AnimatedContainer(
+          duration: Motion.d(context, Motion.state),
+          curve: Motion.standard,
+          height: 44,
+          decoration: BoxDecoration(
+            gradient: AppTheme.brandGradient,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    AppTheme.brand600.withValues(alpha: _hover ? 0.42 : 0.26),
+                blurRadius: _hover ? 18 : 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.qr_code_scanner_rounded,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

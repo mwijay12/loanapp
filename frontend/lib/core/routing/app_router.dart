@@ -64,8 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     // cosmetic; the database is the real boundary once RLS lands.
     redirect: (context, state) {
       final role = ref.read(userRoleProvider);
-      final signedIn =
-          role != UserRoles.noSession && role != UserRoles.pending;
+      final signedIn = role != UserRoles.noSession && role != UserRoles.pending;
       final path = state.matchedLocation;
       final isPublic = _publicRoutes.contains(path);
 
@@ -115,6 +114,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/reports',
             builder: (context, state) => const ReportsScreen(),
+          ),
+          // The Branch Console used to sit outside the shell (_standalone), so a
+          // Branch Manager who opened it lost the navigation entirely - the one
+          // screen a boss is most likely to open on a PC was the only screen with
+          // no way back except the browser. It is a shell route now: same sidebar,
+          // same role chip, same width rules as everything else.
+          GoRoute(
+            path: '/admin',
+            builder: (context, state) => AdminDashboardScreen(
+              initialTab: state.uri.queryParameters['tab'],
+            ),
           ),
           GoRoute(
             path: '/account',
@@ -178,14 +188,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => _standalone(const DailyClosingScreen()),
       ),
       GoRoute(
-        path: '/admin',
-        builder: (context, state) => _standalone(AdminDashboardScreen(
-          initialTab: state.uri.queryParameters['tab'],
-        )),
-      ),
-      GoRoute(
         path: '/branch-performance',
-        builder: (context, state) => _standalone(const BranchPerformanceScreen()),
+        builder: (context, state) =>
+            _standalone(const BranchPerformanceScreen()),
       ),
       GoRoute(
         path: '/notifications',
@@ -199,7 +204,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/loan-details',
         builder: (context, state) {
           final loan = state.extra as LoanItem?;
-          final loanId = state.uri.queryParameters['id'] ?? (loan != null ? loan.id : '');
+          final loanId =
+              state.uri.queryParameters['id'] ?? (loan != null ? loan.id : '');
           return _standalone(
             BorrowerLoanDetailsScreen(loanId: loanId, initialLoan: loan),
             fallback: '/loans',

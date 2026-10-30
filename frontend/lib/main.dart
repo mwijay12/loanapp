@@ -119,45 +119,16 @@ class _LoanInventoryAppState extends ConsumerState<LoanInventoryApp> {
           child: child ?? const SizedBox.shrink(),
         );
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 520) {
-              return Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFE9F1FD), Color(0xFFDCE8FA)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Container(
-                  width: 430,
-                  height: constraints.maxHeight,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0D1B34).withOpacity(0.16),
-                        blurRadius: 40,
-                        offset: const Offset(0, 16),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF1B6EF3).withOpacity(0.08),
-                        blurRadius: 18,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: content,
-                ),
-              );
-            }
-            return content;
-          },
-        );
+        // The app fills the window. It used to be boxed into a 430px "phone
+        // mockup" centred on a lavender backdrop whenever the window was wider
+        // than 520px, which is why a 1920px screen showed a phone column with
+        // ~758px of empty background either side. A desktop is not a phone with
+        // more paper around it; the width belongs to the content.
+        //
+        // Width is now a layout decision inside AppShell (sidebar above 900px,
+        // dock below it, content clamped by LimsBreakpoints.maxContentWidth),
+        // so this builder only owns text scaling.
+        return content;
       },
     );
   }
