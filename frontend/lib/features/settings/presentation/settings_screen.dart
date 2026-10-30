@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/data/branch_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/data/inventory_provider.dart';
+import '../../../core/data/member_admin.dart';
 import '../../../core/data/sales_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
@@ -513,16 +514,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// Who is signed in, from the account itself.
+  ///
+  /// This card used to read the `staff` roster, which has no email column, so it
+  /// printed `—` under "Login email" and `—` under a "Staff number" the database
+  /// has never had. The email is on the session; the branch and the role are
+  /// already printed in the header above this card, so repeating them here would
+  /// be two rows saying the same thing.
   Widget _sessionCard(Locale locale) {
     final me = ref.watch(activeStaffMemberProvider);
+    final member = ref.watch(currentMemberProvider).valueOrNull;
+    final sessionEmail = liveClient()?.auth.currentUser?.email ?? '';
+    final email = (member?.email.isNotEmpty ?? false)
+        ? member!.email
+        : (sessionEmail.isNotEmpty ? sessionEmail : me.email);
+
     return _card(
       child: Column(
         children: [
-          _row(locale, 'set.staffCode',
-              me.staffCode.isEmpty ? '—' : me.staffCode),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          _row(locale, 'set.loginEmail',
-              me.email.trim().isEmpty ? '—' : me.email),
+          _row(locale, 'set.loginEmail', email.trim().isEmpty ? '—' : email),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
           _row(locale, 'set.rbacOwner', tr(locale, 'set.rbacOwnerValue')),
         ],

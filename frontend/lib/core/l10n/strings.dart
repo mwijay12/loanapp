@@ -85,6 +85,10 @@ const Map<String, Map<String, String>> _dictionary = {
   'skdash.mvTransfer': {'en': 'Dispatched', 'sw': 'Imesafirishwa'},
   'skdash.mvReturn': {'en': 'Customer return', 'sw': 'Marejeo ya mteja'},
   'skdash.mvUnits': {'en': '{n} units', 'sw': 'vifaa {n}'},
+  'skdash.mvEmptyTitle': {
+    'en': 'Nothing received yet',
+    'sw': 'Hakuna kilichopokelewa bado',
+  },
   'skdash.mvEmpty': {
     'en':
         'No stock movements recorded yet. Receive a delivery and it will appear here.',
@@ -1735,6 +1739,67 @@ const Map<String, Map<String, String>> _dictionary = {
   'adm.staffUpdated': {
     'en': '{name} has been updated',
     'sw': 'Taarifa za {name} zimesasishwa',
+  },
+
+  // ------------------------------------------------------ member logins (admin)
+  // A roster name and a login are different things. These keys only ever talk
+  // about the login: an email, a password and a role that the database honours.
+  'member.sectionTitle': {'en': 'Logins & roles', 'sw': 'Akaunti & Majukumu'},
+  'member.sectionSub': {
+    'en': '{n} people can sign in',
+    'sw': 'Watu {n} wanaweza kuingia',
+  },
+  'member.notLinked': {
+    'en': 'No login linked',
+    'sw': 'Hakuna akaunti iliyounganishwa',
+  },
+  'member.add': {'en': 'Add member', 'sw': 'Ongeza mwanachama'},
+  'member.addTitle': {'en': 'Give someone a login', 'sw': 'Mpe mtu akaunti'},
+  'member.addSub': {
+    'en': 'They sign in with this email and password. The role decides what the database lets them see.',
+    'sw': 'Ataingia kwa barua pepe na neno la siri hili. Jukumu linaamua anachoweza kuona kwenye database.',
+  },
+  'member.email': {'en': 'Login email', 'sw': 'Barua pepe ya kuingia'},
+  'member.password': {'en': 'Password', 'sw': 'Neno la siri'},
+  'member.regenerate': {'en': 'New password', 'sw': 'Neno lingine'},
+  'member.create': {'en': 'Create login', 'sw': 'Tengeneza akaunti'},
+  'member.creating': {'en': 'Creating…', 'sw': 'Inatengeneza…'},
+  'member.created': {'en': 'Login created', 'sw': 'Akaunti imetengenezwa'},
+  'member.shareHint': {
+    'en': 'Send these to {name}. The password is shown once — copy it now.',
+    'sw': 'Mtumie {name} taarifa hizi. Neno la siri linaonekana mara moja — linakili sasa.',
+  },
+  'member.copy': {'en': 'Copy', 'sw': 'Nakili'},
+  'member.copied': {'en': 'Copied', 'sw': 'Imenakiliwa'},
+  'member.done': {'en': 'Done', 'sw': 'Sawa'},
+  'member.resetPassword': {'en': 'Reset password', 'sw': 'Badilisha neno la siri'},
+  'member.suspend': {'en': 'Suspend', 'sw': 'Simamisha'},
+  'member.reactivate': {'en': 'Reactivate', 'sw': 'Rejesha'},
+  'member.changeRole': {'en': 'Change role', 'sw': 'Badilisha jukumu'},
+  'member.suspended': {'en': 'Suspended', 'sw': 'Imesimamishwa'},
+  'member.needEmail': {
+    'en': 'Enter the email they will sign in with',
+    'sw': 'Ingiza barua pepe atakayotumia kuingia',
+  },
+  'member.needPassword': {
+    'en': 'At least 8 characters, with a letter and a number',
+    'sw': 'Angalau herufi 8, zenye herufi na namba',
+  },
+  'member.noLogins': {
+    'en': 'No logins yet',
+    'sw': 'Hakuna akaunti bado',
+  },
+  'member.passwordReset': {
+    'en': "{name}'s password has been changed",
+    'sw': 'Neno la siri la {name} limebadilishwa',
+  },
+  'member.roleChanged': {
+    'en': '{name} is now {role}',
+    'sw': '{name} sasa ni {role}',
+  },
+  'member.onlyLogins': {
+    'en': 'Only a login can sign in. A name on the roster without a login is just a name.',
+    'sw': 'Ni akaunti pekee inayoweza kuingia. Jina kwenye orodha bila akaunti ni jina tu.',
   },
 
   // ------------------------------------------------------------------- generic

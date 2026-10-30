@@ -8,6 +8,7 @@ import '../../../core/data/store_activity.dart';
 import '../../../core/data/store_movement.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
+import '../../../core/widgets/clay.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 
@@ -55,70 +56,114 @@ class StorekeeperDashboard extends ConsumerWidget {
     }
     final movements = ref.watch(recentStoreMovementsProvider);
 
+    final header = <Widget>[
+      _ProfileRow(
+        name: staff.name,
+        asset: staff.avatarAsset,
+        grad: staff.grad,
+        unread: unread,
+        onAvatarTap: () => context.push('/settings'),
+        onBellTap: () => context.push('/notifications'),
+      ),
+      const SizedBox(height: 18),
+      _Greeting(
+        locale: locale,
+        roleLabel: tr(locale, 'role.storekeeper'),
+      ),
+      const SizedBox(height: 18),
+      _SearchField(locale: locale, onFilterTap: onLowStockTap),
+      const SizedBox(height: 18),
+      _LowStockBanner(
+        locale: locale,
+        count: lowStock,
+        onTap: onLowStockTap,
+      ),
+    ];
+
+    final primary = <Widget>[
+      const SizedBox(height: 16),
+      _StockSummaryCard(
+        locale: locale,
+        handsets: handsets,
+        day: days,
+        heroAsset: heroAsset,
+        heroUrl: heroUrl,
+        onViewInventory: () => context.go('/stock'),
+      ),
+      const SizedBox(height: 14),
+      _AiAssistantCard(
+        locale: locale,
+        onTap: () => context.push('/ai'),
+      ),
+    ];
+
+    final secondary = <Widget>[
+      const SizedBox(height: 22),
+      _SectionTitle(tr(locale, 'skdash.services')),
+      const SizedBox(height: 12),
+      _ServiceRow(locale: locale),
+      const SizedBox(height: 22),
+      _SectionTitle(tr(locale, 'skdash.recentActivity')),
+      const SizedBox(height: 12),
+      _RecentActivity(
+        locale: locale,
+        movements: movements,
+        onRetry: () => ref.invalidate(recentStoreMovementsProvider),
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFCFE3FF), Color(0xFFE9F2FF), Color(0xFFF8FBFF)],
-            stops: [0.0, 0.34, 0.74],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      // The floor screens used to be a single phone-width column at every size,
+      // which on a laptop left two thirds of the window blank. The aurora ground
+      // gives the cards something to sit on, and the two-column arrangement uses
+      // the width the person actually has.
+      body: AuroraBackdrop(
+        palette: AuroraPalette.floor,
         child: SafeArea(
           bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 118),
-            children: [
-              _ProfileRow(
-                name: staff.name,
-                asset: staff.avatarAsset,
-                grad: staff.grad,
-                unread: unread,
-                onAvatarTap: () => context.push('/settings'),
-                onBellTap: () => context.push('/notifications'),
-              ),
-              const SizedBox(height: 18),
-              _Greeting(
-                locale: locale,
-                roleLabel: tr(locale, 'role.storekeeper'),
-              ),
-              const SizedBox(height: 18),
-              _SearchField(locale: locale, onFilterTap: onLowStockTap),
-              const SizedBox(height: 18),
-              _LowStockBanner(
-                locale: locale,
-                count: lowStock,
-                onTap: onLowStockTap,
-              ),
-              const SizedBox(height: 16),
-              _StockSummaryCard(
-                locale: locale,
-                handsets: handsets,
-                day: days,
-                heroAsset: heroAsset,
-                heroUrl: heroUrl,
-                onViewInventory: () => context.go('/stock'),
-              ),
-              const SizedBox(height: 14),
-              _AiAssistantCard(
-                locale: locale,
-                onTap: () => context.push('/ai'),
-              ),
-              const SizedBox(height: 22),
-              _SectionTitle(tr(locale, 'skdash.services')),
-              const SizedBox(height: 12),
-              _ServiceRow(locale: locale),
-              const SizedBox(height: 22),
-              _SectionTitle(tr(locale, 'skdash.recentActivity')),
-              const SizedBox(height: 12),
-              _RecentActivity(
-                locale: locale,
-                movements: movements,
-                onRetry: () => ref.invalidate(recentStoreMovementsProvider),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 900;
+              final gutter = wide ? 28.0 : 20.0;
+              return ListView(
+                padding: EdgeInsets.fromLTRB(gutter, wide ? 14 : 8, gutter, 118),
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: wide ? 1180 : 760),
+                      child: wide
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 6,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [...header, ...primary],
+                                  ),
+                                ),
+                                const SizedBox(width: 22),
+                                Expanded(
+                                  flex: 5,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: secondary,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [...header, ...primary, ...secondary],
+                            ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -481,35 +526,41 @@ class _StockSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // A kicker, not a heading. The card has one big thing to say
+                // and the label is not it.
                 Text(
                   tr(locale, 'skdash.todayActivity'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: Color(0xFF10213F),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    color: Color(0xFF7184A7),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 13.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF7184A7),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       '$handsets',
                       style: const TextStyle(
-                        fontSize: 38,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.2,
+                        fontSize: 54,
+                        height: 0.95,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -2.4,
                         color: Color(0xFF10213F),
                       ),
                     ),
@@ -519,9 +570,11 @@ class _StockSummaryCard extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 3),
                         child: Text(
                           tr(locale, 'skdash.handsetsInStock'),
+                          maxLines: 2,
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            height: 1.25,
+                            fontWeight: FontWeight.w600,
                             color: Color(0xFF5B7194),
                           ),
                         ),
@@ -537,10 +590,12 @@ class _StockSummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          SizedBox(
-            width: 126,
-            height: 156,
+          const SizedBox(width: 2),
+          Transform.translate(
+            offset: const Offset(8, -4),
+            child: SizedBox(
+            width: 118,
+            height: 152,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -556,6 +611,7 @@ class _StockSummaryCard extends StatelessWidget {
                 ),
                 _heroArt(),
               ],
+            ),
             ),
           ),
         ],
@@ -926,10 +982,7 @@ class _RecentActivity extends StatelessWidget {
       ),
       data: (list) {
         if (list.isEmpty) {
-          return _ActivityPlaceholder(
-            icon: Icons.inventory_2_outlined,
-            text: tr(locale, 'skdash.mvEmpty'),
-          );
+          return _EmptyActivity(locale: locale);
         }
         return SizedBox(
           height: 132,
@@ -945,6 +998,88 @@ class _RecentActivity extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// The first-run state of the movement feed.
+///
+/// It was a grey line of text in a grey rounded box, which on a laptop left the
+/// whole right-hand column blank - the screen looked unfinished rather than
+/// quiet. A picture, a heading and the one button that changes the state is the
+/// honest version of "nothing has happened yet, here is what would".
+class _EmptyActivity extends StatelessWidget {
+  const _EmptyActivity({required this.locale});
+
+  final Locale locale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE3EDFB)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F2F6BD6),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Not the carton from the "Receive stock" tile: two identical objects
+          // on one screen read as a rendering mistake, and the test that counts
+          // the shortcut renders caught exactly that.
+          const Clay3DIcon(
+            asset: 'assets/images/icon_store_3d.png',
+            tint: Color(0xFF2563EB),
+            size: 62,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            tr(locale, 'skdash.mvEmptyTitle'),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+              color: Color(0xFF10213F),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            tr(locale, 'skdash.mvEmpty'),
+            style: const TextStyle(
+              fontSize: 11.5,
+              height: 1.45,
+              color: Color(0xFF7184A7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // The only blue thing in the column, because it is the only thing to tap.
+          FilledButton.icon(
+            onPressed: () => context.push('/receive'),
+            icon: const Icon(Icons.add_box_rounded, size: 17),
+            label: Text(
+              tr(locale, 'skdash.receiveStock'),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF246BFD),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

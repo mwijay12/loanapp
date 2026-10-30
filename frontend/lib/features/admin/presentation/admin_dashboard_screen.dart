@@ -7,6 +7,7 @@ import '../../../core/data/sales_provider.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/clay.dart';
 import '../../../core/widgets/person_avatar.dart';
 import '../../../core/widgets/ui_kit.dart';
 
@@ -15,6 +16,7 @@ import '../../../core/data/branch_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/motion/motion.dart';
 import '../../../core/motion/motion_widgets.dart';
+import 'members_panel.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final String? initialTab;
@@ -304,11 +306,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               )
             : null,
       ),
-      body: SafeArea(
-        child: (_selectedTab == 0 || !canAdminister || !_mayOpenStaffTab)
-            ? _buildNetworkOverviewTab(todaySales, activeLoansTotal,
-                lowStockCount, branches, alertList)
-            : _buildStaffRbacTab(),
+      // The console sits on a coloured ground so the white cards read as cards.
+      // A flat grey page made every tile look like the same sheet of paper.
+      body: AuroraBackdrop(
+        child: SafeArea(
+          child: (_selectedTab == 0 || !canAdminister || !_mayOpenStaffTab)
+              ? _buildNetworkOverviewTab(todaySales, activeLoansTotal,
+                  lowStockCount, branches, alertList)
+              : _buildStaffRbacTab(),
+        ),
       ),
     );
   }
@@ -395,68 +401,63 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        // KPI row. Every figure here is counted; the previous version printed a
-        // hardcoded '12' branches, added 2 to the alert count, and fell back to
-        // TZS 96M of loan book when the real total was zero.
+        // One figure carries the screen. Before this, four equally-sized cards
+        // said "these four things matter equally", which is never true on a
+        // dashboard: today's takings are the question, the rest are context.
+        _buildHeroKpi(
+          label: tr(ref.watch(localeProvider), 'admin.revenueToday'),
+          value: formatTzsCompact(todaySales),
+          numeric: todaySales,
+          format: (v) => formatTzsCompact(v.toInt()),
+          trend: _yesterdayTrendText(),
+          trendColor: _yesterdayDelta == null
+              ? AppTheme.ink500
+              : (_yesterdayDelta! >= 0
+                  ? const Color(0xFF12B76A)
+                  : const Color(0xFFE11D48)),
+          asset: 'assets/images/icon_pos_3d.png',
+          tint: const Color(0xFF12B76A),
+          wash: const Color(0xFFE7F8F0),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildKpiCard(
-                label: tr(ref.watch(localeProvider), 'admin.revenueToday'),
-                value: formatTzsCompact(todaySales),
-                numeric: todaySales,
-                format: (v) => formatTzsCompact(v.toInt()),
-                arrivalIndex: 0,
-                trend: _yesterdayTrendText(),
-                trendColor: _yesterdayDelta == null
-                    ? AppTheme.ink500
-                    : (_yesterdayDelta! >= 0
-                        ? const Color(0xFF12B76A)
-                        : const Color(0xFFE11D48)),
-                icon: Icons.trending_up_rounded,
-                color: const Color(0xFF12B76A),
-                bg: const Color(0xFFE7F8F0),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildKpiCard(
+              child: _buildMiniKpi(
                 label: tr(ref.watch(localeProvider), 'admin.activeBranches'),
                 value: '$_activeBranchCount',
                 numeric: _activeBranchCount,
                 format: (v) => v.toInt().toString(),
                 arrivalIndex: 1,
-                trend: tr(ref.watch(localeProvider), 'admin.branchesOpen'),
-                icon: Icons.storefront_rounded,
-                color: AppTheme.brand600,
-                bg: AppTheme.brand100,
+                trend: trf(ref.watch(localeProvider), 'admin.branchesOpen', {
+                  'n': _activeBranchCount,
+                  'total': ref.watch(branchesProvider).length,
+                }),
+                asset: 'assets/images/icon_store_3d.png',
+                tint: AppTheme.brand600,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
+            const SizedBox(width: 10),
             Expanded(
-              child: _buildKpiCard(
+              child: _buildMiniKpi(
                 label: tr(ref.watch(localeProvider), 'admin.loansOutstanding'),
                 value: LimsFormatters.currencyCompact(activeLoansTotal),
                 numeric: activeLoansTotal,
                 format: LimsFormatters.currencyCompact,
                 arrivalIndex: 2,
-                trend:
-                    '$_overdueLoans ${tr(ref.watch(localeProvider), 'admin.overdue')}',
+                trend: trf(ref.watch(localeProvider), 'admin.overdue', {
+                  'n': _overdueLoans,
+                }),
                 trendColor: _overdueLoans > 0
                     ? const Color(0xFFE11D48)
                     : AppTheme.ink500,
-                icon: Icons.handshake_rounded,
-                color: const Color(0xFFF43F5E),
-                bg: const Color(0xFFFFEDF1),
+                asset: 'assets/images/icon_credit_3d.png',
+                tint: const Color(0xFFF43F5E),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _buildKpiCard(
+              child: _buildMiniKpi(
                 label: tr(ref.watch(localeProvider), 'admin.alerts'),
                 value: '${lowStockCount + _overdueLoans}',
                 numeric: lowStockCount + _overdueLoans,
@@ -468,9 +469,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 trendColor: lowStockCount + _overdueLoans == 0
                     ? const Color(0xFF12B76A)
                     : const Color(0xFFF79009),
-                icon: Icons.warning_amber_rounded,
-                color: const Color(0xFFF79009),
-                bg: const Color(0xFFFEF3E4),
+                asset: 'assets/images/icon_shield_3d.png',
+                tint: const Color(0xFFF79009),
               ),
             ),
           ],
@@ -1054,6 +1054,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         ),
         const SizedBox(height: 20),
 
+        // Logins first, roster second. A person who can sign in is the thing an
+        // admin came here to manage; the roster below is a name list.
+        const MembersPanel(),
+        const SizedBox(height: 20),
+
         // Staff Directory Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1086,25 +1091,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: _showAddStaffModal,
-              icon: const Icon(Icons.person_add_rounded, size: 16),
-              label: Text(tr(ref.watch(localeProvider), 'admin.addStaff'),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 12)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.brand600,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-            ),
+            // The button that used to live here said "Add staff" and created
+            // nothing that could sign in. The real one is "Add member" in the
+            // panel above, so this header is a roster heading and nothing more.
           ],
         ),
         const SizedBox(height: 12),
@@ -1614,216 +1603,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-  void _showAddStaffModal() {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController(text: '07');
-    final emailCtrl = TextEditingController();
-    final staffCodeCtrl = TextEditingController(
-        text: 'STF-${DateTime.now().millisecondsSinceEpoch % 1000}');
-    final pinCtrl = TextEditingController();
-    String selectedRole = UserRoles.loanOfficer;
-    String selectedBranch = AppConstants.launchBranch;
-
-    LimsBottomSheet.show(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (modalCtx, setModalState) {
-          return LimsBottomSheet(
-            title: tr(ref.read(localeProvider), 'adm.addStaffTitle'),
-            subtitle: tr(ref.read(localeProvider), 'adm.userSheetSubtitle'),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: tr(ref.read(localeProvider), 'adm.fullName'),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: phoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          labelText:
-                              tr(ref.read(localeProvider), 'adm.phoneNumber'),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: staffCodeCtrl,
-                        decoration: InputDecoration(
-                          labelText: 'Staff ID / Code',
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Barua Pepe (Email)',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: selectedRole,
-                  items: [
-                    for (final role in UserRoles.assignable)
-                      DropdownMenuItem(value: role, child: Text(role)),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) setModalState(() => selectedRole = v);
-                  },
-                  decoration: InputDecoration(
-                    labelText: tr(ref.read(localeProvider), 'adm.roleLabel'),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: selectedBranch,
-                  // Driven by AppConstants.branches. The old hand-written list
-                  // omitted Mbagala entirely, so a Mbagala staff member could
-                  // not be assigned to their own branch.
-                  // Read from the branch store, not from the constant list.
-                  // The constant list and the database disagreed on names
-                  // ('Kariakoo Main Branch' vs 'Kariakoo Branch'), so a new hire
-                  // could be assigned to a branch that no picker or sales query
-                  // ever matched.
-                  items: [
-                    for (final b
-                        in ref.watch(branchesProvider).where((b) => b.active))
-                      DropdownMenuItem(value: b.name, child: Text(b.name)),
-                    if (!ref
-                        .watch(branchesProvider)
-                        .any((b) => b.name == selectedBranch))
-                      DropdownMenuItem(
-                          value: selectedBranch, child: Text(selectedBranch)),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) setModalState(() => selectedBranch = v);
-                  },
-                  decoration: InputDecoration(
-                    labelText:
-                        tr(ref.read(localeProvider), 'adm.assignedBranch'),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: pinCtrl,
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  decoration: InputDecoration(
-                    labelText: 'Supervisor Approval PIN',
-                    counterText: '',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final name = nameCtrl.text.trim();
-                      if (name.isEmpty) {
-                        LimsToast.show(context,
-                            tr(ref.read(localeProvider), 'adm.nameRequired'),
-                            isError: true);
-                        return;
-                      }
-
-                      final newMember = StaffMember(
-                        id: 'STF-${DateTime.now().millisecondsSinceEpoch % 10000}',
-                        name: name,
-                        role: selectedRole,
-                        email: emailCtrl.text.trim().isEmpty
-                            ? '$name@limstanzania.co.tz'
-                                .toLowerCase()
-                                .replaceAll(' ', '.')
-                            : emailCtrl.text.trim(),
-                        phone: phoneCtrl.text.trim(),
-                        branch: selectedBranch,
-                        staffCode: staffCodeCtrl.text.trim(),
-                        supervisorPin: pinCtrl.text.trim(),
-                        status: 'Active',
-                        canDisburseLoans: UserRoles.canHandleCash(selectedRole),
-                        canKnoxLock: UserRoles.canApprove(selectedRole) ||
-                            UserRoles.normalize(selectedRole) ==
-                                UserRoles.loanOfficer,
-                        canViewMargins: UserRoles.canApprove(selectedRole),
-                        canEditStock: UserRoles.canManageStock(selectedRole),
-                        canApproveOverrides: UserRoles.canApprove(selectedRole),
-                        lastActive: 'Active now',
-                        grad: const [AppTheme.brand600, AppTheme.brand700],
-                      );
-
-                      ref.read(staffProvider.notifier).addStaff(newMember);
-                      Navigator.pop(ctx);
-                      LimsToast.show(context, '$name amesajiliwa kikamilifu!');
-                    },
-                    icon: const Icon(Icons.check_circle_rounded, size: 18),
-                    label: const Text('Sajili Mfanyakazi',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 13.5)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.brand600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   /// The bar chart. Each bar is a real day (or week, in month view) and tapping it
   /// opens that period's figures underneath. Before this, the bars were seven
   /// fixed heights: pressing Monday could not show Monday, because there was no
@@ -2096,114 +1875,200 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return '${days[d.weekday - 1]}, ${d.day} ${months[d.month]}';
   }
 
-  Widget _buildKpiCard({
+  /// Today's takings, at the size of the answer to "how did we do".
+  ///
+  /// Three planes, in order: a ghosted repeat of the figure behind everything,
+  /// the number and its label in the middle, and the icon breaking out over the
+  /// card edge in front. The overlap is what stops the card reading as a
+  /// rectangle with a picture in it.
+  Widget _buildHeroKpi({
     required String label,
     required String value,
     required String trend,
-    required IconData icon,
-    required Color color,
-    required Color bg,
+    required String asset,
+    required Color tint,
+    required Color wash,
+    Color? trendColor,
+    num? numeric,
+    String Function(num value)? format,
+  }) {
+    const valueStyle = TextStyle(
+      fontSize: 38,
+      height: 1.05,
+      fontWeight: FontWeight.w900,
+      letterSpacing: -1.4,
+      color: AppTheme.ink900,
+    );
+    return Entrance(
+      delay: Motion.delayFor(context, 0),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(18, 15, 124, 15),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Color.lerp(Colors.white, wash, 0.8)!],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: tint.withValues(alpha: 0.14)),
+              boxShadow: [
+                BoxShadow(
+                  color: tint.withValues(alpha: 0.13),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // The back plane: the same figure, unreadable on purpose.
+                Positioned(
+                  right: -86,
+                  bottom: -34,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 92,
+                      height: 0.9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -4,
+                      color: Color(0x0A0F3478),
+                    ),
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        letterSpacing: 0.3,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink500,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    if (numeric != null &&
+                        format != null &&
+                        Motion.enabled(context))
+                      MetricText(
+                        display: value,
+                        value: numeric,
+                        format: format,
+                        style: valueStyle,
+                      )
+                    else
+                      Text(value, style: valueStyle),
+                    const SizedBox(height: 5),
+                    Text(
+                      trend,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: trendColor ?? AppTheme.ink500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            right: 4,
+            top: -14,
+            child: Clay3DIcon(asset: asset, tint: tint, size: 104),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A supporting figure. Deliberately small: three of these under a hero card
+  /// are context, and making them the same size as the revenue was the reason
+  /// nothing on the page looked important.
+  Widget _buildMiniKpi({
+    required String label,
+    required String value,
+    required String trend,
+    required String asset,
+    required Color tint,
     Color? trendColor,
     num? numeric,
     String Function(num value)? format,
     int arrivalIndex = 0,
   }) {
-    return Entrance(
-      // Four tiles landing on the same frame read as one grey event. Four arriving
-      // 55ms apart read as the page settling, and the eye lands on the first - which
-      // is why the revenue tile is index 0 wherever it appears.
-      delay: Motion.delayFor(context, arrivalIndex),
-      child: _buildKpiCardBody(
-        label: label,
-        value: value,
-        trend: trend,
-        icon: icon,
-        color: color,
-        bg: bg,
-        trendColor: trendColor,
-        numeric: numeric,
-        format: format,
-      ),
-    );
-  }
-
-  Widget _buildKpiCardBody({
-    required String label,
-    required String value,
-    required String trend,
-    required IconData icon,
-    required Color color,
-    required Color bg,
-    Color? trendColor,
-    num? numeric,
-    String Function(num value)? format,
-  }) {
-    final counting =
-        numeric != null && format != null && Motion.enabled(context);
     const valueStyle = TextStyle(
-      fontSize: 16.5,
-      fontWeight: FontWeight.w800,
+      fontSize: 17,
+      height: 1.1,
+      fontWeight: FontWeight.w900,
+      letterSpacing: -0.4,
       color: AppTheme.ink900,
     );
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C0F3478),
-            blurRadius: 20,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(11),
+    return Entrance(
+      delay: Motion.delayFor(context, arrivalIndex),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: tint.withValues(alpha: 0.12)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A0F3478),
+              blurRadius: 14,
+              offset: Offset(0, 4),
             ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.ink500,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Clay3DIcon(asset: asset, tint: tint, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 9,
+                letterSpacing: 0.2,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.ink500,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          // The figure counts up to the string the screen would have printed. When
-          // there is no number to animate toward - a formatted date, "3 of 5" - the
-          // original Text is used untouched rather than a tween toward a guess.
-          if (counting)
-            MetricText(
-              display: value,
-              value: numeric,
-              format: format,
-              style: valueStyle,
-            )
-          else
-            Text(value, style: valueStyle),
-          const SizedBox(height: 4),
-          Text(
-            trend,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: trendColor ?? color,
+            const SizedBox(height: 3),
+            if (numeric != null && format != null && Motion.enabled(context))
+              MetricText(
+                display: value,
+                value: numeric,
+                format: format,
+                style: valueStyle,
+              )
+            else
+              Text(value, style: valueStyle),
+            const SizedBox(height: 3),
+            Text(
+              trend,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: trendColor ?? AppTheme.ink500,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
