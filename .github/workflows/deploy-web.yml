@@ -73,12 +73,21 @@ jobs:
         if: always()
         run: rm -f dart_defines.json
 
+      - name: Pin the project
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          # Without this the CLI invents a project called "web" and every run
+          # lands on a different URL. These two identifiers are not secrets -
+          # they name the project, they do not authorise anything.
+          mkdir -p build/web/.vercel
+          printf '{"projectId":"%s","orgId":"%s"}' \
+            "prj_sa40bYPZOlAGUrbJeBuZwP7n6B9E" \
+            "team_fiPPxqXdbARKUNHTMQuxWtlL" > build/web/.vercel/project.json
+
       - name: Deploy the built folder
         if: steps.gate.outputs.ready == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           set -euo pipefail
           npx --yes vercel@latest deploy build/web --prod --yes --token "$VERCEL_TOKEN" | tee deploy.log
