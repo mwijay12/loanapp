@@ -1068,6 +1068,7 @@ class SupabaseSource {
       brand: r['brand']?.toString(),
       imei1: r['imei1']?.toString(),
       imei2: r['imei2']?.toString(),
+      branchId: r['branch_id']?.toString(),
       costPrice: r['cost_price'] == null ? null : parseMoney(r['cost_price']),
       loanPrice: r['loan_price'] == null ? null : parseMoney(r['loan_price']),
       imageAsset: r['image_asset']?.toString(),
@@ -1148,9 +1149,14 @@ class SupabaseSource {
         id: (r['id'] ?? '').toString(),
         name: (r['name'] ?? 'Branch').toString(),
         city: (r['city'] ?? '').toString(),
-        salesToday: flagged > 0 ? flagged : sales,
+        // Today means today. This used to fall back to the all-time `sales`
+        // text when today was zero, which made every branch look like it had
+        // taken money the moment the counter opened.
+        salesToday: flagged,
         lowStock: (r['low_stock'] as num?)?.toInt() ?? 0,
-        active: (r['status'] ?? 'green').toString() != 'closed',
+        // The real column. Deriving it from `status` meant a branch could not be
+        // dormant without also being painted a warning colour.
+        active: (r['is_active'] as bool?) ?? true,
       );
     }).toList();
   }

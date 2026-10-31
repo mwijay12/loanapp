@@ -26,6 +26,11 @@ class ProductItem {
   final int? loanPrice;
   final String? imageAsset;
   final String? imageUrl;
+
+  /// Which branch holds this stock. Null on rows written before stock was
+  /// recorded per branch; those units are counted at the branch the catalogue
+  /// was seeded from rather than silently disappearing from every total.
+  final String? branchId;
   final List<String> availableImages;
 
   ProductItem({
@@ -50,6 +55,7 @@ class ProductItem {
     this.loanPrice,
     this.imageAsset,
     this.imageUrl,
+    this.branchId,
     this.availableImages = const [],
   });
 

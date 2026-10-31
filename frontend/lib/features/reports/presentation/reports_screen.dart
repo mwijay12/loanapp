@@ -438,7 +438,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     final totalCollected = loans.fold<int>(0, (sum, l) => sum + ((l.amount * l.paid) ~/ 100));
     final collectionRate = totalLoans > 0 ? (totalCollected / totalLoans) : 0.0;
 
-    final pnl = ref.watch(todayPnlProvider);
+    final range = switch (_selectedDateRange) {
+      'This Week' => ReportRange.week,
+      'Month to Date' => ReportRange.month,
+      _ => ReportRange.today,
+    };
+    final pnl = ref.watch(reportTotalsProvider(range));
     final todaySales = pnl.revenue;
     final grossProfit = pnl.profit;
     final todayCogs = pnl.cogs;
@@ -603,7 +608,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                 controller: _tabController,
                 children: [
                   // Tab 1: P&L
-                  _buildPlTab(todaySales, todayCogs, grossProfit),
+                  _buildPlTab(pnl),
 
                   // Tab 2: Loan Book & PAR
                   _buildLoanBookTab(totalLoans, totalCollected, collectionRate, overdueLoans, performingLoans),
@@ -643,8 +648,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     );
   }
 
-  Widget _buildPlTab(int todaySales, int todayCogs, int grossProfit) {
-    final channelSplit = ref.watch(todayChannelSplitProvider);
+  Widget _buildPlTab(ReportTotals totals) {
+    final todaySales = totals.revenue;
+    final todayCogs = totals.cogs;
+    final grossProfit = totals.profit;
     return ListView(
       physics: const ClampingScrollPhysics(),
       children: [
@@ -716,15 +723,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
               _buildFinancialLine('Handset Cost (COGS)', LimsFormatters.currency(todayCogs)),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               _buildFinancialLine('Net Gross Profit Margin', LimsFormatters.currency(grossProfit), isHighlight: true),
+              if (totals.uncostedSales > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+                  child: Text(
+                    '${totals.uncostedSales} of these sales have no cost price on '
+                    'the catalogue, so their cost is estimated at 78%. Add the '
+                    'buying price in Inventory to make this exact.',
+                    style: const TextStyle(fontSize: 11, height: 1.4, color: Color(0xFF64748B)),
+                  ),
+                ),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               // These three used to be constants in the source. They are now the
               // sum of today's sales in each channel, so a zero means the drawer
               // is empty rather than that nobody typed a number in.
-              _buildFinancialLine('Cash at counter', LimsFormatters.currency(channelSplit.cash)),
+              _buildFinancialLine('Cash at counter', LimsFormatters.currency(totals.cash)),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _buildFinancialLine('Mobile money (M-Pesa / Tigo / Airtel)', LimsFormatters.currency(channelSplit.mobile)),
+              _buildFinancialLine('Mobile money (M-Pesa / Tigo / Airtel)', LimsFormatters.currency(totals.mobile)),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _buildFinancialLine('Card & bank settlements', LimsFormatters.currency(channelSplit.card)),
+              _buildFinancialLine('Card & bank settlements', LimsFormatters.currency(totals.card)),
             ],
           ),
         ),

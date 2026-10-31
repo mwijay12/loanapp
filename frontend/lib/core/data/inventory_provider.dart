@@ -629,19 +629,80 @@ final totalInventoryRetailValueProvider = Provider<int>((ref) {
 });
 
 /// Gross Profit Margin Earned Today (TZS)
-/// Today's takings, split by how the money arrived.
+/// Which period the financial report is showing.
+enum ReportRange { today, week, month }
+
+/// One period's money, from one set of rows.
+class ReportTotals {
+  const ReportTotals({
+    required this.revenue,
+    required this.cogs,
+    this.uncostedSales = 0,
+    required this.cash,
+    required this.mobile,
+    required this.card,
+    required this.other,
+  });
+
+  final int revenue;
+  final int cogs;
+  /// Revenue less what the handsets cost. Never a percentage guess.
+  int get profit => revenue - cogs;
+
+  /// Sales with no cost price on the catalogue row, costed at 78% of what they
+  /// sold for. Stated on the report rather than hidden, because a margin built
+  /// on estimates should say so.
+  final int uncostedSales;
+
+  final int cash;
+  final int mobile;
+  final int card;
+  final int other;
+
+  /// The first day included, in the shop's timezone.
+  static DateTime startOf(ReportRange range) {
+    final now = eatTodayDate;
+    switch (range) {
+      case ReportRange.today:
+        return now;
+      case ReportRange.week:
+        // Monday, because a Tanzanian trading week opens on Monday.
+        return now.subtract(Duration(days: now.weekday - 1));
+      case ReportRange.month:
+        return DateTime(now.year, now.month, 1);
+    }
+  }
+}
+
+/// The report's numbers for [range].
 ///
-/// The reports tab used to print "Drawer Cash On Hand TZS 3,250,000" and two
-/// more figures like it: constants typed into the source. A shop owner reading
-/// those has no way to know they are not his money. These are sums of today's
-/// sales rows.
-final todayChannelSplitProvider =
-    Provider<({int cash, int mobile, int card, int other})>((ref) {
+/// The date chips used to change a string and nothing else: "Month to Date"
+/// showed today's figures. They now select a real window, and every line on the
+/// statement comes from the same sales rows so revenue, cost and margin cannot
+/// contradict each other. The day boundary is EAT, not the device's timezone.
+final reportTotalsProvider =
+    Provider.family<ReportTotals, ReportRange>((ref, range) {
   final sales = ref.watch(salesProvider);
-  final now = DateTime.now();
-  var cash = 0, mobile = 0, card = 0, other = 0;
+  final products = ref.watch(inventoryProvider);
+  // Only products that actually carry a cost price. Filling the gap with a
+  // share of the retail price charged the full unit price against a discounted
+  // sale, which is how a month of takings came out with cost at 3x revenue.
+  // Anything without a recorded cost is costed as 78% of what it actually sold
+  // for, which is an estimate and says so on the statement.
+  final costById = <int, int>{
+    for (final p in products)
+      if (p.costPrice != null) p.id: p.costPrice!,
+  };
+  var uncosted = 0;
+  final from = ReportTotals.startOf(range);
+
+  var revenue = 0, cogs = 0, cash = 0, mobile = 0, card = 0, other = 0;
   for (final s in sales) {
-    if (!_isToday(s.soldAt, now)) continue;
+    if (eatDateOf(s.soldAt).isBefore(from)) continue;
+    revenue += s.total;
+    final unitCost = s.productId == null ? null : costById[s.productId];
+    if (unitCost == null) uncosted++;
+    cogs += unitCost ?? (s.total * 0.78).round();
     final c = (s.paymentChannel ?? '').toLowerCase();
     if (c.startsWith('card')) {
       card += s.total;
@@ -653,39 +714,29 @@ final todayChannelSplitProvider =
       other += s.total;
     }
   }
-  return (cash: cash, mobile: mobile, card: card, other: other);
+  return ReportTotals(
+    revenue: revenue,
+    cogs: cogs,
+    uncostedSales: uncosted,
+    cash: cash,
+    mobile: mobile,
+    card: card,
+    other: other,
+  );
 });
 
-/// Today's revenue, cost and profit — all three from the same rows.
-///
-/// Gross profit used to fold `products.soldToday`, a counter that lives outside
-/// the sales table, while revenue came from `sales`. With no sales recorded but
-/// the counter reading 49, the P&L showed a TZS 14.5M margin above TZS 0 of
-/// revenue. Both sides now come from today's sales, costed against the product's
-/// own cost price.
-final todayPnlProvider = Provider<({int revenue, int cogs, int profit})>((ref) {
-  final sales = ref.watch(salesProvider);
-  final products = ref.watch(inventoryProvider);
-  final costById = <int, int>{
-    for (final p in products)
-      p.id: p.costPrice ?? (p.price * 0.78).round(),
-  };
-  final now = DateTime.now();
-  var revenue = 0;
-  var cogs = 0;
-  for (final s in sales) {
-    if (!_isToday(s.soldAt, now)) continue;
-    revenue += s.total;
-    final unitCost = s.productId == null ? null : costById[s.productId];
-    // No catalogue row means no cost to look up; fall back to the old 78% so
-    // the margin stays conservative rather than flattering.
-    cogs += unitCost ?? (s.total * 0.78).round();
-  }
-  return (revenue: revenue, cogs: cogs, profit: revenue - cogs);
-});
+/// Today, for callers that only ever want the day.
+ReportTotals get todayTotalsPlaceholder => const ReportTotals(
+      revenue: 0,
+      cogs: 0,
+      cash: 0,
+      mobile: 0,
+      card: 0,
+      other: 0,
+    );
 
-bool _isToday(DateTime at, DateTime now) =>
-    at.year == now.year && at.month == now.month && at.day == now.day;
+final todayPnlProvider = Provider<ReportTotals>(
+    (ref) => ref.watch(reportTotalsProvider(ReportRange.today)));
 
 final todayGrossProfitProvider = Provider<int>((ref) {
   final products = ref.watch(inventoryProvider);

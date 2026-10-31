@@ -13,6 +13,7 @@ import '../../../core/widgets/ui_kit.dart';
 
 import '../../../core/data/analytics.dart';
 import '../../../core/data/branch_provider.dart';
+import '../../../core/data/branch_stats.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/motion/motion.dart';
 import '../../../core/motion/motion_widgets.dart';
@@ -103,19 +104,31 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     // sales and loans still point at it.
     final branchRecords = ref.watch(branchesProvider);
     final branches = branchRecords
-        .map((b) => <String, dynamic>{
+        .where((b) => b.active)
+        .map((b) {
+              final stats = ref.watch(branchStatsProvider(b.id));
+              return <String, dynamic>{
               'id': b.id,
               'name': b.name,
+              'city': b.city,
+              'units': stats.units,
+              'models': stats.models,
+              'revenue': stats.revenue,
+              'retail': stats.retailValue,
               'sales': formatTzsCompact(b.salesToday),
-              'low': b.lowStock,
+              'low': stats.lowStock,
               'active': b.active,
-              'color': !b.active
-                  ? const Color(0xFF94A3B8)
-                  : (b.lowStock >= 8
-                      ? const Color(0xFFF79009)
-                      : const Color(0xFF12B76A)),
+              'color': b.lowStock >= 8
+                  ? const Color(0xFFF79009)
+                  : const Color(0xFF12B76A),
+            };
             })
-        .toList();
+        .toList()
+      ..sort((a, b) {
+        final byUnits = (b['units'] as int).compareTo(a['units'] as int);
+        if (byUnits != 0) return byUnits;
+        return (b['revenue'] as int).compareTo(a['revenue'] as int);
+      });
 
     // Alerts are the shop's own counts, not a scripted list. The previous
     // version printed "Overdue loan — Amina Komba", "Galaxy A55 below minimum",
@@ -731,8 +744,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                               ),
                             ),
                             Text(
-                              trf(ref.watch(localeProvider),
-                                  'admin.lowStockModels', {'n': b['low']}),
+                              '${b['units']} units · ${b['models']} models · ${b['low']} low',
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -743,7 +755,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         ),
                       ),
                       Text(
-                        b['sales'] as String,
+                        formatTzsCompact(b['revenue'] as int),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -2073,152 +2085,120 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
+  /// One branch, measured from its own rows.
+  ///
+  /// This used to name a custodian ("David Erick Mwijage"), a drawer balance of
+  /// TZS 3,840,000 and an "Operational" status for whichever branch was tapped.
+  /// None of it was read from anywhere. What follows is counted.
   void _showBranchAuditModal(BuildContext context, Map<String, dynamic> b) {
+    final id = b['id'] as String;
+    final stats = ref.read(branchStatsProvider(id));
+    final city = (b['city'] as String?) ?? '';
+    final trading = stats.units > 0 || stats.salesCount > 0;
+
+    Widget row(String label, String value, {Color? colour}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.ink500)),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: colour ?? AppTheme.ink900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     LimsBottomSheet.show(
       context: context,
       builder: (ctx) => LimsBottomSheet(
         title: b['name'] as String,
-        subtitle: 'Live Branch Audit & Custodian Status',
+        subtitle: city.isEmpty ? 'Branch' : city,
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFE7F8F0),
+            color: trading ? const Color(0xFFE7F8F0) : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text('Operational',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF12B76A))),
+          child: Text(
+            trading ? 'Trading' : 'No stock yet',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: trading ? const Color(0xFF12B76A) : const Color(0xFF64748B),
+            ),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Column(
                 children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text('Shift Custodian (Active Staff):',
-                            style: TextStyle(
-                                fontSize: 12, color: AppTheme.ink500)),
-                      ),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'David Erick Mwijage',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.ink900),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 16, color: Color(0xFFEDF2F7)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                          child: Text("Today's Net Sales:",
-                              style: TextStyle(
-                                  fontSize: 12, color: AppTheme.ink500))),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          b['sales'] as String,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.brand600),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 16, color: Color(0xFFEDF2F7)),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                          child: Text('Cash in Branch Safe / Drawer:',
-                              style: TextStyle(
-                                  fontSize: 12, color: AppTheme.ink500))),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'TZS 3,840,000',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF12B76A)),
-                        ),
-                      ),
-                    ],
-                  ),
+                  row('Devices on the shelf', '${stats.units} units'),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  row('Catalogue lines held', '${stats.models} models'),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  row('Needs restocking', '${stats.lowStock} models',
+                      colour: stats.lowStock > 0
+                          ? const Color(0xFFF79009)
+                          : const Color(0xFF12B76A)),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  row('Taken here today', formatTzsCompact(stats.revenueToday),
+                      colour: AppTheme.brand600),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  row('Taken here all time',
+                      formatTzsCompact(stats.revenue)),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  row('Shelf value at marked price',
+                      formatTzsCompact(stats.retailValue)),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  row('Receipts written', '${stats.salesCount}'),
+                  if (stats.costValue > 0) ...[
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    row('Stock at cost', formatTzsCompact(stats.costValue)),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.push('/reports');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Full Ledger',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.push('/transfer');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.brand600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Dispatch Stock',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 12),
+            Text(
+              stats.costValue == 0 && stats.units > 0
+                  ? 'The cost of this stock is not recorded, so its value can '
+                      'only be shown at retail.'
+                  : 'Counted from the products and receipts that carry this '
+                      'branch. Nothing here is typed in by hand.',
+              style: const TextStyle(fontSize: 11, height: 1.45, color: Color(0xFF64748B)),
             ),
           ],
         ),
       ),
     );
   }
+
 
   void _showAlertActionModal(BuildContext context, Map<String, dynamic> a) {
     final title = a['title'] as String;
