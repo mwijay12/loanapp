@@ -738,6 +738,77 @@ ReportTotals get todayTotalsPlaceholder => const ReportTotals(
 final todayPnlProvider = Provider<ReportTotals>(
     (ref) => ref.watch(reportTotalsProvider(ReportRange.today)));
 
+/// How much of the loan book is late, and how late.
+///
+/// Ageing is measured from `loans.due_date` in the shop's day. The screen used
+/// to label every overdue account "PAR 30", which is a different number: thirty
+/// or more days past due. With no date there was nothing to age, so the label
+/// was decoration. Outstanding is used rather than the original amount, because
+/// a borrower who has paid nine of ten instalments is not the same risk as one
+/// who has paid nothing.
+class LoanRisk {
+  const LoanRisk({
+    required this.overdueCount,
+    required this.overdueOutstanding,
+    required this.par7,
+    required this.par30,
+    required this.bookOutstanding,
+    required this.oldestDays,
+  });
+
+  final int overdueCount;
+  final int overdueOutstanding;
+  final int par7;
+  final int par30;
+  final int bookOutstanding;
+  final int oldestDays;
+
+  double get par30Ratio => bookOutstanding == 0 ? 0 : par30 / bookOutstanding;
+  double get par7Ratio => bookOutstanding == 0 ? 0 : par7 / bookOutstanding;
+  bool get isEmpty => overdueCount == 0;
+}
+
+final loanRiskProvider = Provider<LoanRisk>((ref) {
+  final loans = ref.watch(loansProvider);
+  final today = eatTodayDate;
+
+  var overdueCount = 0;
+  var overdueOutstanding = 0;
+  var par7 = 0;
+  var par30 = 0;
+  var book = 0;
+  var oldest = 0;
+
+  for (final l in loans) {
+    final outstanding = (l.amount * (100 - l.paid.clamp(0, 100))) ~/ 100;
+    book += outstanding;
+    final due = l.dueDate;
+    if (due == null) continue;
+    // `due_date` is a calendar date, so it is read as one. Running it through
+    // the timezone helper shifted it a day: parsed at local midnight, converted
+    // to EAT, it landed on the previous evening and a loan due today counted as
+    // one day late.
+    final dueDay = DateTime(due.year, due.month, due.day);
+    final days = today.difference(dueDay).inDays;
+    // A loan due today is not late; one due tomorrow certainly is not.
+    if (days <= 0) continue;
+    overdueCount++;
+    overdueOutstanding += outstanding;
+    if (days > oldest) oldest = days;
+    if (days >= 7) par7 += outstanding;
+    if (days >= 30) par30 += outstanding;
+  }
+
+  return LoanRisk(
+    overdueCount: overdueCount,
+    overdueOutstanding: overdueOutstanding,
+    par7: par7,
+    par30: par30,
+    bookOutstanding: book,
+    oldestDays: oldest,
+  );
+});
+
 final todayGrossProfitProvider = Provider<int>((ref) {
   final products = ref.watch(inventoryProvider);
   return products.fold<int>(0, (sum, p) {

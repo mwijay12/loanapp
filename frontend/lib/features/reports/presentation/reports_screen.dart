@@ -750,8 +750,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
   }
 
   Widget _buildLoanBookTab(int totalLoans, int totalCollected, double collectionRate, List<dynamic> overdue, List<dynamic> performingLoans) {
-    final overdueValue = overdue.fold<int>(0, (sum, l) => sum + (l.amount as int));
-    final performingValue = performingLoans.fold<int>(0, (sum, l) => sum + (l.amount as int));
+    final risk = ref.watch(loanRiskProvider);
     return ListView(
       physics: const ClampingScrollPhysics(),
       children: [
@@ -831,9 +830,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                     // counting every overdue account overstated risk by design.
                     const Text('Overdue now', style: TextStyle(fontSize: 11, color: Color(0xFF991B1B), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('${overdue.length} borrowers', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF991B1B))),
+                    Text('${risk.overdueCount} borrowers', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF991B1B))),
                     const SizedBox(height: 2),
-                    Text(LimsFormatters.currency(overdueValue), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB91C1C))),
+                    Text('${LimsFormatters.currency(risk.overdueOutstanding)} outstanding',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB91C1C))),
+                    if (risk.oldestDays > 0)
+                      Text('oldest ${risk.oldestDays} days late',
+                          style: const TextStyle(fontSize: 10, color: Color(0xFFB91C1C))),
                   ],
                 ),
               ),
@@ -850,11 +853,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Paying on schedule', style: TextStyle(fontSize: 11, color: Color(0xFF065F46), fontWeight: FontWeight.w700)),
+                    // The banking metric, now that there is a date to age.
+                    const Text('PAR 30 (30+ days late)', style: TextStyle(fontSize: 11, color: Color(0xFF065F46), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('${performingLoans.length} accounts', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
+                    Text(LimsFormatters.currency(risk.par30), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
                     const SizedBox(height: 2),
-                    Text(LimsFormatters.currency(performingValue), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
+                    Text('${(risk.par30Ratio * 100).toStringAsFixed(1)}% of the book · PAR 7 ${LimsFormatters.currency(risk.par7)}',
+                        style: const TextStyle(fontSize: 10, color: Color(0xFF047857))),
                   ],
                 ),
               ),

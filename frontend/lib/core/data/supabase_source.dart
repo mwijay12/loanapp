@@ -1096,6 +1096,7 @@ class SupabaseSource {
         amount: amount,
         paid: (r['paid_percent'] as num?)?.toInt() ?? 0,
         due: (r['due_info'] ?? '—').toString(),
+        dueDate: DateTime.tryParse((r['due_date'] ?? '').toString()),
         status: status,
         grad: palette[amount % palette.length],
         phone: r['phone']?.toString(),

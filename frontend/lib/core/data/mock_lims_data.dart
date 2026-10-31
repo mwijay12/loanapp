@@ -159,6 +159,11 @@ class LoanItem {
   int paid; // percentage 0..100
   final String due;
   final String status; // 'current', 'overdue', 'cleared'
+
+  /// When the next instalment falls due. `due` above is the note shown on the
+  /// card ("Due in 4 days"); this is the date the arithmetic uses, so ageing a
+  /// loan does not depend on a sentence somebody typed.
+  final DateTime? dueDate;
   final List<Color> grad;
   final String phone;
   final String nida;
@@ -196,6 +201,7 @@ class LoanItem {
     required this.paid,
     required this.due,
     required this.status,
+    this.dueDate,
     required this.grad,
     String? phone,
     String? nida,
