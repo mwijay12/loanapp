@@ -21,8 +21,10 @@ extension RevenueRangeLabel on RevenueRange {
 
   String get caption => this == RevenueRange.week ? 'this week' : 'this month';
 
-  /// Days shown on the axis.
-  int get days => this == RevenueRange.week ? 7 : 30;
+  /// Days covered by the window. The month is four whole weeks, because the
+  /// bars are weekly buckets: a 30-day window would leave a two-day bucket on
+  /// the end that looks like a bad week rather than a short one.
+  int get days => this == RevenueRange.week ? 7 : 28;
 }
 
 class DailySale {
@@ -190,6 +192,13 @@ class RevenueSeries {
 }
 
 /// Aggregates the ledger into the points the chart and the headline use.
+///
+/// The axis is built from the calendar, not from the rows. It used to iterate
+/// the days that happened to have sales, so a week with trade on four days drew
+/// four bars - Saturday, Tuesday, Wednesday, Friday, evenly spaced - and a quiet
+/// day vanished instead of reading as a closed day. Worse, the window was
+/// anchored on the newest sale rather than today, so a shop that had not sold
+/// anything yet showed last week's chart under this week's heading.
 final revenueSeriesProvider =
     Provider.family<RevenueSeries, RevenueRange>((ref, range) {
   final ledger = ref.watch(salesLedgerProvider);
@@ -202,18 +211,10 @@ final revenueSeriesProvider =
     );
   }
 
-  final today = ledger.last.date;
-  final start = today.subtract(Duration(days: range.days - 1));
-  final window = ledger.where((d) => !d.date.isBefore(start)).toList();
-  final prevStart = start.subtract(Duration(days: range.days));
-  final previous =
-      ledger.where((d) => !d.date.isBefore(prevStart) && d.date.isBefore(start));
-
-  final total = window.fold<int>(0, (s, d) => s + d.amount);
-  final previousTotal = previous.fold<int>(0, (s, d) => s + d.amount);
-  final peak = window.isEmpty
-      ? 0
-      : window.map((d) => d.amount).reduce((a, b) => a > b ? a : b);
+  final today = eatTodayDate;
+  final byDate = {for (final d in ledger) d.date: d};
+  int amountOn(DateTime d) => byDate[d]?.amount ?? 0;
+  int txOn(DateTime d) => byDate[d]?.transactions ?? 0;
 
   const shortDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const monthNames = [
@@ -222,73 +223,82 @@ final revenueSeriesProvider =
   ];
   String shortDate(DateTime d) => '${d.day} ${monthNames[d.month]}';
 
-  // Previous figures are looked up by date, because "the same weekday last week"
-  // is a date, not a bar position.
-  final byDate = {for (final d in ledger) d.date: d};
-
   final points = <RevenuePoint>[];
+  var total = 0;
+  var previousTotal = 0;
+
   if (range == RevenueRange.week) {
-    for (final d in window) {
-      final prevDate = d.date.subtract(const Duration(days: 7));
-      final prev = byDate[prevDate];
+    for (var back = range.days - 1; back >= 0; back--) {
+      final date = today.subtract(Duration(days: back));
+      final prevDate = date.subtract(const Duration(days: 7));
+      final value = amountOn(date);
+      final prevValue = amountOn(prevDate);
+      total += value;
+      previousTotal += prevValue;
       points.add(
         RevenuePoint(
-          label: shortDays[d.date.weekday - 1],
-          value: d.amount,
-          isCurrent: d.date == today,
-          isPeak: d.amount == peak,
-          date: d.date,
-          transactions: d.transactions,
-          previousValue: prev?.amount ?? 0,
+          label: shortDays[date.weekday - 1],
+          value: value,
+          isCurrent: back == 0,
+          isPeak: false,
+          date: date,
+          transactions: txOn(date),
+          previousValue: prevValue,
           previousLabel: shortDate(prevDate),
         ),
       );
     }
   } else {
-    // Month view groups the 30 days into four weekly buckets, which keeps the
-    // axis readable at phone width instead of cramming thirty labels.
-    final prevWindow =
-        ledger.where((d) => !d.date.isBefore(prevStart) && d.date.isBefore(start)).toList();
-    for (var i = 0; i < 4; i++) {
-      final bucketStart = i * 7;
-      final bucket = window.skip(bucketStart).take(7).toList();
-      if (bucket.isEmpty) break;
-      final sum = bucket.fold<int>(0, (s, d) => s + d.amount);
-      final tx = bucket.fold<int>(0, (s, d) => s + d.transactions);
-      final prevBucket = prevWindow.skip(bucketStart).take(7).toList();
-      final prevSum = prevBucket.fold<int>(0, (s, d) => s + d.amount);
+    // Four contiguous seven-day buckets. They cover the same days the week view
+    // would have shown, added up, so switching the chip moves the bars instead
+    // of relabelling the same ones.
+    final buckets = (range.days / 7).ceil();
+    for (var bucket = buckets - 1; bucket >= 0; bucket--) {
+      var sum = 0;
+      var tx = 0;
+      var prevSum = 0;
+      var start = today;
+      for (var i = 6; i >= 0; i--) {
+        final date = today.subtract(Duration(days: bucket * 7 + i));
+        if (i == 6) start = date;
+        sum += amountOn(date);
+        tx += txOn(date);
+        prevSum += amountOn(date.subtract(const Duration(days: 28)));
+      }
+      total += sum;
+      previousTotal += prevSum;
       points.add(
         RevenuePoint(
-          label: 'W${i + 1}',
+          label: 'W${buckets - bucket}',
           value: sum,
-          isCurrent: i == (window.length / 7).ceil() - 1,
+          isCurrent: bucket == 0,
           isPeak: false,
-          date: bucket.first.date,
+          date: start,
           transactions: tx,
           previousValue: prevSum,
-          previousLabel: prevBucket.isEmpty
-              ? ''
-              : 'W${i + 1} prior',
+          previousLabel: shortDate(start.subtract(const Duration(days: 28))),
         ),
       );
     }
   }
 
-  final peakValue = points.isEmpty
-      ? 0
-      : points.map((p) => p.value).reduce((a, b) => a > b ? a : b);
-  final withPeak = points
-      .map((p) => RevenuePoint(
-            label: p.label,
-            value: p.value,
-            isCurrent: p.isCurrent,
-            isPeak: p.value == peakValue,
-            date: p.date,
-            transactions: p.transactions,
-            previousValue: p.previousValue,
-            previousLabel: p.previousLabel,
-          ))
-      .toList();
+  // The peak is flagged once. An all-zero window has no peak: marking the first
+  // empty bar as the best day of the week would be a lie the colour states.
+  final peakValue =
+      points.map((p) => p.value).fold<int>(0, (a, b) => a > b ? a : b);
+  final withPeak = [
+    for (final p in points)
+      RevenuePoint(
+        label: p.label,
+        value: p.value,
+        isCurrent: p.isCurrent,
+        isPeak: peakValue > 0 && p.value == peakValue,
+        date: p.date,
+        transactions: p.transactions,
+        previousValue: p.previousValue,
+        previousLabel: p.previousLabel,
+      ),
+  ];
 
   return RevenueSeries(
     points: withPeak,

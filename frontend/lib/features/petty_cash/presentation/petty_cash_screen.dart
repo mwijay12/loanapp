@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/data/petty_cash_provider.dart';
 import '../../../core/data/inventory_provider.dart';
 import '../../../core/data/supabase_source.dart';
-import '../../../core/data/branch_provider.dart';
-import '../../../core/l10n/strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
 

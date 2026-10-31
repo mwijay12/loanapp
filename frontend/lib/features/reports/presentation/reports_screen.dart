@@ -446,7 +446,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     final pnl = ref.watch(reportTotalsProvider(range));
     final todaySales = pnl.revenue;
     final grossProfit = pnl.profit;
-    final todayCogs = pnl.cogs;
     final totalPhones = ref.watch(totalPhonesCountProvider);
     final inventoryCost = ref.watch(totalInventoryCostProvider);
     final inventoryRetail = ref.watch(totalInventoryRetailValueProvider);

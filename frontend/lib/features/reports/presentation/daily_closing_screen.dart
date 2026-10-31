@@ -7,7 +7,6 @@ import '../../../core/data/petty_cash_provider.dart';
 import '../../../core/data/mock_lims_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui_kit.dart';
-import '../../../core/data/branch_provider.dart';
 
 class DailyClosingScreen extends ConsumerStatefulWidget {
   const DailyClosingScreen({super.key});

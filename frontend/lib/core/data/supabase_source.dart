@@ -1157,7 +1157,6 @@ class SupabaseSource {
 
   List<BranchRecord> parseBranches(List<Map<String, dynamic>> rows) {
     return rows.map((r) {
-      final sales = parseMoney(r['sales']);
       final flagged = parseMoney(r['sales_today']);
       return BranchRecord(
         id: (r['id'] ?? '').toString(),

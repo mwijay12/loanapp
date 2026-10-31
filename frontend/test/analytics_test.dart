@@ -73,14 +73,33 @@ void main() {
       ]);
     });
 
-    test('one point per recorded day inside the window, newest last', () {
+    test('a full week of bars, one per calendar day, newest last', () {
       final series = c.read(revenueSeriesProvider(RevenueRange.week));
       // The window is the last seven days, so the row from eight days back is
       // a comparison figure only - it does not get its own bar.
-      expect(series.points.length, 3);
+      expect(series.points.length, 7);
+      expect(series.points.first.date, today.subtract(const Duration(days: 6)));
       expect(series.points.last.date, today);
       expect(series.total, 1050000);
       expect(series.previousTotal, 400000);
+    });
+
+    test('a day with no sales still gets a bar, at zero', () {
+      final series = c.read(revenueSeriesProvider(RevenueRange.week));
+      // Only four of the seven days have takings. The other three must be on
+      // the axis: a missing bar reads as missing data, a flat one as a closed
+      // day, and a shop with a quiet Tuesday needs to see the Tuesday.
+      final quiet = series.points.where((p) => p.value == 0).toList();
+      expect(quiet.length, 4, reason: 'four of the seven days took nothing');
+      expect(quiet.every((p) => p.date != null), isTrue);
+
+      // Each label is the weekday of the day it sits under, so the axis reads
+      // left to right as a calendar week rather than a list of good days.
+      const shortDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+      for (final p in series.points) {
+        expect(p.label, shortDays[p.date!.weekday - 1]);
+      }
+      expect(series.points.last.isCurrent, isTrue);
     });
 
     test('a point knows the same day last week, not the bar before it', () {
@@ -121,7 +140,7 @@ void main() {
       final month = c.read(revenueSeriesProvider(RevenueRange.month));
 
       expect(week.points.length, 7);
-      expect(month.points.length, 4, reason: '30 days shown as four weeks');
+      expect(month.points.length, 4, reason: 'four whole weeks');
       expect(month.total, greaterThan(week.total));
       // Each month bucket is bigger than a single day, which is what makes the
       // bars move when the chip is pressed.
@@ -136,7 +155,9 @@ void main() {
       final c = _container(rows);
       final series = c.read(revenueSeriesProvider(RevenueRange.week));
       final values = series.points.map((p) => p.value).toList()..sort();
-      expect(values, [111000, 222000]);
+      // Five quiet days sit at zero; the two takings are the rows' own totals,
+      // not heights chosen to make the chart look busy.
+      expect(values, [0, 0, 0, 0, 0, 111000, 222000]);
     });
   });
 }

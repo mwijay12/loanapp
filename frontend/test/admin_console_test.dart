@@ -68,15 +68,18 @@ void main() {
     await pumpConsole(tester, rows);
     expect(tester.takeException(), isNull);
 
-    // Three recorded days, three bars - not seven fixed columns.
-    expect(find.byKey(const ValueKey<String>('revbar-0')), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('revbar-2')), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('revbar-3')), findsNothing);
+    // Seven bars for seven days. The three recorded days are the last three
+    // columns; the four quiet days before them are still on the axis, because a
+    // vanished bar reads as missing data and a flat one reads as a closed day.
+    for (var i = 0; i < 7; i++) {
+      expect(find.byKey(ValueKey<String>('revbar-$i')), findsOneWidget);
+    }
+    expect(find.byKey(const ValueKey<String>('revbar-7')), findsNothing);
 
     expect(find.textContaining('Tap a bar to see that day'), findsOneWidget);
 
     final target = today.subtract(const Duration(days: 1));
-    await tester.tap(find.byKey(const ValueKey<String>('revbar-1')));
+    await tester.tap(find.byKey(const ValueKey<String>('revbar-5')));
     await tester.pumpAndSettle();
 
     // The card names the day that was pressed and its takings.
@@ -94,13 +97,13 @@ void main() {
     ];
     await pumpConsole(tester, rows);
 
-    await tester.tap(find.byKey(const ValueKey<String>('revbar-0')));
+    await tester.tap(find.byKey(const ValueKey<String>('revbar-4')));
     await tester.pumpAndSettle();
     expect(
         find.text(_longDate(today.subtract(const Duration(days: 2)))),
         findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('revbar-2')));
+    await tester.tap(find.byKey(const ValueKey<String>('revbar-6')));
     await tester.pumpAndSettle();
     expect(find.text(_longDate(today)), findsOneWidget);
     // 455k from nothing last week is "no figure", not a fake 0%.
@@ -116,10 +119,9 @@ void main() {
     ];
     await pumpConsole(tester, rows);
 
-    // Only today falls inside the seven-day window, so it is the sole bar; the
+    // Only today carries a figure inside the window, so it is the last bar; the
     // row from a week ago is used as the comparison figure.
-    expect(find.byKey(const ValueKey<String>('revbar-1')), findsNothing);
-    await tester.tap(find.byKey(const ValueKey<String>('revbar-0')));
+    await tester.tap(find.byKey(const ValueKey<String>('revbar-6')));
     await tester.pumpAndSettle();
 
     expect(find.text(_longDate(today)), findsOneWidget);

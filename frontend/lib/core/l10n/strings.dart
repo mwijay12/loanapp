@@ -1504,6 +1504,14 @@ const Map<String, Map<String, String>> _dictionary = {
     'sw': 'hakuna kumbukumbu ya wiki iliyopita',
   },
   'admin.branches': {'en': 'Branches', 'sw': 'Matawi'},
+  // The branch rows carry a currency figure. Without the period next to it, a
+  // branch reading "TZS 0" looks like a branch that has never sold anything
+  // rather than one with no takings on the books yet - and the reader has no
+  // way to tell which of those they are looking at.
+  'admin.revenueToDate': {
+    'en': 'Revenue to date',
+    'sw': 'Mapato hadi sasa'
+  },
   'admin.lowStockModels': {
     'en': '{n} low-stock models',
     'sw': 'bidhaa {n} chini ya kiwango'

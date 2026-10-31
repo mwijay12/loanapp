@@ -21,8 +21,6 @@ import '../data/inventory_provider.dart';
 import '../data/sales_provider.dart';
 import '../data/petty_cash_provider.dart';
 import '../data/supabase_source.dart';
-import '../data/sale_ledger.dart';
-import '../data/supabase_source.dart';
 import 'api_service.dart';
 import 'offline_sales.dart';
 import 'realtime_bridge.dart';

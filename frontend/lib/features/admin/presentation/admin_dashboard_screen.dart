@@ -54,14 +54,23 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   /// Today's takings against the same day-shape yesterday, or null when there is
   /// no yesterday to compare with.
+  /// Change against the day before, on the shop's calendar.
+  ///
+  /// This used to take the two newest rows of the ledger, so on a morning with
+  /// no sales yet it quietly compared the last two days that *did* sell and
+  /// printed the result next to today's zero. Looking both days up by date
+  /// keeps the sentence pointed at the figure it sits under: nothing sold today
+  /// against what sold yesterday is a real -100%, and a missing yesterday is a
+  /// missing comparison, not a change of zero.
   int? get _yesterdayDelta {
     final ledger = ref.watch(salesLedgerProvider);
-    if (ledger.length < 2) return null;
-    final today = ledger.last;
-    final prev = ledger[ledger.length - 2];
-    if (prev.date != today.date.subtract(const Duration(days: 1))) return null;
-    if (prev.amount <= 0) return null;
-    return (((today.amount - prev.amount) / prev.amount) * 100).round();
+    if (ledger.isEmpty) return null;
+    final byDate = {for (final d in ledger) d.date: d};
+    final today = eatTodayDate;
+    final yesterday = byDate[today.subtract(const Duration(days: 1))];
+    if (yesterday == null || yesterday.amount <= 0) return null;
+    final now = byDate[today]?.amount ?? 0;
+    return (((now - yesterday.amount) / yesterday.amount) * 100).round();
   }
 
   String _yesterdayTrendText() {
@@ -679,13 +688,29 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         ),
         const SizedBox(height: 20),
 
-        Text(
-          tr(ref.watch(localeProvider), 'admin.branches'),
-          style: const TextStyle(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.ink900,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(
+              child: Text(
+                tr(ref.watch(localeProvider), 'admin.branches'),
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink900,
+                ),
+              ),
+            ),
+            Text(
+              tr(ref.watch(localeProvider), 'admin.revenueToDate'),
+              style: const TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.ink500,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
 
