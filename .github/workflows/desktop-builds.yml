@@ -22,7 +22,10 @@ on:
 
 jobs:
   windows:
-    runs-on: windows-latest
+    # windows-latest now carries the Visual Studio 2026 toolset (MSVC 14.51),
+    # whose <experimental/coroutine> trips a static_assert inside Flutter's
+    # Windows engine. Pinning 2022 keeps a compiler Flutter actually supports.
+    runs-on: windows-2022
     defaults:
       run:
         working-directory: frontend
@@ -116,11 +119,14 @@ jobs:
 
       - name: Package
         run: |
-          cd build/linux/x64/release
-          tar -czf ../../../lims-linux.tar.gz bundle
+          # Written to the workspace root so the upload path cannot drift: the
+          # first run built the bundle fine and then looked for the tarball one
+          # directory off, which failed the job after a good build.
+          tar -czf "$GITHUB_WORKSPACE/lims-linux.tar.gz" -C build/linux/x64/release bundle
+          ls -lh "$GITHUB_WORKSPACE/lims-linux.tar.gz"
 
       - uses: actions/upload-artifact@v4
         with:
           name: lims-linux
-          path: frontend/build/linux/lims-linux.tar.gz
+          path: lims-linux.tar.gz
           if-no-files-found: error
