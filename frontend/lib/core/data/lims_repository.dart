@@ -8,6 +8,9 @@ import 'mock_lims_data.dart';
 import 'branch_provider.dart';
 import 'inventory_provider.dart';
 import 'sales_provider.dart';
+import 'dart:math';
+
+import '../services/offline_sales.dart';
 import 'sale_ledger.dart';
 import 'supabase_source.dart';
 
@@ -171,7 +174,10 @@ class POSSaleResult {
   ///   record (receipt, PDF) depends on this, never on [success].
   bool get success =>
       persistence == SalePersistence.confirmed ||
-      persistence == SalePersistence.notConfigured;
+      persistence == SalePersistence.notConfigured ||
+      // The counter did complete this sale. It is only the ledger write that is
+      // outstanding, and the queue owns that until it succeeds.
+      persistence == SalePersistence.queued;
 
   /// True only when a row was written and confirmed. Receipt and PDF work must
   /// depend on this, not on [success]: a demo build completes the sale without
@@ -281,12 +287,60 @@ class MockLimsRepository implements LimsRepository {
   /// so a refused insert looked exactly like a stored one. The row reaches the
   /// in-memory ledger only when the database confirmed it — otherwise the till
   /// would show a sale the shop cannot reproduce.
+  /// Unique per sale attempt, stable across retries.
+  String _clientRefFor(String receiptId) {
+    final r = Random();
+    final tail = List.generate(6, (_) => r.nextInt(16).toRadixString(16)).join();
+    return '$receiptId-$tail';
+  }
+
+  /// Saves a sale the network did not answer for, so it can be sent later.
+  ///
+  /// Returns whether the save actually landed. `shared_preferences` is a local
+  /// dependency, not the network, so it is expected to work — but "expected to
+  /// work" is exactly the assumption that turned a dropped connection into a
+  /// lost sale in the first place. If it throws, the cashier has already taken
+  /// the money and handed over the phone; the caller still needs to know, so it
+  /// can say so honestly instead of promising a safety net that was not there.
+  Future<bool> _queueSale(
+    WidgetRef ref,
+    POSSaleResult sale,
+    ProductItem phone, {
+    required String kind,
+    required String clientRef,
+  }) async {
+    try {
+      await const OfflineSaleQueue().add(QueuedSale(
+        clientRef: clientRef,
+        receiptNo: sale.receiptId,
+        kind: kind,
+        total: sale.totalAmount,
+        paid: sale.amountPaid,
+        balance: sale.balanceRemaining,
+        paymentChannel: sale.paymentChannel,
+        customerName: sale.customerName,
+        customerPhone: sale.customerPhone,
+        phoneModel: phone.name,
+        queuedAt: DateTime.now(),
+        imei: sale.primaryImei,
+        branchId: branchIdForActiveBranch(ref),
+        productId: phone.id,
+      ));
+      ref.read(pendingSalesProvider.notifier).refresh();
+      return true;
+    } catch (e) {
+      debugPrint('LIMS: could not save this sale on the device -> $e');
+      return false;
+    }
+  }
+
   Future<SaleLedgerWrite> _persistSale(
     WidgetRef ref,
     POSSaleResult result,
     ProductItem phone, {
     required String kind,
     String? overrideToken,
+    String? clientRef,
   }) async {
     final branchId = branchIdForActiveBranch(ref);
     final write = await ledger.write(
@@ -303,6 +357,7 @@ class MockLimsRepository implements LimsRepository {
       branchId: branchId,
       productId: phone.id,
       overrideToken: overrideToken,
+      clientRef: clientRef,
     );
     if (write.isConfirmed) {
       ref.read(salesProvider.notifier).add(
@@ -398,7 +453,22 @@ class MockLimsRepository implements LimsRepository {
       overrideToken = approval.token;
     }
 
-    final write = await _persistSale(ref, sale, phone, kind: 'cash', overrideToken: overrideToken);
+    // Minted before the attempt: the queue and the ledger must agree on it, or
+    // a retry becomes a second sale.
+    final clientRef = _clientRefFor(sale.receiptId);
+    final write = await _persistSale(
+      ref,
+      sale,
+      phone,
+      kind: 'cash',
+      overrideToken: overrideToken,
+      clientRef: clientRef,
+    );
+
+    var queuedLocally = false;
+    if (write.isUnknown) {
+      queuedLocally = await _queueSale(ref, sale, phone, kind: 'cash', clientRef: clientRef);
+    }
 
     if (write.isConfirmed || write.status == SalePersistence.notConfigured) {
       _applyLocalSale(
@@ -413,6 +483,22 @@ class MockLimsRepository implements LimsRepository {
           description: 'TZS ${phone.price} via $paymentChannel · $customerName',
           time: 'Just now',
         ),
+      );
+    }
+
+    if (write.isUnknown) {
+      return sale.copyWith(
+        // Only promise the safety net if it actually caught the sale. If the
+        // device itself could not record it, that is worse than a dropped
+        // connection, and the cashier needs to write the receipt down by hand
+        // rather than trust an automatic resend that has nothing to resend.
+        persistence: queuedLocally ? SalePersistence.queued : SalePersistence.unconfirmed,
+        errorMessage: queuedLocally
+            ? 'No answer from the network. This sale is saved on this '
+                'device and will be sent automatically - receipt ${sale.receiptId}.'
+            : 'No answer from the network, and this device could not save the '
+                'sale either. Write down receipt ${sale.receiptId} by hand and '
+                'tell a manager before doing anything else.',
       );
     }
 

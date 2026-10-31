@@ -183,6 +183,7 @@ class SupabaseSource {
     String? branchId,
     int? productId,
     String? overrideToken,
+    String? clientRef,
   }) async {
     if (!SupabaseConfig.isConfigured) {
       return const SaleLedgerWrite(SalePersistence.notConfigured);
@@ -222,9 +223,21 @@ class SupabaseSource {
         // not sell is stopped by Postgres and not by this file. A forged uuid fails:
         // it is not in manager_overrides, and a spent one is gone.
         'override_token': overrideToken,
+        // Minted on the till before the first attempt. A retry after a dropped
+        // connection hits the unique index instead of creating a second sale.
+        'client_ref': clientRef,
       });
       return const SaleLedgerWrite(SalePersistence.confirmed);
     } on PostgrestException catch (e) {
+      // 23505 is the unique index on client_ref: this exact sale is already in
+      // the ledger from an earlier attempt whose answer went missing. That is a
+      // success with extra steps, not a failure.
+      if ((e.code ?? '') == '23505' && clientRef != null) {
+        return const SaleLedgerWrite(
+          SalePersistence.confirmed,
+          'This sale was already in the ledger from the earlier attempt.',
+        );
+      }
       // The database answered with an error status. The row is not there.
       ApiService.lastBackendError = 'recordSale: $e';
       debugPrint('LIMS: could not record sale $receiptNo -> $e');
@@ -1249,6 +1262,7 @@ class SupabaseSaleLedger implements SaleLedger {
     String? branchId,
     int? productId,
     String? overrideToken,
+    String? clientRef,
   }) {
     return SupabaseSource.recordSale(
       receiptNo: receiptNo,
@@ -1264,6 +1278,7 @@ class SupabaseSaleLedger implements SaleLedger {
       branchId: branchId,
       productId: productId,
       overrideToken: overrideToken,
+      clientRef: clientRef,
     );
   }
 }

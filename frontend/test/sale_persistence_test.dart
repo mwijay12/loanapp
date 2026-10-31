@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 import 'package:loan_inventory_app/core/data/inventory_provider.dart';
 import 'package:loan_inventory_app/core/data/lims_repository.dart';
 import 'package:loan_inventory_app/core/data/mock_lims_data.dart';
 import 'package:loan_inventory_app/core/data/sale_ledger.dart';
 import 'package:loan_inventory_app/core/data/sales_provider.dart';
+import 'package:loan_inventory_app/core/services/offline_sales.dart';
 import 'package:loan_inventory_app/core/services/pdf_report_service.dart';
 
 /// A sale is only a sale once the ledger says so.
@@ -17,6 +20,30 @@ import 'package:loan_inventory_app/core/services/pdf_report_service.dart';
 /// "confirmed", "refused", "no connection" or "no answer at all", so the three
 /// outcomes that used to collapse into one `false` stay distinct. No demo user,
 /// no demo data and no network is involved.
+
+/// Stands in for local storage that cannot be written to - a full disk, a
+/// corrupted preferences file. Every member a real store exposes either
+/// throws or returns the one answer that keeps a throw on the call `pending()`
+/// and `add()` actually make.
+class _FailingPreferencesStore extends SharedPreferencesStorePlatform {
+  @override
+  bool get isMock => true;
+
+  @override
+  Future<bool> clear() async => throw StateError('storage unavailable');
+
+  @override
+  Future<Map<String, Object>> getAll() async =>
+      throw StateError('storage unavailable');
+
+  @override
+  Future<bool> remove(String key) async =>
+      throw StateError('storage unavailable');
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async =>
+      throw StateError('storage unavailable');
+}
 
 class _FakeLedger implements SaleLedger {
   _FakeLedger(this.response);
@@ -52,6 +79,7 @@ class _FakeLedger implements SaleLedger {
     String? branchId,
     int? productId,
     String? overrideToken,
+    String? clientRef,
   }) {
     writes++;
     overrideTokens.add(overrideToken);
@@ -309,8 +337,13 @@ void main() {
   });
 
   testWidgets(
-      '5b. an unanswered write is reported as unknown, not as a failure',
+      '5b. an unanswered write is queued on the device, not lost',
       (tester) async {
+    // The queue is backed by shared_preferences. A real device always has it;
+    // a test does not unless told to behave as if the box is empty, which is
+    // what this stands in for.
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+
     final ledger = _FakeLedger(
       const SaleLedgerWrite(
         SalePersistence.unconfirmed,
@@ -329,13 +362,69 @@ void main() {
           paymentChannel: 'cash',
         );
 
-    expect(result.isUnconfirmed, isTrue);
-    expect(result.persistence, SalePersistence.unconfirmed);
+    // The counter already took the money and handed over the phone, so this
+    // counts as done - just not yet in the ledger. It must never claim to be
+    // saved, because no receipt may be printed from a row the database has
+    // not confirmed.
+    expect(result.persistence, SalePersistence.queued);
+    expect(result.success, isTrue);
     expect(result.isSaved, isFalse);
-    expect(result.success, isFalse);
-    // One attempt only: an unconfirmed write is never resent automatically.
+    // One attempt at the network only: a dropped connection is never retried
+    // in the same call. Sending it again is the queue's job, on its own clock.
     expect(ledger.writes, 1);
     expect(container.read(salesProvider), isEmpty);
+
+    final queued = await const OfflineSaleQueue().pending();
+    expect(queued, hasLength(1));
+    expect(queued.single.receiptNo, result.receiptId);
+  });
+
+  testWidgets(
+      '5b2. a sale that cannot even be saved locally says so, by hand',
+      (tester) async {
+    // A store that refuses every write, standing in for whatever would make
+    // local storage fail on a real device (full disk, corrupted state). Not
+    // "no mock installed" - that only means absent, and `setMockInitialValues`
+    // in an earlier test leaves a working store registered for the rest of
+    // this file, which would make an absence-based test pass for the wrong
+    // reason depending on run order.
+    //
+    // `resetStatic` matters as much as the store swap: SharedPreferences caches
+    // its first successful read in a Completer, so without it this test would
+    // silently reuse whatever an earlier, successful test already fetched.
+    final previous = SharedPreferencesStorePlatform.instance;
+    SharedPreferencesStorePlatform.instance = _FailingPreferencesStore();
+    SharedPreferences.resetStatic();
+    addTearDown(() {
+      SharedPreferencesStorePlatform.instance = previous;
+      SharedPreferences.resetStatic();
+    });
+
+    final ledger = _FakeLedger(
+      const SaleLedgerWrite(
+        SalePersistence.unconfirmed,
+        'The sale was sent but the database did not confirm it.',
+      ),
+    );
+    final container = _container(ledger);
+    addTearDown(container.dispose);
+    final ref = await _mount(tester, container);
+
+    final result = await container.read(limsRepositoryProvider).executeCashSale(
+          ref: ref,
+          phone: container.read(inventoryProvider).first,
+          customerName: 'Cash Customer',
+          customerPhone: '0712345678',
+          paymentChannel: 'cash',
+        );
+
+    // Worse than a dropped connection, so it must not be dressed up as a
+    // queued sale: nothing is holding onto it, and the cashier needs to know.
+    expect(result.persistence, SalePersistence.unconfirmed);
+    expect(result.success, isFalse);
+    // Case-insensitive on purpose: the assertion is that the cashier is told
+    // to write it down, not that the sentence starts with a lower-case w.
+    expect(result.errorMessage, matches(RegExp('write down', caseSensitive: false)));
   });
 
   testWidgets('5c. a confirmed loan sale books one borrower and one unit',

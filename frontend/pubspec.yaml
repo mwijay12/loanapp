@@ -35,6 +35,11 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  # Lets a test install a storage backend that fails on purpose, to prove the
+  # offline sale queue degrades honestly instead of crashing when the device
+  # itself cannot save a sale. Already a transitive dependency of
+  # shared_preferences; declared directly because the test imports it.
+  shared_preferences_platform_interface: ^2.4.1
 
 flutter:
   uses-material-design: true

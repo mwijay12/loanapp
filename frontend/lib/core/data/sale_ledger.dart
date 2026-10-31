@@ -35,6 +35,12 @@ enum SalePersistence {
   /// The request was sent and no usable answer came back. The row may exist.
   /// Never report this as "not recorded", and never resend it automatically.
   unconfirmed,
+
+  /// The sale was kept on this device because no answer came back, and will be
+  /// sent again under the same `client_ref`. The money is in the drawer and the
+  /// handset left the shelf, so the counter treats it as sold; it is not in the
+  /// ledger yet, so no receipt may be printed from it.
+  queued,
 }
 
 /// The outcome of one attempt to write a sale, plus the sentence a cashier can
@@ -76,6 +82,7 @@ abstract class SaleLedger {
     String? branchId,
     int? productId,
     String? overrideToken,
+    String? clientRef,
   });
 }
 

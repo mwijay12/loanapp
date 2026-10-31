@@ -21,7 +21,10 @@ import '../data/inventory_provider.dart';
 import '../data/sales_provider.dart';
 import '../data/petty_cash_provider.dart';
 import '../data/supabase_source.dart';
+import '../data/sale_ledger.dart';
+import '../data/supabase_source.dart';
 import 'api_service.dart';
+import 'offline_sales.dart';
 import 'realtime_bridge.dart';
 
 /// Where the rows on screen came from.
@@ -311,7 +314,10 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load();
+      _drainQueuedSales();
+    });
   }
 
   @override
@@ -329,6 +335,24 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader>
     super.dispose();
   }
 
+  /// Sends the sales the counter took while the network was down.
+  ///
+  /// Runs on start and whenever the app comes back to the foreground, which is
+  /// when a phone that was offline overnight gets its signal back.
+  Future<void> _drainQueuedSales() async {
+    try {
+      final result = await syncPendingSales(ledger: const SupabaseSaleLedger());
+      if (!mounted) return;
+      await ref.read(pendingSalesProvider.notifier).refresh();
+      if (result.sent > 0) {
+        debugPrint('LIMS: sent ${result.sent} queued sale(s), '
+            '${result.remaining} still waiting');
+      }
+    } catch (e) {
+      debugPrint('LIMS: queued sales still waiting -> $e');
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Backgrounding a handset drops the websocket, and the rows that changed
@@ -339,6 +363,7 @@ class _LiveDataLoaderState extends ConsumerState<LiveDataLoader>
       final bridge = _bridge;
       if (bridge != null) unawaited(bridge.resume());
     }
+    if (state == AppLifecycleState.resumed) unawaited(_drainQueuedSales());
   }
 
   Future<void> _load() async {
