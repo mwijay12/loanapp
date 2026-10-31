@@ -1,12 +1,16 @@
 {
-    "name": "loan_inventory_app",
-    "short_name": "loan_inventory_app",
+    "name": "LIMS — Loan & Inventory",
+    "short_name": "LIMS",
+    "id": "/",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+    "background_color": "#F2F7FE",
+    "theme_color": "#1E60F2",
+    "description": "Branch stock, till sales and phone loans for a Tanzanian phone shop.",
+    "orientation": "any",
+    "categories": ["business", "productivity", "finance"],
     "prefer_related_applications": false,
     "icons": [
         {
@@ -30,6 +34,26 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Sell a phone",
+            "short_name": "Sell",
+            "url": "/#/sell",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "Stock room",
+            "short_name": "Stock",
+            "url": "/#/stock",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "Reports",
+            "short_name": "Reports",
+            "url": "/#/reports",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
         }
     ]
 }

@@ -1,0 +1,126 @@
+# Desktop installers.
+#
+# The web build already runs on a laptop, but a shop with a counter PC wants an
+# icon it double-clicks, not a bookmark. This produces that: a Windows zip and a
+# Linux tarball, both wired to the same Supabase project as the phone build, so a
+# sale rung up on the counter appears on the owner's phone without a refresh.
+#
+# Nothing here ships a secret: the URL and publishable key are written from
+# repository secrets at build time, exactly as the APK workflow does.
+name: desktop-builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/lib/**'
+      - 'frontend/pubspec.yaml'
+      - 'frontend/windows/**'
+      - 'frontend/linux/**'
+      - '.github/workflows/desktop-builds.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Write dart-defines file
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys
+          required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
+          missing = [k for k in required if not os.environ.get(k)]
+          if missing:
+              sys.exit("missing secrets: " + ", ".join(missing))
+          with open("dart_defines.json", "w") as f:
+              json.dump({k: os.environ[k] for k in required}, f)
+          PY
+
+      - run: flutter pub get
+      - run: flutter build windows --release --dart-define-from-file=dart_defines.json
+
+      - name: Remove dart-defines file
+        if: always()
+        shell: bash
+        run: rm -f dart_defines.json
+
+      - name: Package
+        shell: bash
+        run: |
+          cd build/windows/x64/runner/Release
+          powershell -Command "Compress-Archive -Path * -DestinationPath ../../../lims-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lims-windows
+          path: frontend/build/windows/lims-windows.zip
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System libraries for a GTK build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Write dart-defines file
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
+          missing = [k for k in required if not os.environ.get(k)]
+          if missing:
+              sys.exit("missing secrets: " + ", ".join(missing))
+          with open("dart_defines.json", "w") as f:
+              json.dump({k: os.environ[k] for k in required}, f)
+          PY
+
+      - run: flutter config --enable-linux-desktop
+      - run: flutter pub get
+      - run: flutter build linux --release --dart-define-from-file=dart_defines.json
+
+      - name: Remove dart-defines file
+        if: always()
+        run: rm -f dart_defines.json
+
+      - name: Package
+        run: |
+          cd build/linux/x64/release
+          tar -czf ../../../lims-linux.tar.gz bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lims-linux
+          path: frontend/build/linux/lims-linux.tar.gz
+          if-no-files-found: error
