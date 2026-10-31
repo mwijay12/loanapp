@@ -1,0 +1,93 @@
+# Permanent web link.
+#
+# The app is a static bundle, so it can sit on any host. This one deploys the
+# exact artefact that was tested to Vercel and gives it a stable https address
+# that survives restarts, unlike a quick tunnel.
+#
+# Nothing here runs until VERCEL_TOKEN exists as a repository secret. Without it
+# the job stops at the check below with a readable message instead of failing
+# halfway through a deploy.
+name: deploy-web
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/lib/**'
+      - 'frontend/web/**'
+      - 'frontend/pubspec.yaml'
+      - '.github/workflows/deploy-web.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Is a Vercel token configured?
+        id: gate
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=No VERCEL_TOKEN::Add a Vercel token as a repository secret to publish a permanent link. The tunnel link stays in use until then."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: subosito/flutter-action@v2
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          channel: stable
+          cache: true
+
+      - name: Write dart-defines file
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
+          missing = [k for k in required if not os.environ.get(k)]
+          if missing:
+              sys.exit("missing secrets: " + ", ".join(missing))
+          with open("dart_defines.json", "w") as f:
+              json.dump({k: os.environ[k] for k in required}, f)
+          PY
+
+      - run: flutter pub get
+        if: steps.gate.outputs.ready == 'true'
+
+      - run: flutter build web --release --dart-define-from-file=dart_defines.json
+        if: steps.gate.outputs.ready == 'true'
+
+      - name: Remove dart-defines file
+        if: always()
+        run: rm -f dart_defines.json
+
+      - name: Deploy the built folder
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes vercel@latest deploy build/web --prod --yes --token "$VERCEL_TOKEN" | tee deploy.log
+          url=$(grep -oE 'https://[a-z0-9-]+\.vercel\.app' deploy.log | tail -1)
+          echo "::notice title=Permanent link::$url"
+          echo "$url" > ../vercel-url.txt
+
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          name: vercel-url
+          path: vercel-url.txt

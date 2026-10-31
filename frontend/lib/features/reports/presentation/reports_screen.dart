@@ -176,7 +176,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                         const SizedBox(height: 10),
                         _buildDocRow('Registered Office', 'Plot 14, Uhuru St, Kariakoo, Dar es Salaam'),
                         _buildDocRow('Report Category', 'Branch Financial & Portfolio Audit'),
-                        _buildDocRow('Audit Standard', 'Financial Management & Portfolio At Risk (PAR)'),
+                        _buildDocRow('Audit Standard', 'Financial Management & Recovery'),
                         _buildDocRow('Branch Scope', activeBranch),
                         _buildDocRow('Report Date', 'Friday, 02 October 2026 · 14:45 EAT'),
                         _buildDocRow('Auditing Officer', 'David Erick Mwijage · Managing Director'),
@@ -595,7 +595,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
               labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
               tabs: const [
                 Tab(text: "P&L Statement"),
-                Tab(text: "Loan Book & PAR"),
+                Tab(text: "Loan Book"),
                 Tab(text: "Inventory Asset"),
               ],
             ),
@@ -750,6 +750,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
   }
 
   Widget _buildLoanBookTab(int totalLoans, int totalCollected, double collectionRate, List<dynamic> overdue, List<dynamic> performingLoans) {
+    final overdueValue = overdue.fold<int>(0, (sum, l) => sum + (l.amount as int));
+    final performingValue = performingLoans.fold<int>(0, (sum, l) => sum + (l.amount as int));
     return ListView(
       physics: const ClampingScrollPhysics(),
       children: [
@@ -823,11 +825,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('PAR 30 (Overdue)', style: TextStyle(fontSize: 11, color: Color(0xFF991B1B), fontWeight: FontWeight.w700)),
+                    // Not "PAR 30". PAR 30 means 30+ days past due, and this app
+                    // stores a due note ("3 days left"), never a due date, so the
+                    // ageing cannot be measured. Claiming the banking metric while
+                    // counting every overdue account overstated risk by design.
+                    const Text('Overdue now', style: TextStyle(fontSize: 11, color: Color(0xFF991B1B), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('${overdue.length} Borrowers', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF991B1B))),
+                    Text('${overdue.length} borrowers', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF991B1B))),
                     const SizedBox(height: 2),
-                    const Text('Follow-up pending', style: TextStyle(fontSize: 10, color: Color(0xFFB91C1C))),
+                    Text(LimsFormatters.currency(overdueValue), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB91C1C))),
                   ],
                 ),
               ),
@@ -844,11 +850,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Performing Loans', style: TextStyle(fontSize: 11, color: Color(0xFF065F46), fontWeight: FontWeight.w700)),
+                    const Text('Paying on schedule', style: TextStyle(fontSize: 11, color: Color(0xFF065F46), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('${performingLoans.length} Handsets', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
+                    Text('${performingLoans.length} accounts', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF065F46))),
                     const SizedBox(height: 2),
-                    const Text('On schedule (Current)', style: TextStyle(fontSize: 10, color: Color(0xFF047857))),
+                    Text(LimsFormatters.currency(performingValue), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF047857))),
                   ],
                 ),
               ),
