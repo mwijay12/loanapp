@@ -48,7 +48,7 @@ final notificationFeedProvider = Provider<List<AppNotification>>((ref) {
       kind: NotificationKind.lowStock,
       count: low.length,
       detail: low.map((p) => '${p.name} (${p.stock})').join(', '),
-      route: '/stock',
+      route: '/stock?filter=low',
     ));
   }
 

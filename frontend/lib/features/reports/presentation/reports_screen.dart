@@ -201,9 +201,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                       children: [
                         _buildFinancialLine('Gross POS Sales Revenue', LimsFormatters.currency(todaySales), isBold: true),
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        _buildFinancialLine('Cost of Goods Sold (COGS Handsets)', LimsFormatters.currency((todaySales * 0.76).round())),
+                        // Cost is what is left when profit is taken off revenue, so
+                        // the three lines cannot disagree with each other.
+                        _buildFinancialLine('Cost of Goods Sold (COGS Handsets)', LimsFormatters.currency(todaySales - grossProfit)),
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        _buildFinancialLine('Gross Margin (24.0%)', LimsFormatters.currency(grossProfit), isHighlight: true),
+                        _buildFinancialLine(
+                            'Gross Margin (${todaySales > 0 ? ((grossProfit / todaySales) * 100).toStringAsFixed(1) : '0.0'}%)',
+                            LimsFormatters.currency(grossProfit),
+                            isHighlight: true),
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
                         _buildFinancialLine('Active Disbursed Loan Book', LimsFormatters.currency(totalLoans)),
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -433,8 +438,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     final totalCollected = loans.fold<int>(0, (sum, l) => sum + ((l.amount * l.paid) ~/ 100));
     final collectionRate = totalLoans > 0 ? (totalCollected / totalLoans) : 0.0;
 
-    final todaySales = ref.watch(todaySalesTotalProvider);
-    final grossProfit = ref.watch(todayGrossProfitProvider);
+    final pnl = ref.watch(todayPnlProvider);
+    final todaySales = pnl.revenue;
+    final grossProfit = pnl.profit;
+    final todayCogs = pnl.cogs;
     final totalPhones = ref.watch(totalPhonesCountProvider);
     final inventoryCost = ref.watch(totalInventoryCostProvider);
     final inventoryRetail = ref.watch(totalInventoryRetailValueProvider);
@@ -596,7 +603,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                 controller: _tabController,
                 children: [
                   // Tab 1: P&L
-                  _buildPlTab(todaySales, grossProfit),
+                  _buildPlTab(todaySales, todayCogs, grossProfit),
 
                   // Tab 2: Loan Book & PAR
                   _buildLoanBookTab(totalLoans, totalCollected, collectionRate, overdueLoans, performingLoans),
@@ -636,7 +643,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     );
   }
 
-  Widget _buildPlTab(int todaySales, int grossProfit) {
+  Widget _buildPlTab(int todaySales, int todayCogs, int grossProfit) {
+    final channelSplit = ref.watch(todayChannelSplitProvider);
     return ListView(
       physics: const ClampingScrollPhysics(),
       children: [
@@ -705,15 +713,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
             children: [
               _buildFinancialLine('Total Inflow Revenue', LimsFormatters.currency(todaySales), isBold: true),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _buildFinancialLine('Estimated Handset Cost (COGS)', LimsFormatters.currency((todaySales * 0.76).round())),
+              _buildFinancialLine('Handset Cost (COGS)', LimsFormatters.currency(todayCogs)),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               _buildFinancialLine('Net Gross Profit Margin', LimsFormatters.currency(grossProfit), isHighlight: true),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _buildFinancialLine('Drawer Cash On Hand', 'TZS 3,250,000'),
+              // These three used to be constants in the source. They are now the
+              // sum of today's sales in each channel, so a zero means the drawer
+              // is empty rather than that nobody typed a number in.
+              _buildFinancialLine('Cash at counter', LimsFormatters.currency(channelSplit.cash)),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _buildFinancialLine('M-Pesa / Tigo Collections', 'TZS 4,820,000'),
+              _buildFinancialLine('Mobile money (M-Pesa / Tigo / Airtel)', LimsFormatters.currency(channelSplit.mobile)),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _buildFinancialLine('Card & Bank Settlements', 'TZS 1,200,000'),
+              _buildFinancialLine('Card & bank settlements', LimsFormatters.currency(channelSplit.card)),
             ],
           ),
         ),

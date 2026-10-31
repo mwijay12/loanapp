@@ -12,6 +12,7 @@ class SaleRecord {
     this.imei,
     this.customerName,
     this.productId,
+    this.paymentChannel,
   });
 
   final String receiptNo;
@@ -22,6 +23,10 @@ class SaleRecord {
   final String? branchId;
   final String? imei;
   final String? customerName;
+
+  /// How the money arrived: cash, mpesa, airtel, tigopesa, or card ••••1234.
+  /// Kept because the reports have to answer "how much of today was cash".
+  final String? paymentChannel;
   final int? productId;
 
   bool get isCash => kind == 'cash';
@@ -39,6 +44,7 @@ class SaleRecord {
       imei: row['imei']?.toString(),
       customerName: row['customer_name']?.toString(),
       productId: row['product_id'] is int ? row['product_id'] as int : null,
+      paymentChannel: row['payment_channel']?.toString(),
     );
   }
 

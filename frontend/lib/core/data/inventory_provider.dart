@@ -629,6 +629,64 @@ final totalInventoryRetailValueProvider = Provider<int>((ref) {
 });
 
 /// Gross Profit Margin Earned Today (TZS)
+/// Today's takings, split by how the money arrived.
+///
+/// The reports tab used to print "Drawer Cash On Hand TZS 3,250,000" and two
+/// more figures like it: constants typed into the source. A shop owner reading
+/// those has no way to know they are not his money. These are sums of today's
+/// sales rows.
+final todayChannelSplitProvider =
+    Provider<({int cash, int mobile, int card, int other})>((ref) {
+  final sales = ref.watch(salesProvider);
+  final now = DateTime.now();
+  var cash = 0, mobile = 0, card = 0, other = 0;
+  for (final s in sales) {
+    if (!_isToday(s.soldAt, now)) continue;
+    final c = (s.paymentChannel ?? '').toLowerCase();
+    if (c.startsWith('card')) {
+      card += s.total;
+    } else if (c.contains('pesa') || c.contains('tigo') || c.contains('airtel')) {
+      mobile += s.total;
+    } else if (c == 'cash') {
+      cash += s.total;
+    } else {
+      other += s.total;
+    }
+  }
+  return (cash: cash, mobile: mobile, card: card, other: other);
+});
+
+/// Today's revenue, cost and profit — all three from the same rows.
+///
+/// Gross profit used to fold `products.soldToday`, a counter that lives outside
+/// the sales table, while revenue came from `sales`. With no sales recorded but
+/// the counter reading 49, the P&L showed a TZS 14.5M margin above TZS 0 of
+/// revenue. Both sides now come from today's sales, costed against the product's
+/// own cost price.
+final todayPnlProvider = Provider<({int revenue, int cogs, int profit})>((ref) {
+  final sales = ref.watch(salesProvider);
+  final products = ref.watch(inventoryProvider);
+  final costById = <int, int>{
+    for (final p in products)
+      p.id: p.costPrice ?? (p.price * 0.78).round(),
+  };
+  final now = DateTime.now();
+  var revenue = 0;
+  var cogs = 0;
+  for (final s in sales) {
+    if (!_isToday(s.soldAt, now)) continue;
+    revenue += s.total;
+    final unitCost = s.productId == null ? null : costById[s.productId];
+    // No catalogue row means no cost to look up; fall back to the old 78% so
+    // the margin stays conservative rather than flattering.
+    cogs += unitCost ?? (s.total * 0.78).round();
+  }
+  return (revenue: revenue, cogs: cogs, profit: revenue - cogs);
+});
+
+bool _isToday(DateTime at, DateTime now) =>
+    at.year == now.year && at.month == now.month && at.day == now.day;
+
 final todayGrossProfitProvider = Provider<int>((ref) {
   final products = ref.watch(inventoryProvider);
   return products.fold<int>(0, (sum, p) {

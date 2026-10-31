@@ -98,7 +98,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/stock',
-            builder: (context, state) => const StockScreen(),
+            builder: (context, state) => StockScreen(
+              initialFilter: state.uri.queryParameters['filter'] ?? 'all',
+            ),
           ),
           GoRoute(
             path: '/loans',

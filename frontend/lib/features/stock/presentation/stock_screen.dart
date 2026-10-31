@@ -18,14 +18,18 @@ import '../../../core/widgets/view_toggle.dart';
 import '../../../core/motion/motion_widgets.dart';
 
 class StockScreen extends ConsumerStatefulWidget {
-  const StockScreen({super.key});
+  const StockScreen({super.key, this.initialFilter = 'all'});
+
+  /// Which tab to open on. A notice about low stock should land on the low
+  /// stock rows, not on the whole catalogue with the user left to find them.
+  final String initialFilter;
 
   @override
   ConsumerState<StockScreen> createState() => _StockScreenState();
 }
 
 class _StockScreenState extends ConsumerState<StockScreen> {
-  String _selectedFilter = 'all';
+  late String _selectedFilter = widget.initialFilter;
   String _searchQuery = '';
 
   /// Rows or cards. Held per visit: the stock list is a browsing surface, and a
@@ -33,6 +37,18 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   /// what the counter expects to see.
   CollectionView _view = CollectionView.list;
   final TextEditingController _searchCtrl = TextEditingController();
+
+  @override
+  void didUpdateWidget(covariant StockScreen old) {
+    super.didUpdateWidget(old);
+    // Same screen, different notice: the tab has to follow the route.
+    if (old.initialFilter != widget.initialFilter &&
+        _filterIds.contains(widget.initialFilter)) {
+      setState(() => _selectedFilter = widget.initialFilter);
+    }
+  }
+
+  static const List<String> _filterIds = ['all', 'phones', 'acc', 'low', 'loan'];
 
   final List<Map<String, String>> _filterOptions = [
     {'id': 'all', 'label': 'All'},
