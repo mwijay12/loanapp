@@ -79,7 +79,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       final aiService = ref.read(mercuryAiServiceProvider);
       final facts = StoreFacts.fromProviders(ref);
       final swahili = ref.read(localeProvider).languageCode == 'sw';
-      final response = await aiService.queryAi(
+      final reply = await aiService.ask(
         userPrompt: query,
         chatHistory: history,
         facts: facts,
@@ -103,7 +103,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _messages.add(_Message(text: response, isUser: false));
+          _messages.add(_Message(
+            text: reply.text,
+            isUser: false,
+            local: reply.source == AiSource.local,
+          ));
         });
         _scrollToBottom();
       }
@@ -116,6 +120,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           _messages.add(_Message(
             text: answerFromFacts(query, facts, swahili: swahili).text,
             isUser: false,
+            local: true,
           ));
         });
         _scrollToBottom();
@@ -325,16 +330,21 @@ class _Message {
   final String text;
   final bool isUser;
 
-  _Message({required this.text, required this.isUser});
+  /// True when the reply was assembled from the shop's rows instead of written
+  /// by a model. Shown on the bubble: the two read the same, and only one of
+  /// them can be wrong about a total.
+  final bool local;
+
+  _Message({required this.text, required this.isUser, this.local = false});
 }
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends ConsumerWidget {
   final _Message message;
 
   const _MessageBubble({required this.message});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -361,12 +371,12 @@ class _MessageBubble extends StatelessWidget {
             ),
           ],
         ),
-        child: _buildContent(context),
+        child: _buildContent(context, ref),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
     if (message.isUser) {
       return Text(
         message.text,
@@ -445,6 +455,34 @@ class _MessageBubble extends StatelessWidget {
               EdgeInsets.only(bottom: isHeader ? 4 : 2, top: isHeader ? 4 : 0),
           child: RichText(
             text: TextSpan(children: spans),
+          ),
+        ),
+      );
+    }
+
+    if (message.local) {
+      // Says plainly where the sentence came from. Without this the two kinds
+      // of reply are indistinguishable, and only one of them can be wrong.
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.offline_bolt_rounded,
+                  size: 12, color: AppTheme.ink400),
+              const SizedBox(width: 5),
+              Text(
+                ref.watch(localeProvider).languageCode == 'sw'
+                    ? 'Imehesabiwa kutoka data yako · bila mtandao'
+                    : 'Computed from your books · offline',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.ink400,
+                ),
+              ),
+            ],
           ),
         ),
       );

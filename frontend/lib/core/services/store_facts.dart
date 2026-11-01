@@ -62,12 +62,24 @@ class StoreFacts {
     final sales = ref.watch(salesProvider);
     final products = ref.watch(inventoryProvider);
     final loans = ref.watch(loansProvider);
-    final branch = ref.watch(activeBranchProvider);
     final scope = ref.watch(dataSourceProvider).kind == DataSourceKind.live
         ? 'live'
         : 'demo';
 
-    final today = sales.where((s) => isEatToday(s.soldAt));
+    // The label and the figures have to describe the same set of rows. The
+    // assistant used to sum every branch and then print the answer under one
+    // branch's name - "No sales recorded today at Mbagala" on a morning when
+    // Mbagala had not opened but the network had sold.
+    //
+    // Scoping to the selected branch would fix the label but only for sales and
+    // stock: `loans` carries no branch column, so the loan figures would still
+    // be the whole shop's under a branch heading. Half-scoped is worse than
+    // openly network-wide, so the figures stay network-wide and say so.
+    final branchSales = sales;
+    final branchProducts = products;
+    final branchLoans = loans;
+
+    final today = branchSales.where((s) => isEatToday(s.soldAt));
 
     var cash = 0;
     var credit = 0;
@@ -82,23 +94,24 @@ class StoreFacts {
       collected += s.paid;
     }
 
-    final low = products
+    final low = branchProducts
         .where((p) => p.stock <= p.min || p.status == 'low')
         .map((p) => MapEntry(p.name, p.stock))
         .toList()
       ..sort((a, b) => a.value.compareTo(b.value));
 
-    final active = loans.where((l) => l.status != 'settled').toList();
+    final active =
+        branchLoans.where((l) => l.status != 'settled').toList();
     final overdue = active.where((l) => l.status == 'overdue').toList();
 
     return StoreFacts(
-      branch: branch,
+      branch: 'all branches',
       salesCount: today.length,
       salesTotal: cash + credit,
       cashTotal: cash,
       creditTotal: credit,
-      stockUnits: products.fold<int>(0, (sum, p) => sum + p.stock),
-      modelCount: products.length,
+      stockUnits: branchProducts.fold<int>(0, (sum, p) => sum + p.stock),
+      modelCount: branchProducts.length,
       lowStock: low,
       loansActive: active.length,
       loansOverdue: overdue.length,
@@ -142,11 +155,21 @@ StoreAnswer answerFromFacts(
   required bool swahili,
 }) {
   final q = query.toLowerCase();
-  bool has(List<String> words) => words.any(q.contains);
+
+  /// Whole-word match.
+  ///
+  /// `q.contains('low')` also fires on "below", "follow" and "slow", and
+  /// `q.contains('leo')` - Swahili for *today* - fired on every question that
+  /// mentioned the day, including "mikopo iliyochelewa leo", which is a question
+  /// about overdue loans and got answered with today's takings.
+  bool has(List<String> words) => words.any((w) {
+        final escaped = RegExp.escape(w.trim());
+        return RegExp('(^|[^a-z])$escaped([^a-z]|\$)').hasMatch(q);
+      });
 
   final money = f.money;
 
-  if (has(['sales', 'mauzo', 'revenue', 'mapato', 'leo'])) {
+  if (has(['sales', 'mauzo', 'revenue', 'mapato'])) {
     if (f.salesCount == 0) {
       return StoreAnswer(swahili
           ? 'Hakuna mauzo yaliyorekodiwa leo katika ${f.branch}.'

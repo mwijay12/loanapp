@@ -87,6 +87,23 @@ void main() {
     expect(a.text.toLowerCase(), contains('demo'));
   });
 
+  // "leo" means today. It is a time word, not a topic, and it used to be a
+  // trigger for the sales intent - so a question about overdue loans today was
+  // answered with today's takings.
+  test('a question about overdue loans today is not answered with sales', () {
+    final a = answerFromFacts('mikopo iliyochelewa leo', facts(loansOverdue: 3),
+        swahili: true);
+    expect(a.text.toLowerCase(), contains('mikopo'));
+    expect(a.text, isNot(contains('Miamala')));
+  });
+
+  // `contains('low')` also fired on "below", "follow" and "slow".
+  test('a word that merely contains "low" is not a stock question', () {
+    final a = answerFromFacts('why are sales slow?', facts(), swahili: false);
+    expect(a.text.toLowerCase(), contains('sales'));
+    expect(a.text, isNot(contains('below buffer')));
+  });
+
   test('money is grouped in threes', () {
     expect(facts().money(1716000), 'TZS 1,716,000');
     expect(facts().money(950), 'TZS 950');

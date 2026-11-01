@@ -1,8 +1,30 @@
 import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'store_facts.dart';
+
+/// Which engine produced an answer.
+///
+/// The screen used to print a model's reply and a template's reply in the same
+/// bubble, so a shopkeeper could not tell a sentence read from their own rows
+/// from one a model had written. That difference matters when the question is
+/// "how much did we take today".
+enum AiSource {
+  /// A language model wrote this, from the figures handed to it.
+  model,
+
+  /// No model was reachable; the answer was assembled from the local rows.
+  local,
+}
+
+class AiReply {
+  const AiReply(this.text, this.source);
+  final String text;
+  final AiSource source;
+}
 
 /// Mercury 2.5 AI Assistant service using Inception Labs API.
 /// Ultra-fast response with high quality retail loan and inventory reasoning.
@@ -27,6 +49,89 @@ class MercuryAiService {
     _keyIndex = (_keyIndex + 1) % _apiKeys.length;
   }
 
+  /// Whether the online proxy has already been found missing.
+  ///
+  /// The function is deployed separately from the bundle, so an older project
+  /// answers 404. Trying it on every message would put a failed request in the
+  /// log for each question the cashier asks; one refusal per session is enough
+  /// to know this build talks to the local engine only.
+  bool _edgeUnavailable = false;
+
+  /// Attaches a payment-channel breakdown for the proxy's system prompt.
+  Map<String, dynamic> _payload(
+    String prompt,
+    List<Map<String, String>> history,
+    StoreFacts? facts,
+  ) =>
+      {
+        'prompt': prompt,
+        'history': history,
+        'facts': facts == null
+            ? null
+            : {
+                'branch': facts.branch,
+                'salesCount': facts.salesCount,
+                'salesTotal': facts.salesTotal,
+                'cashTotal': facts.cashTotal,
+                'creditTotal': facts.creditTotal,
+                'collectedToday': facts.collectedToday,
+                'stockUnits': facts.stockUnits,
+                'modelCount': facts.modelCount,
+                'lowStock': {
+                  for (final e in facts.lowStock.take(10)) e.key: e.value,
+                },
+                'loansActive': facts.loansActive,
+                'loansOverdue': facts.loansOverdue,
+                'overdueOutstanding': facts.overdueOutstanding,
+                'scope': facts.scope,
+              },
+      };
+
+  /// Ask the assistant, and say who answered.
+  ///
+  /// Order matters: the served proxy first (the key stays on the server), then
+  /// a key compiled into this build for local development, then the shop's own
+  /// rows. The last step is not a degraded mode - it is the one that works on a
+  /// bad line in Kariakoo, and it cannot invent a number.
+  Future<AiReply> ask({
+    required String userPrompt,
+    required List<Map<String, String>> chatHistory,
+    Map<String, dynamic>? branchContext,
+    StoreFacts? facts,
+    bool swahili = false,
+  }) async {
+    if (!_edgeUnavailable) {
+      try {
+        final res = await Supabase.instance.client.functions.invoke(
+          'ai-assistant',
+          body: _payload(userPrompt, chatHistory, facts),
+        );
+        final answer = res.data is Map ? res.data['answer'] : null;
+        if (answer is String && answer.trim().isNotEmpty) {
+          return AiReply(answer.trim(), AiSource.model);
+        }
+      } catch (_) {
+        _edgeUnavailable = true;
+      }
+    }
+
+    if (_apiKeys.isNotEmpty) {
+      final online = await _askDirect(
+        userPrompt: userPrompt,
+        chatHistory: chatHistory,
+        branchContext: branchContext,
+        facts: facts,
+        swahili: swahili,
+      );
+      if (online != null) return AiReply(online, AiSource.model);
+    }
+
+    return AiReply(
+      _localFallbackResponse(userPrompt, facts, swahili: swahili),
+      AiSource.local,
+    );
+  }
+
   /// Send prompt to Mercury 2.5 with live store context
   Future<String> queryAi({
     required String userPrompt,
@@ -35,9 +140,28 @@ class MercuryAiService {
     StoreFacts? facts,
     bool swahili = false,
   }) async {
-    if (_apiKeys.isEmpty) {
-      return _localFallbackResponse(userPrompt, facts, swahili: swahili);
-    }
+    final online = await _askDirect(
+      userPrompt: userPrompt,
+      chatHistory: chatHistory,
+      branchContext: branchContext,
+      facts: facts,
+      swahili: swahili,
+    );
+    return online ?? _localFallbackResponse(userPrompt, facts, swahili: swahili);
+  }
+
+  /// The direct-to-provider call, kept for a build that has its own key.
+  ///
+  /// Returns null when no key answered, so the caller decides what to show
+  /// rather than being handed a template dressed as a model reply.
+  Future<String?> _askDirect({
+    required String userPrompt,
+    required List<Map<String, String>> chatHistory,
+    Map<String, dynamic>? branchContext,
+    StoreFacts? facts,
+    bool swahili = false,
+  }) async {
+    if (_apiKeys.isEmpty) return null;
     // Context comes from the facts object, never from a literal. The old prompt
     // filled missing values with "TZS 4,850,000" and "86 accounts", so even a
     // correctly configured model was told fiction and repeated it confidently.
@@ -136,8 +260,8 @@ Rules:
       }
     }
 
-    // Fallback if offline or all keys timed out
-    return _localFallbackResponse(userPrompt, storeFacts, swahili: swahili);
+    // Offline, or every key refused. Null says so.
+    return null;
   }
 
   /// Offline answers, computed from the facts the caller passed in.
