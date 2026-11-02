@@ -6,10 +6,16 @@
 // the shop, and forwards only what the prompt needs.
 //
 // Deploy:
-//   supabase secrets set MERCURY_API_KEY=sk_...
-//   supabase functions deploy ai-assistant --no-verify-jwt=false
+//   supabase secrets set AI_API_KEY=sk-...
+//   supabase functions deploy ai-assistant
 //
-// Without the secret the function answers 503 and the app falls back to its
+// The three settings are deliberately provider-agnostic so switching supplier
+// is a secret change, not a code change:
+//   AI_API_KEY   (required) the key itself
+//   AI_BASE_URL  (optional) any OpenAI-compatible /chat/completions endpoint
+//   AI_MODEL     (optional) model name that endpoint expects
+//
+// Without AI_API_KEY the function answers 503 and the app falls back to its
 // offline engine, which reads the shop's own rows.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -20,7 +26,8 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const ENDPOINT = 'https://api.inceptionlabs.ai/v1/chat/completions';
+const DEFAULT_BASE = 'https://api.inceptionlabs.ai/v1';
+const DEFAULT_MODEL = 'mercury-2.5';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -39,7 +46,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
-  const key = Deno.env.get('MERCURY_API_KEY') ?? '';
+  // MERCURY_API_KEY is still honoured so a project that set it keeps working.
+  const key = Deno.env.get('AI_API_KEY') ?? Deno.env.get('MERCURY_API_KEY') ?? '';
+  const base = (Deno.env.get('AI_BASE_URL') ?? DEFAULT_BASE).replace(/\/+$/, '');
+  const model = Deno.env.get('AI_MODEL') ?? DEFAULT_MODEL;
   if (!key) {
     // A clear 503 rather than a 500: the app treats it as "no online model" and
     // answers from the ledger instead of showing an error to the cashier.
@@ -116,10 +126,10 @@ Rules:
   ];
 
   try {
-    const upstream = await fetch(ENDPOINT, {
+    const upstream = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'mercury-2.5', reasoning_effort: 'low', messages }),
+      body: JSON.stringify({ model, messages }),
     });
 
     if (!upstream.ok) {
@@ -131,7 +141,7 @@ Rules:
     if (typeof answer !== 'string' || !answer.trim()) {
       return json({ error: 'empty answer' }, 502);
     }
-    return json({ answer: answer.trim(), model: data?.model ?? 'mercury-2.5' });
+    return json({ answer: answer.trim(), model: data?.model ?? model });
   } catch (_e) {
     return json({ error: 'upstream unreachable' }, 502);
   }

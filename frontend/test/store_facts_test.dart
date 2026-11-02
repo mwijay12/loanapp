@@ -104,6 +104,29 @@ void main() {
     expect(a.text, isNot(contains('below buffer')));
   });
 
+  // A cashier on a bad line has already taken the money; the row is just not in
+  // the database yet. "No sales recorded today" over the top of a queued sale is
+  // an answer the cashier can see is wrong.
+  test('a held sale is not reported as no sale', () {
+    final a = answerFromFacts(
+      'mauzo ya leo',
+      facts(salesCount: 0, salesTotal: 0, cash: 0, credit: 0, collected: 0)
+          .copyWith(queuedCount: 2, queuedTotal: 430000),
+      swahili: false,
+    );
+    expect(a.text.toLowerCase(), contains('no confirmed sales'));
+    expect(a.text, contains('2'));
+    expect(a.text, contains('TZS 430,000'));
+    expect(a.text.toLowerCase(), isNot(contains('no sales recorded')));
+  });
+
+  test('a normal sales answer still lists what is waiting to sync', () {
+    final a = answerFromFacts('sales', facts().copyWith(queuedCount: 1, queuedTotal: 95000),
+        swahili: false);
+    expect(a.text, contains("Today's sales"));
+    expect(a.text.toLowerCase(), contains('waiting to sync'));
+  });
+
   test('money is grouped in threes', () {
     expect(facts().money(1716000), 'TZS 1,716,000');
     expect(facts().money(950), 'TZS 950');

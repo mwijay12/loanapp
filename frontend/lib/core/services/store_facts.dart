@@ -31,6 +31,8 @@ class StoreFacts {
     required this.overdueOutstanding,
     required this.collectedToday,
     required this.scope,
+    this.queuedCount = 0,
+    this.queuedTotal = 0,
   });
 
   final String branch;
@@ -55,6 +57,34 @@ class StoreFacts {
   /// "live" or "demo" — because a demo branch has demo takings, and saying
   /// otherwise would be the same lie in a quieter voice.
   final String scope;
+
+  /// Sales rung up while the line was down, still held on the device.
+  ///
+  /// They are not in the database yet, so every figure above excludes them. On a
+  /// bad-network day that made the assistant answer "no sales recorded today"
+  /// to a cashier who had just taken three. The count is here so it can say so.
+  final int queuedCount;
+  final int queuedTotal;
+
+  /// The queue is read asynchronously by the screen after the provider figures
+  /// are gathered, so it is folded in here rather than in `fromProviders`.
+  StoreFacts copyWith({int? queuedCount, int? queuedTotal}) => StoreFacts(
+        branch: branch,
+        salesCount: salesCount,
+        salesTotal: salesTotal,
+        cashTotal: cashTotal,
+        creditTotal: creditTotal,
+        stockUnits: stockUnits,
+        modelCount: modelCount,
+        lowStock: lowStock,
+        loansActive: loansActive,
+        loansOverdue: loansOverdue,
+        overdueOutstanding: overdueOutstanding,
+        collectedToday: collectedToday,
+        scope: scope,
+        queuedCount: queuedCount ?? this.queuedCount,
+        queuedTotal: queuedTotal ?? this.queuedTotal,
+      );
 
   bool get isEmpty => salesCount == 0 && stockUnits == 0 && loansActive == 0;
 
@@ -170,7 +200,24 @@ StoreAnswer answerFromFacts(
   final money = f.money;
 
   if (has(['sales', 'mauzo', 'revenue', 'mapato'])) {
+    // A sale held on the device is money the shop has taken even though the
+    // database has not seen it. Saying "no sales" over the top of three queued
+    // ones is the kind of answer that makes a cashier stop trusting the screen.
+    final held = swahili
+        ? '• Zinasubiri mtandao: ${f.queuedCount} (${money(f.queuedTotal)}) - '
+            'zitahesabiwa baada ya kusawazishwa'
+        : '• Waiting to sync: ${f.queuedCount} (${money(f.queuedTotal)}) - '
+            'they count once the line is back';
+
     if (f.salesCount == 0) {
+      if (f.queuedCount > 0) {
+        return StoreAnswer([
+          swahili
+              ? 'Hakuna mauzo yaliyothibitishwa leo katika ${f.branch} bado.'
+              : 'No confirmed sales today at ${f.branch} yet.',
+          held,
+        ].join('\n'));
+      }
       return StoreAnswer(swahili
           ? 'Hakuna mauzo yaliyorekodiwa leo katika ${f.branch}.'
           : 'No sales recorded today at ${f.branch}.');
@@ -190,6 +237,7 @@ StoreAnswer answerFromFacts(
           ? '• Zilizokusanywa: ${money(f.collectedToday)}'
           : '• Collected: ${money(f.collectedToday)}',
     ];
+    if (f.queuedCount > 0) lines.add(held);
     if (f.scope == 'demo') {
       lines.add(swahili
           ? 'Data hii ni ya majaribio (demo), sio mauzo halisi.'

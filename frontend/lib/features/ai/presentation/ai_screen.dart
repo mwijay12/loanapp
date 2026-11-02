@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/mercury_ai_service.dart';
+import '../../../core/services/offline_sales.dart';
 import '../../../core/services/store_facts.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../home/presentation/dashboard_kit.dart';
@@ -77,7 +78,21 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
     try {
       final aiService = ref.read(mercuryAiServiceProvider);
-      final facts = StoreFacts.fromProviders(ref);
+      var facts = StoreFacts.fromProviders(ref);
+      // Sales the till took while the line was down are not in the database, so
+      // the facts above do not see them. Fold them in before the answer is
+      // composed, or the assistant contradicts the cashier's own drawer.
+      try {
+        final held = await const OfflineSaleQueue().pending();
+        if (held.isNotEmpty) {
+          facts = facts.copyWith(
+            queuedCount: held.length,
+            queuedTotal: held.fold<int>(0, (sum, q) => sum + q.total),
+          );
+        }
+      } catch (_) {
+        // A queue that cannot be read is not a reason to refuse the question.
+      }
       final swahili = ref.read(localeProvider).languageCode == 'sw';
       final reply = await aiService.ask(
         userPrompt: query,
