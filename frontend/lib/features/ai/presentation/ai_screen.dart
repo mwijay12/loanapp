@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/mercury_ai_service.dart';
+import '../../../core/services/ai_actions.dart';
 import '../../../core/services/offline_sales.dart';
 import '../../../core/services/store_facts.dart';
 import '../../../core/l10n/locale_provider.dart';
@@ -122,6 +124,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             text: reply.text,
             isUser: false,
             local: reply.source == AiSource.local,
+            // Only the offline engine can act: the model has no tools, so a
+            // button on its reply would be a promise nothing keeps.
+            action: reply.source == AiSource.local
+                ? parseAssistantAction(query)
+                : null,
           ));
         });
         _scrollToBottom();
@@ -350,7 +357,16 @@ class _Message {
   /// them can be wrong about a total.
   final bool local;
 
-  _Message({required this.text, required this.isUser, this.local = false});
+  /// A screen this reply can take the user to, when the offline engine
+  /// recognised an instruction. Null for ordinary answers.
+  final AssistantAction? action;
+
+  _Message({
+    required this.text,
+    required this.isUser,
+    this.local = false,
+    this.action,
+  });
 }
 
 class _MessageBubble extends ConsumerWidget {
@@ -498,6 +514,50 @@ class _MessageBubble extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      );
+    }
+
+    final action = message.action;
+    if (action != null) {
+      final swahili = ref.watch(localeProvider).languageCode == 'sw';
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              // `go`, not `push`. The assistant lives outside the shell that
+              // owns /stock and friends, so pushing a shell route stacked a
+              // second shell with no child in it: the sidebar appeared, the
+              // selected item moved, and the page itself came up blank.
+              onTap: () => GoRouter.of(context).go(action.route),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.brand600,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      action.labelFor(swahili: swahili),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.arrow_forward_rounded,
+                        size: 14, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       );

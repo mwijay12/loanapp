@@ -1258,15 +1258,20 @@ class _StockScreenState extends ConsumerState<StockScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Kariakoo Branch',
+                        // Was the literal string 'Kariakoo Branch', so a
+                        // Mbagala storekeeper opened his own stockroom and read
+                        // another branch's name over it. The list below is every
+                        // branch's stock (232 units, not Kariakoo's 63), so the
+                        // header now says that instead of naming one.
+                        '${tr(ref.watch(localeProvider), 'stock.allBranches')}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.ink500,

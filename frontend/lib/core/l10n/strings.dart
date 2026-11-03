@@ -198,6 +198,8 @@ const Map<String, Map<String, String>> _dictionary = {
   'dash.imeiInspector': {'en': 'Device & IMEI Inspector', 'sw': 'Ukaguzi wa IMEI'},
   'dash.imeiInspectorSub': {'en': 'Check a serial', 'sw': 'Hakiki namba ya kifaa'},
 
+  // The stock list is every branch's, so the header cannot name one.
+  'stock.allBranches': {'en': 'All branches', 'sw': 'Matawi yote'},
   'nav.inventory': {'en': 'Inventory', 'sw': 'Stoo'},
   'nav.loans': {'en': 'Loans', 'sw': 'Mikopo'},
   // The door a Storekeeper gets instead of Loans. It is not a rename of
