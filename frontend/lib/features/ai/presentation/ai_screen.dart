@@ -80,7 +80,28 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
     try {
       final aiService = ref.read(mercuryAiServiceProvider);
-      var facts = StoreFacts.fromProviders(ref);
+      // A recognised instruction is not a question. Asking the model produced
+    // "Sorry, information about 'open stock' is not in the provided facts" - an
+    // apology for a request that was perfectly clear, and a round trip on a shop
+    // line for nothing. Answer it here, with the door already open.
+    final instruction = parseAssistantAction(query);
+    if (instruction != null) {
+      final sw = ref.read(localeProvider).languageCode == 'sw';
+      setState(() {
+        _messages.add(_Message(
+          text: sw
+              ? 'Sawa. Bonyeza kitufe hapa chini.'
+              : 'Sure. Tap the button below.',
+          isUser: false,
+          local: true,
+          action: instruction,
+        ));
+        _isLoading = false;
+      });
+      return;
+    }
+
+    var facts = StoreFacts.fromProviders(ref);
 
     // A cold open on /ai runs before the loaders have filled the providers, so
     // every figure is zero. Sending that to a model produces a confident "the

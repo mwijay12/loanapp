@@ -28,6 +28,7 @@ import '../../features/scanner/presentation/device_imei_inspector_screen.dart';
 import '../../features/petty_cash/presentation/petty_cash_screen.dart';
 import '../constants/app_constants.dart';
 import '../data/inventory_provider.dart';
+import '../services/live_data.dart';
 import '../services/onboarding_prefs.dart';
 import '../data/mock_lims_data.dart';
 import '../widgets/app_shell.dart';
@@ -151,7 +152,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/ai',
-        builder: (context, state) => _standalone(const AIScreen()),
+        // The assistant reads providers that the shell's loader fills. Opened
+        // from the menu it inherits that loader; opened by link it sat on top of
+        // an empty snapshot and could only ever answer "data is still loading".
+        builder: (context, state) =>
+            LiveDataLoader(child: _standalone(const AIScreen())),
       ),
       GoRoute(
         path: '/scan',
