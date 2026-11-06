@@ -68,11 +68,10 @@ void main() async {
         signedInNameProvider.overrideWith(
           (ref) => restored?['name'] as String?,
         ),
-        signedInBranchProvider.overrideWith(
-          (ref) => (restored?['branch'] as String?)?.trim().isEmpty ?? true
-              ? null
-              : restored!['branch'] as String?,
-        ),
+        signedInBranchProvider.overrideWith((ref) {
+          final b = (restored?['branch'] as String?)?.trim();
+          return (b == null || b.isEmpty) ? null : b;
+        }),
         signedInAvatarProvider.overrideWith(
           (ref) => restored?['avatar'] as String?,
         ),

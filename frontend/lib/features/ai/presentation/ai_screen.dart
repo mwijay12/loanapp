@@ -81,6 +81,33 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     try {
       final aiService = ref.read(mercuryAiServiceProvider);
       var facts = StoreFacts.fromProviders(ref);
+
+    // A cold open on /ai runs before the loaders have filled the providers, so
+    // every figure is zero. Sending that to a model produces a confident "the
+    // shop holds 0 units, no loans" - a false statement about the business,
+    // written in full sentences. Wait for the rows, and refuse rather than
+    // answer from an empty snapshot.
+    if (facts.isEmpty) {
+      for (var i = 0; i < 12 && facts.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        if (!mounted) return;
+        facts = StoreFacts.fromProviders(ref);
+      }
+      if (facts.isEmpty) {
+        final sw = ref.read(localeProvider).languageCode == 'sw';
+        setState(() {
+          _messages.add(_Message(
+            text: sw
+                ? 'Data ya duka bado inapakia. Jaribu tena baada ya sekunde chache.'
+                : 'Shop data is still loading. Try again in a moment.',
+            isUser: false,
+            local: true,
+          ));
+          _isLoading = false;
+        });
+        return;
+      }
+    }
       // Sales the till took while the line was down are not in the database, so
       // the facts above do not see them. Fold them in before the answer is
       // composed, or the assistant contradicts the cashier's own drawer.
