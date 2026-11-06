@@ -9,6 +9,7 @@ import 'core/services/app_permissions_service.dart';
 import 'core/widgets/responsive.dart';
 import 'core/l10n/locale_provider.dart';
 
+import 'core/data/inventory_provider.dart';
 import 'core/services/api_service.dart';
 
 void main() async {
@@ -46,14 +47,35 @@ void main() async {
   }
 
   // Read once, before the router exists: a first run opens the introduction, a
-  // later run opens sign-in.
+  // later run opens sign-in - unless a session is already on disk, in which case
+  // the person stays signed in. The token was always there; nothing read it.
   final seenOnboarding = await OnboardingPrefs.hasSeen();
+  final restored = SupabaseConfig.isConfigured
+      ? await ApiService().restoreSession()
+      : null;
   final savedLocale = await LocaleStore.load();
   runApp(
     ProviderScope(
       overrides: [
         seenOnboardingProvider.overrideWithValue(seenOnboarding),
         localeProvider.overrideWith((ref) => savedLocale),
+        restoredSessionProvider.overrideWithValue(restored),
+        userRoleProvider.overrideWith(
+          (ref) => UserRoleNotifier(
+            restoredRole: restored?['role'] as String?,
+          ),
+        ),
+        signedInNameProvider.overrideWith(
+          (ref) => restored?['name'] as String?,
+        ),
+        signedInBranchProvider.overrideWith(
+          (ref) => (restored?['branch'] as String?)?.trim().isEmpty ?? true
+              ? null
+              : restored!['branch'] as String?,
+        ),
+        signedInAvatarProvider.overrideWith(
+          (ref) => restored?['avatar'] as String?,
+        ),
       ],
       child: const LoanInventoryApp(),
     ),

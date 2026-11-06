@@ -193,58 +193,8 @@ class ApiService {
       throw StateError('Invalid email or password.');
     }
 
-    // 2. Read the server-owned role. This is display/routing data only; RLS on
-    //    every table is what actually enforces access.
-    //
-    //    The live `public.profiles` table does NOT use the auth user id as its
-    //    primary key. It carries a separate nullable `auth_user_id` column, and
-    //    rows are keyed by their own `id`. Reading the profile by `.eq('id',
-    //    user.id)` therefore matched nothing and every real account fell through
-    //    to the fail-closed path — the accounts existed, the roles did not.
-    //
-    //    Resolution order, most authoritative first:
-    //      1. auth_user_id  — the correct link on the live schema
-    //      2. id            — correct on a schema where they are the same value
-    //      3. email         — legacy rows written before the link existed
-    //    `eq` escapes its argument, so no filter expression is interpolated.
-    Map<String, dynamic>? res;
-
-    try {
-      res = await client
-          .from('profiles')
-          .select()
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-    } catch (e) {
-      _report('backend call', e);
-      // Column absent on this schema — fall through.
-    }
-
-    if (res == null) {
-      try {
-        res = await client
-            .from('profiles')
-            .select()
-            .eq('id', user.id)
-            .maybeSingle();
-      } catch (e) {
-        _report('backend call', e);
-        // id is not an auth id on every schema — fall through.
-      }
-    }
-
-    if (res == null && (user.email ?? email).isNotEmpty) {
-      try {
-        res = await client
-            .from('profiles')
-            .select()
-            .eq('email', user.email ?? email)
-            .maybeSingle();
-      } catch (e) {
-        _report('backend call', e);
-        // Leave res null; the fail-closed branch below reports it.
-      }
-    }
+    // 2. Read the server-owned role.
+    final res = await _resolveProfile(user, email);
 
     final rawRole = res == null ? null : res['role'] as String?;
     final role = UserRoles.normalize(rawRole);
@@ -271,6 +221,95 @@ class ApiService {
       // role placeholder.
       'avatar': res == null ? null : res['avatar_asset'] as String?,
     };
+  }
+
+  /// The profile row behind a user, by the same three-step resolution [login]
+  /// uses: the live schema links on `auth_user_id`, some schemas use `id`, and
+  /// legacy rows only have an email.
+  ///
+  /// `eq` escapes its argument, so no filter expression is interpolated.
+  Future<Map<String, dynamic>?> _resolveProfile(
+    dynamic user,
+    String email,
+  ) async {
+    final client = Supabase.instance.client;
+    final userId = user.id as String;
+    Map<String, dynamic>? res;
+
+    try {
+      res = await client
+          .from('profiles')
+          .select()
+          .eq('auth_user_id', userId)
+          .maybeSingle();
+    } catch (e) {
+      _report('backend call', e);
+    }
+
+    if (res == null) {
+      try {
+        res = await client
+            .from('profiles')
+            .select()
+            .eq('id', userId)
+            .maybeSingle();
+      } catch (e) {
+        _report('backend call', e);
+      }
+    }
+
+    if (res == null && (user.email ?? email).isNotEmpty) {
+      try {
+        res = await client
+            .from('profiles')
+            .select()
+            .eq('email', user.email ?? email)
+            .maybeSingle();
+      } catch (e) {
+        _report('backend call', e);
+      }
+    }
+    return res;
+  }
+
+  /// Rebuild the signed-in identity from a session that is already on disk.
+  ///
+  /// The token survives a reload in local storage, but nothing used to read it
+  /// back: [UserRoleNotifier] starts at `noSession` and was only ever hydrated
+  /// by the login button, so every reload landed on the sign-in screen with a
+  /// perfectly valid session sitting in storage.
+  ///
+  /// Returns null when there is no session, or when the account has no usable
+  /// role - the same fail-closed rule as login.
+  Future<Map<String, dynamic>?> restoreSession() async {
+    if (!SupabaseConfig.isConfigured) return null;
+    try {
+      final client = Supabase.instance.client;
+      final session = client.auth.currentSession;
+      final user = session?.user;
+      if (user == null) return null;
+
+      final res = await _resolveProfile(user, user.email ?? '');
+      final role = UserRoles.normalize(res == null ? null : res['role'] as String?);
+      if (role == null || role == UserRoles.pending) {
+        await client.auth.signOut();
+        return null;
+      }
+
+      return {
+        'id': user.id,
+        'name': (res == null ? null : res['full_name'] as String?) ?? 'User',
+        'email': user.email ?? '',
+        'phone': (res == null ? null : res['phone'] as String?) ?? '',
+        'role': role,
+        'branch': (res == null ? null : res['branch_name'] as String?) ??
+            AppConstants.launchBranch,
+        'avatar': res == null ? null : res['avatar_asset'] as String?,
+      };
+    } catch (e) {
+      _report('session restore', e);
+      return null;
+    }
   }
 
   /// A failed read used to be swallowed silently, so a missing table, an RLS

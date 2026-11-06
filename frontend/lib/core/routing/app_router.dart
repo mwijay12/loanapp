@@ -40,6 +40,15 @@ import '../widgets/back_guard.dart';
 /// pill, because no session had been established yet. A showcase must open on
 /// the login screen.
 final initialRouteProvider = Provider<String>((ref) {
+  // A session restored from disk outranks the onboarding flag: the person is
+  // already signed in, so opening on /login and making them do it again is the
+  // bug this guards against.
+  final role = ref.watch(userRoleProvider);
+  if (role != UserRoles.noSession && role != UserRoles.pending) {
+    final landsOnAdmin =
+        role == UserRoles.superAdmin || role == UserRoles.branchManager;
+    return landsOnAdmin ? '/admin' : '/home';
+  }
   return ref.watch(seenOnboardingProvider) ? '/login' : '/onboarding';
 });
 
@@ -57,8 +66,14 @@ Widget _standalone(Widget screen, {String fallback = '/home'}) =>
     BackGuard(child: screen, fallback: fallback);
 
 final routerProvider = Provider<GoRouter>((ref) {
+  // A link that names a screen wins over the default landing screen. Without
+  // this, restoring the session at launch sent a signed-in user hitting /ai to
+  // /admin - the deep link in the address bar was simply ignored.
+  final requested = Uri.base.path;
+  final deepLinked = requested.isNotEmpty && requested != '/';
+
   return GoRouter(
-    initialLocation: ref.watch(initialRouteProvider),
+    initialLocation: deepLinked ? requested : ref.watch(initialRouteProvider),
     // Auth guard. `UserRoles.noSession` is the fail-closed default, so anything
     // that is not a real role is treated as signed out. Enforcement in the UI is
     // cosmetic; the database is the real boundary once RLS lands.

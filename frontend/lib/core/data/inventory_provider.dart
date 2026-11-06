@@ -12,7 +12,11 @@ import 'sales_provider.dart';
 /// from the server profile via [hydrateFromSession]. No client-side role
 /// writer exists.
 class UserRoleNotifier extends StateNotifier<String> {
-  UserRoleNotifier() : super(UserRoles.noSession);
+  /// [restoredRole] is the role read from a session that was already on disk at
+  /// start-up. Without it the state began at `noSession` on every launch and the
+  /// router sent a signed-in user back to the sign-in screen.
+  UserRoleNotifier({String? restoredRole})
+      : super(UserRoles.normalize(restoredRole) ?? UserRoles.noSession);
 
   /// One-way hydration from the server session.
   ///
@@ -32,6 +36,10 @@ class UserRoleNotifier extends StateNotifier<String> {
 final userRoleProvider = StateNotifierProvider<UserRoleNotifier, String>((ref) {
   return UserRoleNotifier();
 });
+
+/// The identity rebuilt from a stored session, or null when the launch was
+/// signed out. `main` overrides this before the router is built.
+final restoredSessionProvider = Provider<Map<String, dynamic>?>((ref) => null);
 
 /// The staff profile behind the current session.
 ///
