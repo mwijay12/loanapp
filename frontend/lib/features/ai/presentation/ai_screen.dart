@@ -124,11 +124,10 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             text: reply.text,
             isUser: false,
             local: reply.source == AiSource.local,
-            // Only the offline engine can act: the model has no tools, so a
-            // button on its reply would be a promise nothing keeps.
-            action: reply.source == AiSource.local
-                ? parseAssistantAction(query)
-                : null,
+            // Parsed from the user's own sentence, not from the reply, so it
+            // works the same whether a model or the local engine answered. The
+            // button is executed by the app; the model needs no tools for it.
+            action: parseAssistantAction(query),
           ));
         });
         _scrollToBottom();
